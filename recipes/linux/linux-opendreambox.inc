@@ -15,6 +15,13 @@ FILES_kernel-image = "/boot/vmlinux.gz /boot/autoexec.bat"
 KERNEL_IMAGETYPE = "vmlinux"
 KERNEL_OUTPUT = "vmlinux"
 
+PKG_kernel-image = "kernel-image"
+PKG_kernel-base = "kernel-base"
+RPROVIDES_kernel = "kernel-${KERNEL_VERSION}"
+RPROVIDES_kernel-image = "kernel-image-${KERNEL_VERSION}"
+RPROVIDES_kernel-base = "kernel-base-${KERNEL_VERSION}"
+PROVIDES += "kernel-${KERNEL_VERSION} kernel-image-${KERNEL_VERSION} kernel-base-${KERNEL_VERSION}"
+
 do_configure_prepend () {
 	install -m 0644 ${WORKDIR}/defconfig ${S}/.config
 	oe_runmake oldconfig
