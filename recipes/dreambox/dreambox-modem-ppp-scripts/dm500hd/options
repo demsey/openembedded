@@ -1,6 +1,6 @@
-/dev/ttyS2 2400
+/dev/ttyS1 2400
 
-nocrtscts
+crtscts
 nocdtrcts
 local
 
