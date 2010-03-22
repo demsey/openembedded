@@ -1,7 +1,12 @@
 require linux-opendreambox.inc
 
-SRCREV = "791f9cc7d5e91e43ad6ea42c364d7e3e7f097cbe"
-PR = "r0"
+SRCREV = "a2a48b5dca53784507da399a256895cc598a3c1f"
+PR="r1"
+
+RREPLACES_kernel = "kernel-2.6.18-7.1-dm500hd"
+RCONFLICTS_kernel = "kernel-2.6.18-7.1-dm500hd"
+RREPLACES_kernel-image = "kernel-image-2.6.18-7.1-dm500hd"
+RCONFLICTS_kernel-image = "kernel-image-2.6.18-7.1-dm500hd"
 
 SRC_URI += " http://trappist.elis.ugent.be/~mronsse/cdfs/download/cdfs-2.6.18.tar.bz2 \
 	file://stblinux-2.6.18-cdfs.patch \
