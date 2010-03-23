@@ -41,7 +41,14 @@ trap ":" INT QUIT TSTP
 #
 
 # HACK: progress needs LCD to create /proc device entry
-modprobe lcd
+if [ -f /lib/modules/$(uname -r)/modules.dep ] && [ $(cat /lib/modules/$(uname -r)/modules.dep | grep dreambox_rc2 | wc -l) -gt 0 ]; then 
+	/bin/true;
+else
+	echo "regenerate module dependencies";
+	depmod -ae;
+fi
+
+[ $(cat /lib/modules/$(uname -r)/modules.dep | grep lcd | wc -l) -gt 0 ] && modprobe lcd
 
 if [ "$VERBOSE" = no ]; then
     if [ -e /proc/progress ]; then
