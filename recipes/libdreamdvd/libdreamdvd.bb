@@ -7,7 +7,7 @@ RDEPENDS = "libdvdnav"
 PR = "r0"
 PV = "0.9+cvs${SRCDATE}"
 
-SRCDATE = "20100308"
+SRCDATE = "20100330"
 #no hw scaling support for 7025 yet.. so use old libdreamdvd
 SRCDATE_dm7025 = "20090517"
 
