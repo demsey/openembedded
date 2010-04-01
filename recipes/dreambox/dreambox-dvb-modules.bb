@@ -20,13 +20,13 @@ KV_dm7025 = "2.6.32-dm7025"
 PV_dm7025 = "${KV}-20100303"
 
 KV_dm500hd = "${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', '2.6.18-7.3-dm500hd', '2.6.30-dm500hd', d)}"
-PV_dm500hd = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', '20100330', '20090727', d)}"
+PV_dm500hd = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', '20100401', '20090727', d)}"
 
 KV_dm800 = "${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '2.6.18-7.3-dm800', '2.6.30-dm800', d)}"
-PV_dm800 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '20100324', '20090723', d)}"
+PV_dm800 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '20100401', '20090723', d)}"
 
 KV_dm8000 = "${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '2.6.18-7.3-dm8000', '2.6.30-dm8000', d)}"
-PV_dm8000 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '20100330', '20090820', d)}"
+PV_dm8000 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '20100401', '20090820', d)}"
 
 RDEPENDS = "kernel (${KV})"
 PR = "r0"
