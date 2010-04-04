@@ -1,0 +1,209 @@
+2010-01-04  Christian Bruel  <christian.bruel@st.com>
+  
+        https://bugzilla.stlinux.com/show_bug.cgi?id=8178
+	* final.c (shorten_branches): Enable asm statements to vary.
+ 	* config/sh/sh.c (asm_size): Catch multiple .long asm statements.
+	(sh_insn_length_alignment): New function.
+	* config/sh/sh-protos.h (sh_insn_length_alignment): Declare.
+	* config/sh/sh.h (INSN_LENGTH_ALIGNMENT): Call sh_insn_length_alignment.
+
+Index: gcc/gcc/final.c
+===================================================================
+--- gcc.orig/gcc/final.c	(revision 1145)
++++ gcc/gcc/final.c	(revision 1224)
+@@ -1070,7 +1070,10 @@
+ 	  /* Alignment is handled by ADDR_VEC_ALIGN.  */
+ 	}
+       else if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
+-	insn_lengths[uid] = asm_insn_count (body) * insn_default_length (insn);
++	{
++	  insn_lengths[uid] = asm_insn_count (body) * insn_default_length (insn);
++	  varying_length[uid] = 1;
++	}
+       else if (GET_CODE (body) == SEQUENCE)
+ 	{
+ 	  int i;
+@@ -1362,7 +1365,16 @@
+ 	    }
+ 	  else
+ 	    {
+-	      new_length = insn_current_length (insn);
++	      rtx body = PATTERN (insn);
++	      if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
++		{
++		  new_length = asm_insn_count (body) *
++		    insn_default_length (insn);
++		  if (new_length < insn_lengths[uid])
++		    new_length = insn_lengths[uid];
++		}
++	      else 
++		new_length = insn_current_length (insn);
+ 	      insn_current_address += new_length;
+ 	    }
+ 
+Index: gcc/gcc/config/sh/sh-protos.h
+===================================================================
+--- gcc.orig/gcc/config/sh/sh-protos.h	(revision 1145)
++++ gcc/gcc/config/sh/sh-protos.h	(revision 1224)
+@@ -125,6 +125,7 @@
+ extern void expand_sfunc_binop (enum machine_mode, rtx (*) (rtx, rtx),
+ 				const char *, enum rtx_code code, rtx *);
+ extern int sh_insn_length_adjustment (rtx, const int, const int);
++extern int sh_insn_length_alignment (rtx);
+ extern int sh_can_redirect_branch (rtx, rtx);
+ extern void sh_expand_unop_v2sf (enum rtx_code, rtx, rtx);
+ extern void sh_expand_binop_v2sf (enum rtx_code, rtx, rtx, rtx);
+Index: gcc/gcc/config/sh/sh.c
+===================================================================
+--- gcc.orig/gcc/config/sh/sh.c	(revision 1145)
++++ gcc/gcc/config/sh/sh.c	(revision 1224)
+@@ -9071,6 +9071,44 @@
+ }
+ 
+ int
++sh_insn_length_alignment (rtx insn)
++{
++  int align = 1;
++
++  if (INSN_P (insn))
++    {
++      rtx body = PATTERN (insn);
++
++      if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
++	{
++	  const char *template;
++
++	  if (GET_CODE (body) == ASM_INPUT)
++	    template = XSTR (body, 0);
++	  else
++	    template = decode_asm_operands (body, NULL, NULL, NULL, NULL);
++
++	  (void) sh_asm_count (template, &align);
++	  return align;
++	}
++
++      return 1 << TARGET_SHMEDIA;
++    }
++
++  align = GET_CODE (insn) == JUMP_INSN
++    && GET_CODE (PATTERN (insn)) == ADDR_DIFF_VEC                   
++    && GET_MODE (PATTERN (insn)) == HImode                   
++    ? 0
++    : GET_CODE (insn) == BARRIER
++    ? 0                         
++    : GET_CODE (insn) == JUMP_INSN || GET_CODE (insn) == CALL_INSN
++    ? 1 << TARGET_SHMEDIA
++    : 1;
++
++  return align;
++}
++
++int
+ sh_insn_length_adjustment (rtx insn, const int cur_length, const int special)
+ {
+   int addlen = 0;
+@@ -12232,15 +12270,35 @@
+   if (*s == ';' || *s == '\n' || *s == '\0')
+     return 0;
+ 
+-  else if (strstr (s, ".long"))
+-    return 2;
++  if (strstr (s, ".long"))
++    {
++      int n = 1;
++      /* parse .long	1, 3 syntax.  */
++      while (*s != '\n' && *s != '\0')
++	{
++	  s++;
++	  if (*s == ',')  n++;
++	}
++      return 2 * n;
++    }
+ 
+-  else if (strstr (s, ".short"))
+-    return 1;
++  else if (strstr (s, ".short") || strstr (s, ".word"))
++    {
++      int n = 1;
++      /* parse .short	1, 3 syntax.  */
++      while (*s != '\n' && *s != '\0')
++	{
++	  s++;
++	  if (*s == ',')  n++;
++	}
++      return n;
++    }
+ 
+   else if (insn_current_address != -1 && strstr (s, ".balign"))
+     {
+       long int align;
++      int new_address;
++
+       while (*s != '\t' && *s != ' ') s++;
+       align = strtol (s, NULL, 10);
+       if (errno == ERANGE || errno == EINVAL)
+@@ -12248,13 +12306,20 @@
+ 	  warning (OPT_mdb_page_bug, "unsupported %s asm for w/a.", s);
+ 	  return 0;
+ 	}
+-      if (seen_align) *seen_align = align ;
+-      return (((addr + align - 1) & -align) - addr) / 2;
++
++      /* return log.  */
++      if (seen_align) 
++	*seen_align = exact_log2 (align);
++      new_address = (addr + align - 1) & -align;
++      /* return size / insn_default_length().  */
++      return (new_address - addr) / 2;
+     }
+ 
+   else if (insn_current_address != -1 && strstr (s, ".align"))
+     {
+       long int align;
++      int new_address;
++
+       while (*s != '\t' && *s != ' ') s++;
+       align = strtol (s, NULL, 10);
+       if (errno == ERANGE || errno == EINVAL)
+@@ -12263,9 +12328,14 @@
+ 	  return 0;
+ 	}
+ 
+-      if (seen_align) *seen_align = align;
++      /* return log.  */
++      if (seen_align)
++	*seen_align = align;
++
+       align = 1 << align;
+-      return (((addr + align - 1) & -align) - addr) / 2;
++      new_address = (addr + align - 1) & -align;
++      /* return size / insn_default_length().  */
++      return (new_address - addr) / 2;
+     }
+ 
+   else if (strstr (s, ".space") || strstr (s, ".skip"))
+Index: gcc/gcc/config/sh/sh.h
+===================================================================
+--- gcc.orig/gcc/config/sh/sh.h	(revision 1145)
++++ gcc/gcc/config/sh/sh.h	(revision 1224)
+@@ -958,18 +958,8 @@
+ /* The base two logarithm of the known minimum alignment of an insn length.  */
+ /* After a addr_diff_vec:HI the log align is 1.  Update it so the  next
+    insn_current_address can correctly be computed in final.  */
+-#define INSN_LENGTH_ALIGNMENT(A_INSN)					\
+-  (GET_CODE (A_INSN) == INSN						\
+-   ? 1 << TARGET_SHMEDIA						\
+-   : GET_CODE (A_INSN) == JUMP_INSN                                     \
+-     && GET_CODE (PATTERN (A_INSN)) == ADDR_DIFF_VEC                    \
+-     && GET_MODE (PATTERN (A_INSN)) == HImode                           \
+-   ? 0                                                                  \
+-   : GET_CODE (A_INSN) == BARRIER                                       \
+-   ? 0                                                                  \
+-   : GET_CODE (A_INSN) == JUMP_INSN || GET_CODE (A_INSN) == CALL_INSN	\
+-   ? 1 << TARGET_SHMEDIA						\
+-   : 1)
++#define INSN_LENGTH_ALIGNMENT(X) sh_insn_length_alignment (X)
++
+ 
+ /* Standard register usage.  */
+ 

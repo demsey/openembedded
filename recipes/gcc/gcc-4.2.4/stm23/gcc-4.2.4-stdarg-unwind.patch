@@ -1,0 +1,18 @@
+2010-03-02  Christian Bruel  <christian.bruel@st.com>
+
+        https://bugzilla.stlinux.com/show_bug.cgi?id=8414
+	* config/sh/sh.c (sh_expand_prologue): Keep frame related varags stack
+	 pushes for unwind.
+
+Index: gcc/gcc/config/sh/sh.c
+===================================================================
+--- gcc/gcc/config/sh/sh.c	(revision 1239)
++++ gcc/gcc/config/sh/sh.c	(revision 1240)
+@@ -6579,7 +6579,6 @@
+ 			))
+ 		break;
+ 	      insn = push (rn);
+-	      RTX_FRAME_RELATED_P (insn) = 0;
+ 	    }
+ 	}
+     }

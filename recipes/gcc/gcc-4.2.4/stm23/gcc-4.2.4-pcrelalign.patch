@@ -1,0 +1,118 @@
+Index: gcc-4.2-4.orig/gcc/ChangeLog.STM
+===================================================================
+--- gcc-4.2-4.orig/gcc/ChangeLog.STM	(revision 994)
++++ gcc-4.2-4/gcc/gcc/ChangeLog.STM	(working copy)
+@@ -1,0 +1,6 @@
++2009-09-03  Christian Bruel  <christian.bruel@st.com>
++ 
++ 	https://bugzilla.stlinux.com/show_bug.cgi?id=7000
++ 	* config/sh/sh.md (movdf_i4): Fix length attribute.
++ 	* config/sh/sh.c (sh_jump_align): Rework.
++ 
+2009-10-20  Christian Bruel  <christian.bruel@st.com>
+  
+        https://bugzilla.stlinux.com/show_bug.cgi?id=7276
+Index: gcc-4.2-4.orig/gcc/config/sh/sh.c
+===================================================================
+--- gcc-4.2-4.orig/gcc/config/sh/sh.c	(revision 994)
++++ gcc-4.2-4/gcc/gcc/config/sh/sh.c	(working copy)
+@@ -4799,25 +4799,27 @@
+     }
+ }
+ 
+-int sh_jump_align (rtx label)
++int
++sh_jump_align (rtx label)
+ {
+-  if (sh_align_small_blocks && TARGET_CACHE32)
+-    {
+-      rtx insn;
+-      int size = 0;
++  rtx insn;
++  int size = 0;
+ 
+-      for (insn = NEXT_INSN (label);
+-	   insn && GET_CODE (insn) != BARRIER &&
+-	     GET_CODE (insn) != CODE_LABEL;
+-	   insn = NEXT_INSN (insn))
+-	if (INSN_P (insn))
+-	  size += get_attr_min_length (insn);
++  gcc_assert (label && GET_CODE (label) == CODE_LABEL);
+ 
+-      if (size <= sh_align_small_blocks)
+-	return 0;
++  for (insn = NEXT_INSN (label);
++       insn && GET_CODE (insn) != BARRIER &&
++	 GET_CODE (insn) != CODE_LABEL;
++       insn = NEXT_INSN (insn))
++    {
++      if (INSN_P (insn))
++	size += get_attr_min_length (insn);
++
++      if (size > sh_align_small_blocks)
++	return align_jumps_log;
+     }
+ 
+-  return align_jumps_log;
++  return 0;
+ }
+ 
+ /* BARRIER_OR_LABEL is either a BARRIER or a CODE_LABEL immediately following
+@@ -4827,7 +4829,6 @@
+ {
+   rtx next = next_real_insn (barrier_or_label), pat, prev;
+   int slot, credit, jump_to_next = 0;
+-  rtx label;
+ 
+   if (! next)
+     return 0;
+@@ -4934,30 +4935,14 @@
+ 	}
+     }
+ 
+-  if (sh_align_small_blocks && TARGET_CACHE32)
+-    {
+-      label = next_nonnote_insn (barrier_or_label);
+-      if (label && GET_CODE (label) == CODE_LABEL)
+-	{
+-	  rtx insn;
+-	  int size = 0;
++  while (BARRIER_P (barrier_or_label))
++    barrier_or_label = next_nonnote_insn (barrier_or_label);
+ 
+-	  for (insn = NEXT_INSN (label);
+-	       insn && GET_CODE (insn) != BARRIER &&
+-		 GET_CODE (insn) != CODE_LABEL;
+-	       insn = NEXT_INSN (insn))
+-	    if (INSN_P (insn))
+-	      size += get_attr_min_length (insn);
+-
+-	  if (size <= sh_align_small_blocks)
+-	    return 0;
+-	}
+-    }
+-
+-  return align_jumps_log;
++  return sh_jump_align (barrier_or_label);
+ }
+ 
+-static bool in_between(rtx start, rtx end, rtx r)
++static bool
++in_between(rtx start, rtx end, rtx r)
+ {
+   rtx scan;
+   for (scan = NEXT_INSN (start); scan && scan != end; scan = NEXT_INSN (scan))
+Index: gcc-4.2-4.orig/gcc/config/sh/sh.md
+===================================================================
+--- gcc-4.2-4.orig/gcc/config/sh/sh.md	(revision 994)
++++ gcc-4.2-4/gcc/gcc/config/sh/sh.md	(working copy)
+@@ -5926,8 +5926,8 @@
+      [(if_then_else (eq_attr "fmovd" "yes") (const_int 2) (const_int 4))
+       (const_int 4)
+       (if_then_else (eq_attr "fmovd" "yes") (const_int 4) (const_int 6))
++      (const_int 4)
+       (if_then_else (eq_attr "fmovd" "yes") (const_int 4) (const_int 6))
+-      (if_then_else (eq_attr "fmovd" "yes") (const_int 4) (const_int 6))
+       (const_int 4)
+       (const_int 8) (const_int 8) ;; these need only 8 bytes for @(r0,rn)
+       ;; We can't use 4-byte push/pop on SHcompact, so we have to

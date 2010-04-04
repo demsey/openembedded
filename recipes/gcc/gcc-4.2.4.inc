@@ -3,7 +3,7 @@ LICENSE = "GPLv3"
 
 DEPENDS = "mpfr gmp"
 
-INC_PR = "r10"
+INC_PR = "r11"
 
 SRC_URI = "${GNU_MIRROR}/gcc/gcc-${PV}/gcc-${PV}.tar.bz2 \
 	file://100-uclibc-conf.patch;patch=1 \
@@ -77,12 +77,45 @@ SRC_URI_append_sh4  = " file://sh_unwind.patch;patch=1 \
 			file://cppdefault_cross.patch;patch=1 \
 		      "
 
+SRC_URI_append_openstmstb  = " \
+	file://stm23/cache-amnesia-revert.patch;patch=1 \
+# stm23 common
+	file://stm23/gcc-4.2.4-stm-release.patch;patch=1 \
+	file://stm23/gcc-4.2.4-multilibpath.patch;patch=1 \
+# stm23 sh4 common
+	file://stm23/gcc-4.2.4-090602.patch;patch=1;pnum=0 \
+	file://stm23/gcc-4.2.4-sh-use-gnu-hash-style.patch;patch=1 \
+	file://stm23/gcc-4.2.4-icache-flush.patch;patch=1 \
+	file://stm23/gcc-4.2.4-multilib-opts.patch;patch=1 \
+	file://stm23/gcc-4.2.4-cbranchdi.patch;patch=1 \
+	file://stm23/gcc-4.2.4-pref.patch;patch=1 \
+	file://stm23/gcc-4.2.4-structalias.patch;patch=1 \
+	file://stm23/gcc-4.2.4-unlikely.patch;patch=1 \
+	file://stm23/gcc-4.2.4-pcrelalign.patch;patch=1 \
+	file://stm23/gcc-4.2.4-warn-branchprob.patch;patch=1 \
+	file://stm23/gcc-4.2.4-brafix.patch;patch=1 \
+	file://stm23/gcc-4.2.4-asmlength.patch;patch=1 \
+	file://stm23/gcc-4.2.4-gp-pic-1.patch;patch=1 \
+	file://stm23/gcc-4.2.4-stdarg-unwind.patch;patch=1 \
+	file://stm23/gcc-4.2.4-dwarfctors.patch;patch=1 \
+	file://stm23/cache-amnesia-merge.patch;patch=1 \
+	"
 
 # Language Overrides
 FORTRAN = ""
 FORTRAN_linux-gnueabi = ",fortran"
 JAVA = ""
+OBJC = ""
 
 EXTRA_OECONF_BASE = "--enable-libssp --disable-bootstrap --enable-libgomp --disable-libmudflap"
+EXTRA_OECONF_BASE_openstmstb = "--disable-bootstrap --with-system-zlib --disable-libmudflap --enable-checking=assert"
+
+STM_RELEASE_openstmstb = "62"
 
 ARM_INSTRUCTION_SET = "arm"
+
+do_configure_prepend_openstmstb () {
+    sed -i  -e '/VERSUFFIX/s,".*"," (STMicroelectronics/Linux Base ${PV}-${STM_RELEASE} packaged by ${DISTRO_NAME} ${PR})",' \
+        -e '/bug_report_url/s,".*","<URL:https://bugzilla.stlinux.com>",' \
+        ${S}/gcc/version.c
+}

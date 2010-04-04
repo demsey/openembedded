@@ -1,0 +1,46 @@
+Index: gcc-4.2.4-orig/gcc/ChangeLog.STM
+===================================================================
+--- gcc-4.2.4-orig/gcc/ChangeLog.STM	(revision 1134)
++++ gcc-4.2.4/gcc/ChangeLog.STM	(working copy)
+@@ -1,3 +1,9 @@
++2009-11-03  Christian Bruel  <christian.bruel@st.com>
++  
++        https://bugzilla.stlinux.com/show_bug.cgi?id=7377
++ 	* config/sh/sh.c (sh_insn_length_adjustment): Adjust jumps labels with
++	alignment.
++
+ 2009-10-29  Yvan Roux  <yvan.roux@st.com>
+ 
+ 	* doc/invoke.texi (-Wbranch-probabilities-computation): Document.
+Index: gcc-4.2.4-orig/gcc/config/sh/sh.c
+===================================================================
+--- gcc-4.2.4-orig/gcc/config/sh/sh.c	(revision 1134)
++++ gcc-4.2.4/gcc/config/sh/sh.c	(working copy)
+@@ -9245,7 +9245,26 @@
+ 	(4) .L: .long	.L5
+       */
+       if (cur_length == 10)
+-	return xnop;
++	{
++	  /* Ideally that should be in final.c but we don't have computed the
++	     insns lengths at that time.
++	     Make sure here that .align padding is taken into account when 
++	     computing distances.  */
++
++	  int uid_address = INSN_ADDRESSES (INSN_UID (insn));
++	  int long_address = uid_address + 6;
++	  int aligned_long_address = (long_address + 3) & -4;
++
++	  int offset = branch_dest (insn) - INSN_ADDRESSES (INSN_UID (insn));
++	  int far;
++
++	  far = ! (offset >= -32764 && offset - get_attr_length (insn) <= 32766);
++
++	  if (far)
++	    return aligned_long_address - long_address;
++	  else
++	    return 0;
++	}
+ 	
+       /*
+ 	mov.l	r13,@-r15	[length = 16]

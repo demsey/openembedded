@@ -1,0 +1,50 @@
+Index: gcc-4.2-4.orig/gcc/tree-ssa-alias.c
+===================================================================
+--- gcc-4.2-4.orig/gcc/tree-ssa-alias.c	(revision 1061)
++++ gcc-4.2-4/gcc/tree-ssa-alias.c	(working copy)
+@@ -3197,7 +3197,6 @@
+ 	    size_t uid = DECL_UID (var);
+ 	    
+ 	    up = get_or_create_used_part_for (uid);
+- 
+ 	    up->minused = 0;
+ 	    up->maxused = TREE_INT_CST_LOW (DECL_SIZE (var));
+ 	    up->implicit_uses = true;
+@@ -3205,6 +3204,7 @@
+ 	      up->write_only = false;
+ 
+ 	    up_insert (uid, up);
++	    if (! var_can_have_subvars (var))
+ 	    *walk_subtrees = 0;
+ 	    return NULL_TREE;
+ 	  }
+Index: gcc-4.2-4.orig/gcc/ChangeLog.STM
+===================================================================
+--- gcc-4.2-4.orig/gcc/ChangeLog.STM	(revision 1086)
++++ gcc-4.2-4/gcc/ChangeLog.STM	(working copy)
+@@ -1,1 +1,9 @@
++2009-10-20  Christian Bruel  <christian.bruel@st.com>
++  
++        https://bugzilla.stlinux.com/show_bug.cgi?id=7276
++ 	* tree-ssa-operands.c (add_virtual_operand): Set op volatile if 
++	! aliases_computed_p.
++ 	* tree-ssa-alias.c (find_used_portions): Set walk_subtrees for
++	 ADDR_EXPR.
++
+   
+2009-04-12  Christian Bruel  <christian.bruel@st.com>
+  
+Index: gcc-4.2-4.orig/gcc/tree-ssa-operands.c
+===================================================================
+--- gcc-4.2-4.orig/gcc/tree-ssa-operands.c	(revision 1061)
++++ gcc-4.2-4/gcc/tree-ssa-operands.c	(working copy)
+@@ -1249,6 +1249,9 @@
+       /* The variable is not aliased or it is an alias tag.  */
+       if (flags & opf_is_def)
+ 	{
++	  if (!aliases_computed_p)
++	    s_ann->has_volatile_ops = true;
++
+ 	  if (flags & opf_kill_def)
+ 	    {
+ 	      /* V_MUST_DEF for non-aliased, non-GIMPLE register 

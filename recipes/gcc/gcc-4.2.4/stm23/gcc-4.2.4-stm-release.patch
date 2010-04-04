@@ -1,0 +1,62 @@
+This patch is derived from RedHat gcc-4.1.1-30.src.rpm
+gcc41-gnuc-rh-release.patch. Which was:
+
+2004-10-19  Jakub Jelinek  <jakub@redhat.com>
+
+        * c-cppbuiltin.c (define__GNUC__): Also define __GNUC_RH_RELEASE__.
+
+Do the same for __GNUC_STM_RELEASE__
+
+Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
+
+Updated for gcc-4.2.1
+Signed-off-by: Carl Shaw <carl.shaw@st.com>
+
+Index: gcc/gcc/c-cppbuiltin.c
+===================================================================
+--- gcc.orig/gcc/c-cppbuiltin.c	2007-09-01 16:28:30.000000000 +0100
++++ gcc/gcc/c-cppbuiltin.c	2009-01-27 14:29:55.000000000 +0000
+@@ -337,13 +337,13 @@
+ {
+   /* The format of the version string, enforced below, is
+      ([^0-9]*-)?[0-9]+[.][0-9]+([.][0-9]+)?([- ].*)?  */
+-  const char *q, *v = version_string;
++  const char *q, *v = version_string, *vstart, *vend;
+ 
+   while (*v && !ISDIGIT (*v))
+     v++;
+   gcc_assert (*v && (v <= version_string || v[-1] == '-'));
+ 
+-  q = v;
++  vstart = q = v;
+   while (ISDIGIT (*v))
+     v++;
+   builtin_define_with_value_n ("__GNUC__", q, v - q);
+@@ -369,6 +369,27 @@
+     builtin_define_with_value_n ("__GNUC_PATCHLEVEL__", "0", 1);
+ 
+   gcc_assert (!*v || *v == ' ' || *v == '-');
++
++  vend = v;
++  v = strchr (v, '(');
++  if (v != NULL && strncmp (v + 1, "STMicroelectronics/Linux ", 25) == 0)
++    {
++      v += 26;
++      if (strncmp (v, "Base ", 5) == 0)
++	v += 5;
++
++      gcc_assert (strncmp (v, vstart, vend - vstart) == 0);
++      gcc_assert (v[vend - vstart] == '-');
++
++      v += vend - vstart + 1;
++      q = v;
++      gcc_assert (ISDIGIT (*v));
++      while (ISDIGIT (*v))
++	v++;
++      builtin_define_with_value_n ("__GNUC_STM_RELEASE__", q, v - q);
++
++      gcc_assert (!*v || *v == ')' || *v == '.');
++    }
+ }
+ 
+ /* Define macros used by <stdint.h>.  Currently only defines limits

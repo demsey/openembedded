@@ -1,0 +1,17 @@
+This patch merge changes made by cache-amnesia.patch with
+changes made by stm23 patches.
+
+Signed-off-by: Robert Demski <demsey@users.sourceforge.org>
+
+Index: gcc-4.2.4/configure
+===================================================================
+--- gcc-4.2.4.orig/gcc/configure
++++ gcc-4.2.4/gcc/configure
+@@ -12272,6 +12272,7 @@ else
+ 	CC="${CC_FOR_BUILD}" CFLAGS="${CFLAGS_FOR_BUILD}" \
+ 	CONFIG_SITE="" \
+	${realsrcdir}/configure \
++		--cache-file=./other.cache \
+ 		--enable-languages=${enable_languages-all} \
+ 		--target=$target_alias --host=$build_alias --build=$build_alias
+ 	CFLAGS="${saved_CFLAGS}"

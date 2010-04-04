@@ -1,0 +1,29 @@
+ /* Return a condition that satisfies both COND1 and COND2.  Either string
+Index: gcc/gcc/ChangeLog.STM
+===================================================================
+--- gcc/gcc/ChangeLog.STM	(revision 937)
++++ gcc/gcc/ChangeLog.STM	(working copy)
+@@ -1,5 +1,10 @@
+ 2009-06-18  Christian Bruel  <christian.bruel@st.com>
+ 
++	https://bugzilla.stlinux.com/show_bug.cgi?id=6407
++	* config/sh/sh.h (SIMULTANEOUS_PREFETCHES): Tuned for st40-300.
++
++2009-06-18  Christian Bruel  <christian.bruel@st.com>
++
+ 	https://bugzilla.stlinux.com/show_bug.cgi?id=6459
+ 	* config/sh/sh.md (cbranchdi4_i): Don't define insn.
+ 
+Index: gcc/gcc/config/sh/sh.h
+===================================================================
+--- gcc/gcc/config/sh/sh.h	(revision 934)
++++ gcc/gcc/config/sh/sh.h	(working copy)
+@@ -3565,7 +3565,7 @@
+ 2:\n" TEXT_SECTION_ASM_OP);
+ #endif /* (defined CRT_BEGIN || defined CRT_END) && ! __SHMEDIA__ */
+ 
+-#define SIMULTANEOUS_PREFETCHES 2
++#define SIMULTANEOUS_PREFETCHES (TARGET_SH4_300 ? 6 : 2)
+ 
+ /* FIXME: middle-end support for highpart optimizations is missing.  */
+ #define high_life_started reload_in_progress

@@ -1,0 +1,18 @@
+This patch enables multilib optimisations for SH4-200 and SH4-300
+
+Signed-off-by: Carl Shaw <carl.shaw@st.com>
+
+Index: gcc/gcc/config/sh/t-linux
+===================================================================
+--- gcc.orig/gcc/config/sh/t-linux	2009-02-19 16:36:51.000000000 +0000
++++ gcc/gcc/config/sh/t-linux	2009-02-19 16:35:25.000000000 +0000
+@@ -10,7 +10,8 @@
+ MULTILIB_MATCHES = 
+ MULTILIB_EXCEPTIONS=
+ 
+-EXTRA_MULTILIB_PARTS= crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
++EXTRA_MULTILIB_PARTS= crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o \
++	$(OPT_EXTRA_PARTS)
+ 
+ # Override t-slibgcc-elf-ver to export some libgcc symbols with
+ # the symbol versions that glibc used, and hide some lib1func

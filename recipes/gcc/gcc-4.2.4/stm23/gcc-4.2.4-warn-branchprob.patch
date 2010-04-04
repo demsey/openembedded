@@ -1,0 +1,190 @@
+Index: gcc-4.2.4-orig/gcc/doc/invoke.texi
+===================================================================
+--- gcc-4.2.4-orig/gcc/doc/invoke.texi	(revision 1112)
++++ gcc-4.2.4/gcc/doc/invoke.texi	(revision 1130)
+@@ -224,8 +224,9 @@
+ @xref{Warning Options,,Options to Request or Suppress Warnings}.
+ @gccoptlist{-fsyntax-only  -pedantic  -pedantic-errors @gol
+ -w  -Wextra  -Wall  -Waddress  -Waggregate-return -Wno-attributes @gol
++-Wbranch-probabilities-computation @gol
+ -Wc++-compat -Wcast-align  -Wcast-qual  -Wchar-subscripts  -Wcomment @gol
+--Wconversion  -Wno-deprecated-declarations @gol
++-Wconversion  -Wcoverage-mismatch  -Wno-deprecated-declarations @gol
+ -Wdisabled-optimization  -Wno-div-by-zero  -Wno-endif-labels @gol
+ -Werror  -Werror=* -Werror-implicit-function-declaration @gol
+ -Wfatal-errors  -Wfloat-equal  -Wformat  -Wformat=2 @gol
+@@ -3604,6 +3605,26 @@
+ 
+ This option is implied by @option{-pedantic}, and can be disabled with
+ @option{-Wno-overlength-strings}.
++
++@item -Wcoverage-mismatch
++@opindex Wcoverage-mismatch
++Warn if feedback profiles do not match when using the
++@option{-fprofile-use} option.
++If a source file was changed between @option{-fprofile-gen} and
++@option{-fprofile-use}, the files with the profile feedback can fail
++to match the source file and GCC can not use the profile feedback
++information.  By default, GCC emits an error message in this case.
++The option @option{-Wcoverage-mismatch} emits a warning instead of an
++error.  GCC does not use appropriate feedback profiles, so using this
++option can result in poorly optimized code.  This option is useful
++only in the case of very minor changes such as bug fixes to an
++existing code-base.
++
++@item -Wbranch-probabilities-computation
++@opindex Wbranch-probabilities-computation
++Warn if edge and/or basic block counts computation is not consistent
++when using the @option{-fbranch-probabilities} option.
++
+ @end table
+ 
+ @node Debugging Options
+@@ -5686,6 +5707,10 @@
+ The following options are enabled: @code{-fbranch-probabilities}, @code{-fvpt},
+ @code{-funroll-loops}, @code{-fpeel-loops}, @code{-ftracer}
+ 
++By default, GCC emits an error message if the feedback profiles do not
++match the source code.  This error can be turned into a warning by using
++@option{-Wcoverage-mismatch}.  Note this may result in poorly optimized
++code.
+ @end table
+ 
+ The following options control compiler behavior regarding floating
+Index: gcc-4.2.4-orig/gcc/profile.c
+===================================================================
+--- gcc-4.2.4-orig/gcc/profile.c	(revision 1112)
++++ gcc-4.2.4/gcc/profile.c	(revision 1130)
+@@ -492,8 +492,13 @@
+ 
+       if (bb->count < 0)
+ 	{
+-	  error ("corrupted profile info: number of iterations for basic block %d thought to be %i",
+-		 bb->index, (int)bb->count);
++	  if (warn_branch_probabilities_computation)
++	    warning (OPT_Wbranch_probabilities_computation, "corrupted profile "
++		     "info: number of iterations for basic block %d thought to "
++		     "be %i", bb->index, (int)bb->count);
++	  else
++	    error ("corrupted profile info: number of iterations for basic "
++		   "block %d thought to be %i", bb->index, (int)bb->count);
+ 	  bb->count = 0;
+ 	}
+       FOR_EACH_EDGE (e, ei, bb->succs)
+@@ -513,8 +518,14 @@
+ 	    }
+ 	  if (e->count < 0 || e->count > bb->count)
+ 	    {
+-	      error ("corrupted profile info: number of executions for edge %d-%d thought to be %i",
+-		     e->src->index, e->dest->index,
++	      if (warn_branch_probabilities_computation)
++		warning (OPT_Wbranch_probabilities_computation, "corrupted "
++			 "profile info: number of executions for edge %d-%d "
++			 "thought to be %i", e->src->index, e->dest->index,
++			 (int)e->count);
++	      else 
++		error ("corrupted profile info: number of executions for edge "
++		       "%d-%d thought to be %i", e->src->index, e->dest->index,
+ 		     (int)e->count);
+ 	      e->count = bb->count / 2;
+ 	    }
+Index: gcc-4.2.4-orig/gcc/coverage.c
+===================================================================
+--- gcc-4.2.4-orig/gcc/coverage.c	(revision 1112)
++++ gcc-4.2.4/gcc/coverage.c	(revision 1130)
+@@ -350,21 +350,42 @@
+     }
+ 
+   checksum = compute_checksum ();
+-  if (entry->checksum != checksum)
++  if (entry->checksum != checksum
++      || entry->summary.num != expected)
+     {
++      static int warned = 0;
++      const char *id = IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME
++			 (current_function_decl));
++
++      if (warn_coverage_mismatch)
++	warning (OPT_Wcoverage_mismatch, "coverage mismatch for function "
++		 "%qs while reading counter %qs", id, ctr_names[counter]);
++      else
+       error ("coverage mismatch for function %qs while reading counter %qs",
+-	     IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (current_function_decl)),
+-	     ctr_names[counter]);
+-      error ("checksum is %x instead of %x", entry->checksum, checksum);
+-      return 0;
++	       id, ctr_names[counter]);
++
++      if (!inhibit_warnings)
++	{
++	  if (entry->checksum != checksum)
++	    inform ("checksum is %x instead of %x", entry->checksum, checksum);
++	  else
++	    inform ("number of counters is %d instead of %d",
++		    entry->summary.num, expected);
+     }
+-  else if (entry->summary.num != expected)
++
++      if (warn_coverage_mismatch
++	  && !inhibit_warnings
++	  && !warned++)
+     {
+-      error ("coverage mismatch for function %qs while reading counter %qs",
+-	     IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (current_function_decl)),
+-	     ctr_names[counter]);
+-      error ("number of counters is %d instead of %d", entry->summary.num, expected);
+-      return 0;
++	  inform ("coverage mismatch ignored due to -Wcoverage-mismatch");
++	  inform (flag_guess_branch_prob
++		  ? "execution counts estimated"
++		  : "execution counts assumed to be zero");
++	  if (!flag_guess_branch_prob)
++	    inform ("this can result in poorly optimized code");
++	}
++
++      return NULL;
+     }
+ 
+   if (summary)
+Index: gcc-4.2.4-orig/gcc/ChangeLog.STM
+===================================================================
+--- gcc-4.2.4-orig/gcc/ChangeLog.STM	(revision 1112)
++++ gcc-4.2.4/gcc/ChangeLog.STM	(revision 1130)
+@@ -1,3 +1,18 @@
++2009-10-29  Yvan Roux  <yvan.roux@st.com>
++
++	* doc/invoke.texi (-Wbranch-probabilities-computation): Document.
++	* common.opt (-Wbranch-probabilities-computation): New warning option.
++	* profile.c (compute_branch_probabilities): Ignore inconsistent bb
++	and/or edge counts computation if -Wbranch-probabilities-computation is
++	given.
++
++2007-01-25  Richard Guenther  <rguenther@suse.de>
++
++	* doc/invoke.texi (-Wcoverage-mismatch): Document.
++	* common.opt (-Wcoverage-mismatch): New warning option.
++	* coverage.c (get_coverage_counts): Ignore coverage mismatch
++	if -Wcoverage-mismatch is given.
++
+ 2009-10-20  Christian Bruel  <christian.bruel@st.com>
+   
+         https://bugzilla.stlinux.com/show_bug.cgi?id=7276
+Index: gcc-4.2.4-orig/gcc/common.opt
+===================================================================
+--- gcc-4.2.4-orig/gcc/common.opt	(revision 1112)
++++ gcc-4.2.4/gcc/common.opt	(revision 1130)
+@@ -193,6 +193,14 @@
+ Common Var(warn_register_var)
+ Warn when a register variable is declared volatile
+ 
++Wcoverage-mismatch
++Common RejectNegative Var(warn_coverage_mismatch) Warning
++Warn instead of error in case profiles in -fprofile-use do not match
++
++Wbranch-probabilities-computation
++Common Var(warn_branch_probabilities_computation)
++Warn instead of error in probabilities computation in -fbranch-probabilities
++
+ aux-info
+ Common Separate
+ -aux-info <file>	Emit declaration information into <file>

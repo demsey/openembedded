@@ -1,0 +1,62 @@
+https://bugzilla.stlinux.com/show_bug.cgi?id=8489
+
+	Backport from 4.3.4.
+	2008-11-14  Dodji Seketeli  <dodji@redhat.com>
+
+	PR debug/27574
+	* cgraph.h: New abstract_and_needed member to struct cgraph_node.
+	* cgraphunit.c (cgraph_analyze_functions): Flag abstract functions
+	-which clones are reachable - as "abstract and needed".
+	* cgraph.c (cgraph_release_function_body):  If a node is
+	"abstract and needed", do not release its DECL_INITIAL() content
+	will be needed to emit debug info.
+
+Index: gcc/gcc/cgraph.c
+===================================================================
+--- gcc/gcc/cgraph.c	(revision 1137)
++++ gcc/gcc/cgraph.c	(working copy)
+@@ -598,6 +598,10 @@
+     {
+       DECL_SAVED_TREE (node->decl) = NULL;
+       DECL_STRUCT_FUNCTION (node->decl) = NULL;
++      /* If the node is abstract and needed, then do not clear DECL_INITIAL
++	 of its associated function function declaration because it's
++	 needed to emit debug info later.  */
++      if (!node->abstract_and_needed)
+       DECL_INITIAL (node->decl) = error_mark_node;
+     }
+   node->decl = NULL;
+Index: gcc/gcc/cgraph.h
+===================================================================
+--- gcc/gcc/cgraph.h	(revision 1137)
++++ gcc/gcc/cgraph.h	(working copy)
+@@ -152,6 +152,9 @@
+   /* Set when function must be output - it is externally visible
+      or its address is taken.  */
+   unsigned needed : 1;
++  /* Set when decl is an abstract function pointed to by the
++     ABSTRACT_DECL_ORIGIN of a reachable function.  */
++  unsigned abstract_and_needed : 1;
+   /* Set when function is reachable by call from other function
+      that is either reachable or needed.  */
+   unsigned reachable : 1;
+Index: gcc/gcc/cgraphunit.c
+===================================================================
+--- gcc/gcc/cgraphunit.c	(revision 1137)
++++ gcc/gcc/cgraphunit.c	(working copy)
+@@ -1125,6 +1125,15 @@
+ 	if (!edge->callee->reachable)
+ 	  cgraph_mark_reachable_node (edge->callee);
+ 
++      /* If decl is a clone of an abstract function, mark that abstract
++	 function so that we don't release its body. The DECL_INITIAL() of that
++         abstract function declaration will be later needed to output debug info.  */
++      if (DECL_ABSTRACT_ORIGIN (decl))
++	{
++	  struct cgraph_node *origin_node = cgraph_node (DECL_ABSTRACT_ORIGIN (decl));
++	  origin_node->abstract_and_needed = true;
++	}
++
+       /* We finalize local static variables during constructing callgraph
+          edges.  Process their attributes too.  */
+       process_function_and_variable_attributes (first_processed,

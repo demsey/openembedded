@@ -1,0 +1,39 @@
+Index: gcc/gcc/ChangeLog.STM
+===================================================================
+--- gcc/gcc/ChangeLog.STM	(revision 933)
++++ gcc/gcc/ChangeLog.STM	(working copy)
+@@ -1,1 +1,6 @@
++2009-06-18  Christian Bruel  <christian.bruel@st.com>
++
++	https://bugzilla.stlinux.com/show_bug.cgi?id=6459
++	* config/sh/sh.md (cbranchdi4_i): Don't define insn.
++
+ 
+Index: gcc/gcc/config/sh/sh.md
+===================================================================
+--- gcc/gcc/config/sh/sh.md	(revision 935)
++++ gcc/gcc/config/sh/sh.md	(working copy)
+@@ -740,18 +740,16 @@
+    operands[4] = gen_rtx_SCRATCH (SImode);
+ }")
+ 
+-(define_insn_and_split "cbranchdi4_i"
++(define_split
+   [(set (pc)
+ 	(if_then_else (match_operator 0 "comparison_operator"
+-			[(match_operand:DI 1 "arith_operand" "r,r")
+-			 (match_operand:DI 2 "arith_operand" "rN,i")])
++			[(match_operand:DI 1 "arith_operand" "")
++			 (match_operand:DI 2 "arith_operand" "")])
+ 		      (label_ref (match_operand 3 "" ""))
+ 		      (pc)))
+-   (clobber (match_scratch:SI 4 "=X,&r"))
++   (clobber (match_scratch:SI 4 ""))
+    (clobber (reg:SI T_REG))]
+-  "TARGET_CBRANCHDI4"
+-  "#"
+-  "&& reload_completed"
++  "TARGET_CBRANCHDI4 && reload_completed"
+   [(pc)]
+   "
+ {

@@ -1,0 +1,108 @@
+2010-02-10  Christian Bruel  <christian.bruel@st.com>
+
+	* config/sh/sh.c (find_barrier): Don't emit a CP inside the GP setting.
+	(sh_asm_count): force max addr if insn_current_address unknown.
+ 	* final.c (shorten_branches): Enable asm statements to vary.
+
+diff -urb gcc-4.2.4.orig/gcc/config/sh/sh.c gcc-4.2.4/gcc/config/sh/sh.c
+--- gcc-4.2.4.orig/gcc/config/sh/sh.c	2010-02-24 16:04:45.301673000 +0100
++++ gcc-4.2.4/gcc/config/sh/sh.c	2010-02-24 16:07:07.314565000 +0100
+@@ -3,7 +3,7 @@
+    2003, 2004, 2005, 2006, 2007 Free Software Foundation, Inc.
+    Contributed by Steve Chamberlain (sac@cygnus.com).
+    Improved by Jim Wilson (wilson@cygnus.com).
+-   Copyright (c) 2009  STMicroelectronics.
++   Copyright (c) 2010 STMicroelectronics.
+ 
+ This file is part of GCC.
+ 
+@@ -4042,6 +4042,7 @@
+   int si_limit;
+   int hi_limit;
+   rtx orig = from;
++  rtx last_got = NULL_RTX;
+ 
+   /* For HImode: range is 510, add 4 because pc counts from address of
+      second instruction after this one, subtract 2 for the jump instruction
+@@ -4137,6 +4138,16 @@
+ 	  dst = SET_DEST (pat);
+ 	  mode = GET_MODE (dst);
+ 
++	  /* GOT pcrelat setting comes in pair of
++	     mova	.L8,r0
++	     mov.l	.L8,r12
++	     instructions.  (plus add r0,r12).
++	     Remember if we see one without the other.  */
++          if (GET_CODE (src) == UNSPEC && PIC_ADDR_P (XVECEXP (src, 0, 0)))
++            last_got = last_got ? NULL_RTX : from;
++          else if (PIC_ADDR_P (src))
++            last_got = last_got ? NULL_RTX : from;
++
+ 	  /* We must explicitly check the mode, because sometimes the
+ 	     front end will generate code to load unsigned constants into
+ 	     HImode targets without properly sign extending them.  */
+@@ -4232,10 +4243,8 @@
+ 	new_align = 4;
+ 
+       /* There is a possibility that a bf is transformed into a bf/s by the
+-	 delay slot scheduler, Conservatively handle this case.  */
+-      if (GET_CODE (from) == JUMP_INSN
+-	  && GET_CODE (PATTERN (from)) != ADDR_DIFF_VEC
+-	  && GET_CODE (PATTERN (from)) != ADDR_VEC
++	 delay slot scheduler.  */
++      if (JUMP_P (from) && !JUMP_TABLE_DATA_P (from) 
+ 	  && get_attr_type (from) == TYPE_CBRANCH
+ 	  && GET_CODE (PATTERN (NEXT_INSN (PREV_INSN (from)))) != SEQUENCE)
+ 	inc += 2;
+@@ -4318,6 +4327,13 @@
+       else
+ 	from = PREV_INSN (from);
+ 
++      /* Don't emit a constant table int the middle of global pointer setting,
++	 since that that would move the addressing base GOT into another table. 
++	 We need the first mov instruction before the _GLOBAL_OFFSET_TABLE_
++	 in the pool anyway, so just move up the whole constant pool.  */
++      if (last_got)
++        from = PREV_INSN (last_got);
++
+       /* Walk back to be just before any jump or label.
+ 	 Putting it before a label reduces the number of times the branch
+ 	 around the constant pool table will be hit.  Putting it before
+@@ -12371,7 +12387,10 @@
+   char *s, *lt;
+   char delim[] = ";\n";
+   int in_sub = 0;
+-  int addr = insn_current_address;
++  int addr;
++  
++  addr = mdep_reorg_phase > SH_FIXUP_PCLOAD && INSN_ADDRESSES_SET_P () ?
++    insn_current_address : 2;
+ 
+   lt = alloca (strlen (template) + 1);
+   strcpy (lt, template);
+diff -urb gcc-4.2.4.orig/gcc/final.c gcc-4.2.4/gcc/final.c
+--- gcc-4.2.4.orig/gcc/final.c	2010-02-24 16:03:13.320852000 +0100
++++ gcc-4.2.4/gcc/final.c	2010-02-24 16:07:22.072890000 +0100
+@@ -2,7 +2,7 @@
+    Copyright (C) 1987, 1988, 1989, 1992, 1993, 1994, 1995, 1996, 1997,
+    1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
+    Free Software Foundation, Inc.
+-   Copyright (c) 2009  STMicroelectronics.
++   Copyright (c) 2010 STMicroelectronics.
+ 
+ This file is part of GCC.
+ 
+@@ -1367,12 +1367,7 @@
+ 	    {
+ 	      rtx body = PATTERN (insn);
+ 	      if (GET_CODE (body) == ASM_INPUT || asm_noperands (body) >= 0)
+-		{
+-		  new_length = asm_insn_count (body) *
+-		    insn_default_length (insn);
+-		  if (new_length < insn_lengths[uid])
+-		    new_length = insn_lengths[uid];
+-		}
++		new_length = asm_insn_count (body) * insn_default_length (insn);
+ 	      else 
+ 		new_length = insn_current_length (insn);
+ 	      insn_current_address += new_length;
