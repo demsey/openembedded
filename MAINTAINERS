@@ -291,6 +291,13 @@ Machines:   akita
 Recipes:    aircrack-ng, kismet, lorcon, mdk, rfakeap, rglueap, 
 Recipes:    rt2570-k2wrlz, void11
 
+Person:     Robert Demski 'demsey'
+Mail:       demsey@users.sourceforge.net
+Interests:  sh4, Embedded Linux, free software, java
+Distros:    openstmstb
+Machines:   cuberevo, cuberevo-mini, cuberevo-mini2, cuberevo-mini-fta, cuberevo-250hd, cuberevo-2000hd, cuberevo-9500hd
+Recipes:    linux-cuberevo*
+
 Person:     Robert Schuster 'thebohemian'
 Mail:       robert.schuster@tarent.de, thebohemian@gmx.net
 Website:    http://fsfe.org/en/fellows/robertschuster/weblog
