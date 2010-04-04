@@ -1,0 +1,11 @@
+diff -Naur glibc-2.6.1/sysdeps/unix/sysv/linux/check_pf.c glibc-2.6.1-stm/sysdeps/unix/sysv/linux/check_pf.c
+--- glibc-2.6.1/sysdeps/unix/sysv/linux/check_pf.c	2007-04-25 17:05:18.000000000 +0100
++++ glibc-2.6.1-stm/sysdeps/unix/sysv/linux/check_pf.c	2007-08-07 17:05:41.000000000 +0100
+@@ -34,6 +34,7 @@
+ #include <not-cancel.h>
+ #include <kernel-features.h>
+ 
++#include <alloca.h>
+ 
+ #ifndef IFA_F_TEMPORARY
+ # define IFA_F_TEMPORARY IFA_F_SECONDARY

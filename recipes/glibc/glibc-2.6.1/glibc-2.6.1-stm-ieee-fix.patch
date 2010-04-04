@@ -1,0 +1,21 @@
+Force build of libm on sh4 with the -mieee compiler flag.
+
+See https://bugzilla.stlinux.com/show_bug.cgi?id=1239
+or http://www.cygwin.com/ml/glibc-bugs/2007-05/msg00101.html
+for why this is a good idea.
+
+Signed-off-by: Carl Shaw <carl.shaw@st.com>
+
+diff -Naur glibc-2.6.1-stm/math/Makefile glibc-2.6.1-stm-ieee-fix/math/Makefile
+--- glibc-2.6.1-stm/math/Makefile	2007-08-07 17:05:12.000000000 +0100
++++ glibc-2.6.1-stm-ieee-fix/math/Makefile	2007-09-11 12:06:23.000000000 +0100
+@@ -177,7 +177,8 @@
+ endif
+ 
+ # The fdlibm code generates a lot of these warnings but is otherwise clean.
+-override CFLAGS += -Wno-uninitialized
++# We add -mieee for SH4 to ensure that library is properly ieee compliant
++override CFLAGS += -Wno-uninitialized -mieee
+ 
+ # The -lieee library is actually an object file.
+ # The module just defines the _LIB_VERSION_ variable.

@@ -1,0 +1,33 @@
+--- glibc-2.3.2.orig/sysdeps/unix/sysv/linux/sh/sysdep.h	2004-12-02 22:53:16.000000000 +0000
++++ glibc-2.3.2/sysdeps/unix/sysv/linux/sh/sysdep.h	2004-12-02 22:56:38.000000000 +0000
+@@ -201,14 +201,22 @@
+ 
+ #undef	DO_CALL
+ #define DO_CALL(syscall_name, args)	\
+-    mov.l 1f,r3;			\
+-    SYSCALL_INST##args;			\
+-    SYSCALL_INST_PAD;			\
+-    bra 2f;				\
+-     nop;				\
+-    .align 2;				\
+- 1: .long SYS_ify (syscall_name);	\
+- 2:
++  .if SYS_ify(syscall_name) < 128;	\
++    mov #SYS_ify(syscall_name), r3;	\
++  .else;				\
++  .if SYS_ify(syscall_name) < 256;	\
++    mov #SYS_ify(syscall_name), r3;	\
++    extu.b r3, r3;			\
++  .else;				\
++    mov #SYS_ify(syscall_name)&0xff,r3;	\
++    extu.b r3, r3;			\
++    mov #SYS_ify(syscall_name)>>8, r2;	\
++    shll8 r2;				\
++    or r2, r3;				\
++  .endif;				\
++  .endif;				\
++    SYSCALL_INST##args;		\
++    SYSCALL_INST_PAD;
+ 
+ #else /* not __ASSEMBLER__ */
+ 

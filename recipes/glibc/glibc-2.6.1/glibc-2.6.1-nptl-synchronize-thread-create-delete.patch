@@ -1,0 +1,48 @@
+2006-03-15  Daniel Jacobowitz  <dan@codesourcery.com>
+
+	* pthread_create.c (start_thread): Use a mutex around the call to
+	__nptl_death_event.
+	* sysdeps/pthead/createthread.c (create_thread): Likewise for
+	__nptl_create_event.
+
+Signed-off-by: Chris Smith <chris.smith@st.com>
+
+Index: glibc/nptl/pthread_create.c
+===================================================================
+--- glibc.orig/nptl/pthread_create.c	2006-03-09 16:02:14.000000000 -0500
++++ glibc/nptl/pthread_create.c	2006-03-15 16:52:30.000000000 -0500
+@@ -293,8 +293,13 @@ start_thread (void *arg)
+ 							   pd, pd->nextevent));
+ 	    }
+ 
+-	  /* Now call the function to signal the event.  */
++	  /* Now call the function which signals the event.  We
++	     serialize at this point to simplify debug agents which
++	     set a breakpoint at the event function.  */
++	  static pthread_mutex_t death_event_mutex = PTHREAD_MUTEX_INITIALIZER;
++	  pthread_mutex_lock (&death_event_mutex);
+ 	  __nptl_death_event ();
++	  pthread_mutex_unlock (&death_event_mutex);
+ 	}
+     }
+ 
+Index: glibc/nptl/sysdeps/pthread/createthread.c
+===================================================================
+--- glibc.orig/nptl/sysdeps/pthread/createthread.c	2006-03-09 16:01:23.000000000 -0500
++++ glibc/nptl/sysdeps/pthread/createthread.c	2006-03-15 16:52:50.000000000 -0500
+@@ -206,8 +206,13 @@ create_thread (struct pthread *pd, const
+ 							   pd, pd->nextevent)
+ 		     != 0);
+ 
+-	      /* Now call the function which signals the event.  */
++	      /* Now call the function which signals the event.  We
++		 serialize at this point to simplify debug agents
++		 which set a breakpoint at the event function.  */
++	      static pthread_mutex_t create_event_mutex = PTHREAD_MUTEX_INITIALIZER;
++	      pthread_mutex_lock (&create_event_mutex);
+ 	      __nptl_create_event ();
++	      pthread_mutex_unlock (&create_event_mutex);
+ 
+ 	      /* And finally restart the new thread.  */
+ 	      lll_unlock (pd->lock);
+

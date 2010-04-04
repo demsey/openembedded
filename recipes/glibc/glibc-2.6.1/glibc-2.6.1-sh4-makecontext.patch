@@ -1,0 +1,23 @@
+If makecontext() is called with argc of 4 or less, it erronously sets the
+initial stack pointer in the new context to be upto three words beyond the
+the end of the stack. On the other hand, if called with 4 or more arguments
+it doesn't allocate any additional space for the extra arguments, and
+tries to write them beyond the end of the stack.
+
+This is due to getting the arguments to the compare the wrong way round.
+
+See also bugzilla 6374:
+https://bugzilla.stlinux.com/show_bug.cgi?id=6374
+
+Signed-off-by: Stuart Menefy <stuart.menefy@st.com>
+--- glibc-2.6.1/sysdeps/unix/sysv/linux/sh/makecontext.S.orig	2005-12-30 22:14:52.000000000 +0000
++++ glibc-2.6.1/sysdeps/unix/sysv/linux/sh/makecontext.S	2009-06-05 18:25:05.000000000 +0100
+@@ -37,7 +37,7 @@
+ 	mov.l	@(oSS_SP,r4), r1
+ 	mov.l	@(oSS_SIZE,r4), r2
+ 	add	r1, r2
+-	cmp/gt	r6, r3
++	cmp/gt	r3, r6
+ 	bf/s	1f
+ 	 shlr2	r2
+ 	sub	r6, r2

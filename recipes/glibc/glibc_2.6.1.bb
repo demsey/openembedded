@@ -1,5 +1,5 @@
 require glibc.inc
-PR = "${INC_PR}.0"
+PR = "${INC_PR}.1"
 
 PACKAGES_DYNAMIC = "libc6*"
 RPROVIDES_${PN}-dev = "libc6-dev virtual-libc-dev"
@@ -72,6 +72,37 @@ SRC_URI_append_ep9312 = "\
 # Build fails on sh3 and sh4 without additional patches
 SRC_URI_append_sh3 = " file://no-z-defs.patch;patch=1"
 SRC_URI_append_sh4 = " file://no-z-defs.patch;patch=1"
+
+SRC_URI_append_openstmstb = " \
+# stm22 patches
+  file://glibc-2.6-nscd_init.patch;patch=1 \
+  file://glibc-2.6-tzconfig.patch;patch=1 \
+  file://glibc-2.3.6-nptl-config.patch;patch=1 \
+  file://glibc-2.6.1-alloca_fix.patch;patch=1 \
+  file://glibc-2.5-ustat.patch;patch=1 \
+  file://glibc-2.5-memcpy.patch;patch=1 \
+  file://glibc-2.5-shsyscall2.patch;patch=1 \
+  file://glibc-2.5-sh-atomic-fixes.patch;patch=1 \
+  file://glibc-2.5-mutex.patch;patch=1 \
+  file://glibc-2.5-clone.patch;patch=1 \
+  file://glibc-2.5-fegetexceptflag.patch;patch=1 \
+  file://glibc-2.5-sh-staticfix.patch;patch=1 \
+  file://glibc-2.5-sh-fxstatat64.patch;patch=1 \
+# stm23 patches
+  file://glibc-2.6.1-stm-ieee-fix.patch;patch=1 \
+  file://glibc-2.6.1-nptl-synchronize-thread-create-delete.patch;patch=1 \
+  file://glibc-2.6.1-GNBvd69798.patch;patch=1 \
+  file://glibc-2.6.1-no_tls_search_path.patch;patch=1 \
+  file://glibc-2.6.1-sh4-makecontext.patch;patch=1 \
+  file://glibc-2.6.1-fix-pthread_barrier_wait-epilog.patch;patch=1 \
+  file://glibc-2.6.1-sh-add-assembly-memset-from-Kernel-and-optimise-it.patch;patch=1 \
+  file://glibc-2.6.1-sh-add-assembly-memchr-from-Kernel.patch;patch=1 \
+  file://glibc-2.6.1-sh-add-a-new-memmove-optimised-for-SH4.patch;patch=1 \
+  file://glibc-2.6.1-sh-add-assembly-strcpy-and-strncpy.patch;patch=1 \
+  file://glibc-2.6.1-sh-Fix-up-optimized-SH-4-memcpy-on-big-endian.nptl.patch;patch=1 \
+  file://glibc-2.6.1-sh-optimise-the-memcpy-with-prefetching-and-64bit-d.patch;patch=1 \
+  file://glibc-2.6.1-sh-add-the-backtrace-support.patch;patch=1 \
+"
 
 # PowerPC Patches to add support for soft-float
 SRC_URI_append_powerpc = "\

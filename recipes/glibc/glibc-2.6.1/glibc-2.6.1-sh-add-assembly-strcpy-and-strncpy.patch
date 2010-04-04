@@ -1,0 +1,133 @@
+From 28d2342ac5e0512aa02f9ab9381cb78cc56e6341 Mon Sep 17 00:00:00 2001
+From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Date: Wed, 15 Jul 2009 11:24:58 +0200
+Subject: [PATCH] sh: add assembly strcpy and strncpy
+
+This patch adds the strcpy and strncpy assembly routines.
+Benchmarks showed the following gains:
+~7% for strcpy
+~30% for strncpy
+
+These functions have been only tested on SH4, for this reason
+I've voluntarily added them within the sh4 sub-folder.
+If somebody would like to test them on other SH CPUs, these can be moved
+on sh common folder.
+
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+---
+ sysdeps/sh/sh4/strcpy.S  |   40 +++++++++++++++++++++++++++++++++
+ sysdeps/sh/sh4/strncpy.S |   55 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 95 insertions(+), 0 deletions(-)
+ create mode 100644 sysdeps/sh/sh4/strcpy.S
+ create mode 100644 sysdeps/sh/sh4/strncpy.S
+
+diff --git a/sysdeps/sh/sh4/strcpy.S b/sysdeps/sh/sh4/strcpy.S
+new file mode 100644
+index 0000000..e8c95e4
+--- /dev/null
++++ b/sysdeps/sh/sh4/strcpy.S
+@@ -0,0 +1,40 @@
++/* Copyright (C) 2009 STMicroelectronics Ltd.
++
++   Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
++
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++/*
++	char *strcpy(char *dest, const char *src);
++ */
++
++#include <sysdep.h>
++
++ENTRY(strcpy)
++	mov	r4,r2
++1:
++	mov.b	@r5+,r1
++	tst	r1,r1
++	mov.b	r1,@r2
++	bf/s	1b
++	 add	#1,r2
++
++	rts
++	 mov	r4,r0
++END(strcpy)
++libc_hidden_builtin_def (strcpy)
+diff --git a/sysdeps/sh/sh4/strncpy.S b/sysdeps/sh/sh4/strncpy.S
+new file mode 100644
+index 0000000..bf5d110
+--- /dev/null
++++ b/sysdeps/sh/sh4/strncpy.S
+@@ -0,0 +1,55 @@
++/* Copyright (C) 2009 STMicroelectronics Ltd.
++
++   Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
++
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++/*
++	char *strncpy(char *dest, const char *src, size_t n);
++ */
++
++#include <sysdep.h>
++
++ENTRY(strncpy)
++	mov	#0,r0
++	bra	2f
++	 mov	r4,r2
++1:
++	mov.b	r1,@(r0,r2)
++	add	#1,r0
++2:
++	cmp/hs	r6,r0
++	bt	5f
++	mov.b	@(r0,r5),r1
++	tst	r1,r1
++	bf/s	1b
++	 cmp/hs	r6,r0
++	bra	4f
++	 nop
++3:
++	mov.b	r1,@(r0,r2)
++	add	#1,r0
++	cmp/hs	r6,r0
++4:
++	bf/s	3b
++	 mov	#0,r1
++5:
++	rts
++	 mov     r2,r0
++END(strncpy)
++libc_hidden_builtin_def(strncpy)
+-- 
+1.6.0.6
+

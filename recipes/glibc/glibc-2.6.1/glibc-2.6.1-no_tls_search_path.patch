@@ -1,0 +1,56 @@
+Do not append tls to lib search path. Unused on STLinux.
+This will improve libs lookup.
+
+Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
+Signed-off-by: Filippo Arcidiacono <filippo.arcidiacono@st.com>
+
+--- glibc-2.6.1/elf/dl-sysdep.c.orig	2009-04-22 10:33:33.000000000 -0400
++++ glibc-2.6.1/elf/dl-sysdep.c	2009-04-22 10:35:39.000000000 -0400
+@@ -404,9 +404,16 @@ _dl_important_hwcaps (const char *platfo
+ 	  }
+     }
+ #endif
++#define SKIP_TLS_PATH
++/*
++ * Do not append tls to lib search path. Unused on STLinux.
++ * This will improve libs lookup.
++ */
+ 
++#ifndef SKIP_TLS_PATH
+   /* For TLS enabled builds always add 'tls'.  */
+   ++cnt;
++#endif
+ 
+   /* Create temporary data structure to generate result table.  */
+   temp = (struct r_strlenpair *) alloca (cnt * sizeof (*temp));
+@@ -449,12 +456,30 @@ _dl_important_hwcaps (const char *platfo
+       ++m;
+     }
+ 
++#ifndef SKIP_TLS_PATH
+   temp[m].str = "tls";
+   temp[m].len = 3;
+   ++m;
++#endif
+ 
+   assert (m == cnt);
+ 
++#ifdef SKIP_TLS_PATH
++  /* Handle the case in which there are not hw capabilities */
++  if (cnt == 0)
++    {
++      *sz = 1;
++      result = (struct r_strlenpair *) malloc (sizeof (*result));
++      if (result == NULL)
++        _dl_signal_error (ENOMEM, NULL, NULL,
++	    	          N_("cannot create empty capability list"));
++      result[0].str = NULL;
++      result[0].len = 0;
++      *max_capstrlen = 0;
++
++      return result;
++    }
++#endif
+   /* Determine the total size of all strings together.  */
+   if (cnt == 1)
+     total = temp[0].len + 1;

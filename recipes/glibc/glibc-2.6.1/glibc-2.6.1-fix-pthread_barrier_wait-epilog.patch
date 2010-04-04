@@ -1,0 +1,36 @@
+In the pthread_barrier_wait function's epilog implementation do not
+use the macro ret (that is defined as rts; nop) to correctly execute
+in the delay slot the instruction  "mov.l    @r15+, r9" that will
+restore the r9 register to the previous value saved on the stack and
+as side effect will restore the stack pointer register back to the correct
+value.
+Same fix is applied to __lll_mutex_lock_wait, even if in the delay slot
+we have actually a nop, so using the macro would be safe here.
+
+Signed-off-by: Christian Bruel <christian.bruel@st.com>
+Signed-off-by: Filippo Arcidiacono <filippo.arcidiacono@st.com>
+
+--- glibc-2.6.1-orig/nptl/sysdeps/unix/sysv/linux/sh/pthread_barrier_wait.S	2009-06-15 03:10:51.000000000 -0400
++++ glibc-2.6.1/nptl/sysdeps/unix/sysv/linux/sh/pthread_barrier_wait.S	2009-06-15 03:11:36.000000000 -0400
+@@ -136,7 +136,7 @@ pthread_barrier_wait:
+ 	mov	#-1, r0		/* == PTHREAD_BARRIER_SERIAL_THREAD */
+ 	lds.l	@r15+, pr
+ 	mov.l	@r15+, r8
+-	ret
++	rts
+ 	 mov.l	@r15+, r9
+ 
+ 1:
+--- glibc-2.6.1-orig/nptl/sysdeps/unix/sysv/linux/sh/lowlevellock.S	2009-06-15 03:42:18.000000000 -0400
++++ glibc-2.6.1/nptl/sysdeps/unix/sysv/linux/sh/lowlevellock.S	2009-06-15 03:26:55.000000000 -0400
+@@ -53,8 +53,8 @@ __lll_mutex_lock_wait:
+ 	tst	r2, r2
+ 	bf	1b
+ 
+-	ret
+-	nop
++	rts
++	 nop
+ 	cfi_endproc
+ 	.size	__lll_mutex_lock_wait,.-__lll_mutex_lock_wait
+ 

@@ -1,0 +1,10 @@
+--- ports/sysdeps/unix/sysv/linux/arm/ioperm.c	2009-05-12 08:50:28.000000000 +0530
++++ ports_new/sysdeps/unix/sysv/linux/arm/ioperm.c
+@@ -45,7 +45,6 @@
+ #include <sys/mman.h>
+ 
+ #include <linux/version.h>
+-#include <asm/page.h>
+ #include <sys/sysctl.h>
+ 
+ #define PATH_ARM_SYSTYPE	"/etc/arm_systype"

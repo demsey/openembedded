@@ -1,0 +1,12 @@
+diff -urN glibc-2.6.1.orig/configure.in glibc-2.6.1/configure.in
+--- glibc-2.6.1.orig/configure	2007-03-20 17:41:23.000000000 +0530
++++ glibc-2.6.1/configure	2009-05-04 12:48:01.000000000 +0530
+@@ -912,7 +912,7 @@
+ # thing on a system that doesn't need fixincludes.  (Not presently a problem.)
+ if test -n "$sysheaders"; then
+   ccheaders=`$CC -print-file-name=include`
+-  SYSINCLUDES="-nostdinc -isystem $ccheaders \
++  SYSINCLUDES="-nostdinc -isystem $ccheaders -isystem $ccheaders-fixed \
+ -isystem `echo $sysheaders | sed 's/:/ -isystem /g'`"
+   if test -n "$CXX"; then
+     cxxversion=`$CXX -dumpversion 2>&AS_MESSAGE_LOG_FD` &&

@@ -1,0 +1,153 @@
+From a35ad8635feec5631f42d39e08e9581b9e190146 Mon Sep 17 00:00:00 2001
+From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Date: Tue, 4 Aug 2009 15:16:37 +0200
+Subject: [PATCH] sh: add the backtrace support.
+
+This patch adds the backtrace support for SH architecture,
+Backtrace() performs stack unwinding by using the
+_Unwind_Backtrace.
+
+User application that wants to use backtrace needs to be
+compiled with "-fexceptions" option and "-rdynamic" to get
+full symbols printed.
+
+This patch also forces the libc_cv_gcc_unwind_find_fde=no
+for SH.
+This means the DWARF2 frame unwind runtime interface will
+come from the GCC library.
+Disabling that reduces the library size by about 10KiB.
+
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
+---
+ sysdeps/sh/Makefile               |    2 +
+ sysdeps/sh/backtrace.c            |   93 +++++++++++++++++++++++++++++++++++++
+ sysdeps/unix/sysv/linux/configure |    2 +-
+ 3 files changed, 96 insertions(+), 1 deletions(-)
+ create mode 100644 sysdeps/sh/backtrace.c
+
+diff --git a/sysdeps/sh/Makefile b/sysdeps/sh/Makefile
+index cf18ded..a07bbfa 100644
+--- a/sysdeps/sh/Makefile
++++ b/sysdeps/sh/Makefile
+@@ -1,3 +1,5 @@
+ ifeq ($(subdir),gmon)
+ sysdep_routines += _mcount
+ endif
++
++CFLAGS-backtrace.c += -fexceptions
+diff --git a/sysdeps/sh/backtrace.c b/sysdeps/sh/backtrace.c
+new file mode 100644
+index 0000000..3f8834a
+--- /dev/null
++++ b/sysdeps/sh/backtrace.c
+@@ -0,0 +1,93 @@
++/* Return backtrace of current program state.
++   Copyright (C) 2009 STMicroelectronics Ltd.
++   This file is part of the GNU C Library.
++   Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++#include <dlfcn.h>
++#include <execinfo.h>
++#include <stdlib.h>
++#include <unwind.h>
++
++struct trace_arg
++{
++  void **array;
++  int cnt, size;
++};
++
++#ifdef SHARED
++static _Unwind_Reason_Code (*unwind_backtrace) (_Unwind_Trace_Fn, void *);
++static _Unwind_Ptr (*unwind_getip) (struct _Unwind_Context *);
++
++static void
++init (void)
++{
++  void *handle = __libc_dlopen ("libgcc_s.so.1");
++
++  if (handle == NULL)
++    return;
++
++  unwind_backtrace = __libc_dlsym (handle, "_Unwind_Backtrace");
++  unwind_getip = __libc_dlsym (handle, "_Unwind_GetIP");
++  if (unwind_getip == NULL)
++    unwind_backtrace = NULL;
++}
++#else
++# define unwind_backtrace _Unwind_Backtrace
++# define unwind_getip _Unwind_GetIP
++#endif
++
++static _Unwind_Reason_Code
++backtrace_helper (struct _Unwind_Context *ctx, void *a)
++{
++  struct trace_arg *arg = a;
++
++  /* We are first called with address in the __backtrace function.
++     Skip it.  */
++  if (arg->cnt != -1)
++    arg->array[arg->cnt] = (void *) unwind_getip (ctx);
++  if (++arg->cnt == arg->size)
++    return _URC_END_OF_STACK;
++  return _URC_NO_REASON;
++}
++
++/*
++ * Perform stack unwinding by using the _Unwind_Backtrace.
++ *
++ * User application that wants to use backtrace needs to be
++ * compiled with -fexceptions option and -rdynamic to get full
++ * symbols printed.
++ */
++int
++__backtrace (void **array, int size)
++{
++  struct trace_arg arg = { .array = array, .size = size, .cnt = -1 };
++#ifdef SHARED
++  __libc_once_define (static, once);
++
++  __libc_once (once, init);
++  if (unwind_backtrace == NULL)
++    return 0;
++#endif
++
++  if (size >= 1)
++    unwind_backtrace (backtrace_helper, &arg);
++
++  return arg.cnt != -1 ? arg.cnt : 0;
++}
++weak_alias (__backtrace, backtrace)
++libc_hidden_def (__backtrace)
+diff --git a/sysdeps/unix/sysv/linux/configure b/sysdeps/unix/sysv/linux/configure
+index a8a9cc4..0b1050f 100644
+--- a/sysdeps/unix/sysv/linux/configure
++++ b/sysdeps/unix/sysv/linux/configure
+@@ -132,7 +132,7 @@ case "$machine" in
+     ;;
+   sh*)
+     arch_minimum_kernel=2.3.99
+-    libc_cv_gcc_unwind_find_fde=yes
++    libc_cv_gcc_unwind_find_fde=no
+     ;;
+   sparc/sparc64*)
+     libc_cv_gcc_unwind_find_fde=yes
+-- 
+1.6.0.4
+

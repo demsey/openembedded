@@ -1,0 +1,18 @@
+Add a nop to stop the rts falling on a bad alignment re: GNBvd69798.
+
+Signed-off-by: Chris Smith <chris.smith@st.com>
+
+Index: glibc-2.6.1/libio/iogetline.c
+===================================================================
+--- glibc-2.6.1.orig/libio/iogetline.c	2005-09-27 00:51:03.000000000 +0100
++++ glibc-2.6.1/libio/iogetline.c	2009-03-23 15:40:33.000000000 +0000
+@@ -117,6 +117,9 @@
+ 	  n -= len;
+ 	}
+     }
++  __asm (
++    "nop\n\t"
++  );
+   return ptr - buf;
+ }
+ INTDEF(_IO_getline_info)

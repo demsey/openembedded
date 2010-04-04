@@ -1,0 +1,57 @@
+From: Richard P. Curnow <richard.curnow@st.com>
+Date: Mon, 2 Jul 2007 12:05:57 +0100
+Subject: [PATCH] Correct signal mask handling in setjmp and _setjmp
+
+The argument to sigsetjmp which determines whether to save the signal mask or
+not was being wrongly passed in r0 instead of r5.
+
+Signed-off-by: Richard P. Curnow <richard.curnow@st.com>
+---
+ sysdeps/sh/bsd-_setjmp.S |    4 ++--
+ sysdeps/sh/bsd-setjmp.S  |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sysdeps/sh/bsd-_setjmp.S b/sysdeps/sh/bsd-_setjmp.S
+index 2811fcf..5db0138 100644
+--- a/sysdeps/sh/bsd-_setjmp.S
++++ b/sysdeps/sh/bsd-_setjmp.S
+@@ -36,14 +36,14 @@ ENTRY (_setjmp)
+ 	mov.l	3f, r1
+ 	mov.l	@(r0,r1), r1
+ 	jmp	@r1
+-	 mov	#0, r0
++	 mov	#0, r5
+ 	.align	2
+ 3:
+ 	.long	C_SYMBOL_NAME(__sigsetjmp@GOT)
+ #else
+ 	mov.l	1f, r1
+ 	jmp	@r1
+-	 mov	#0, r0
++	 mov	#0, r5
+ 	.align	2
+ 1:
+ 	.long	C_SYMBOL_NAME(__sigsetjmp)
+diff --git a/sysdeps/sh/bsd-setjmp.S b/sysdeps/sh/bsd-setjmp.S
+index e076284..f099ba8 100644
+--- a/sysdeps/sh/bsd-setjmp.S
++++ b/sysdeps/sh/bsd-setjmp.S
+@@ -36,14 +36,14 @@ ENTRY (setjmp)
+ 	mov.l	3f, r1
+ 	mov.l	@(r0,r1), r1
+ 	jmp	@r1
+-	 mov	#1, r0
++	 mov	#1, r5
+ 	.align	2
+ 3:
+ 	.long	C_SYMBOL_NAME(__sigsetjmp@GOT)
+ #else
+ 	mov.l	1f, r1
+ 	jmp	@r1
+-	 mov	#1, r0
++	 mov	#1, r5
+ 	.align	2
+ 1:
+ 	.long	C_SYMBOL_NAME(__sigsetjmp)
+-- 1.5.2.2 
+
