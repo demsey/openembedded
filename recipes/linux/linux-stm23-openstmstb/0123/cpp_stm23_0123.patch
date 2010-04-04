@@ -1,0 +1,33 @@
+*** linux-sh4/include/linux/stddef.h	2009-06-02 22:43:07.000000000 +0200
+--- UFS922_stm23_Patchdir/cpp/stddef.h	2009-06-02 22:36:26.000000000 +0200
+***************
+*** 12,21 ****
+--- 12,24 ----
+  
+  #ifdef __KERNEL__
+  
++ #if !defined(__cplusplus)
++ 
+  enum {
+  	false	= 0,
+  	true	= 1
+  };
++ #endif
+  
+  #undef offsetof
+  #ifdef __compiler_offsetof
+*** linux-sh4/include/linux/types.h	2009-06-02 22:42:58.000000000 +0200
+--- UFS922_stm23_Patchdir/cpp/types.h	2009-06-02 22:36:41.000000000 +0200
+***************
+*** 33,39 ****
+--- 33,42 ----
+  typedef __kernel_mqd_t		mqd_t;
+  
+  #ifdef __KERNEL__
++ 
++ #if !defined(__cplusplus)
+  typedef _Bool			bool;
++ #endif
+  
+  typedef __kernel_uid32_t	uid_t;
+  typedef __kernel_gid32_t	gid_t;

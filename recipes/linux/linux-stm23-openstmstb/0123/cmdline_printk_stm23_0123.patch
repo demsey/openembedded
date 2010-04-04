@@ -1,0 +1,46 @@
+--- linux_old/kernel/printk.c	2010-02-08 11:20:21.000000000 +0100
++++ linux/kernel/printk.c	2010-02-08 14:44:44.000000000 +0100
+@@ -464,6 +464,23 @@
+ 
+ __setup("time", printk_time_setup);
+ 
++/* parse a printk option to the kernel
++ * to enable printk while booting
++ * needs CONFIG_RPINTK too
++ */
++static int use_printk = 0;
++
++static int __init printk_cmdline_opt(char *str)
++{
++        if (get_option(&str, &use_printk)){
++                printk(KERN_NOTICE "use_printk per bootargs: %d\n", use_printk);
++                return 1;
++        }
++        else
++                return 0;
++}
++__setup("printk=", printk_cmdline_opt);
++
+ __attribute__((weak)) unsigned long long printk_clock(void)
+ {
+ 	return sched_clock();
+@@ -509,6 +526,9 @@
+ 	va_list args;
+ 	int r;
+ 
++	if (use_printk == 0)
++	   return 0;
++
+ 	va_start(args, fmt);
+ 	trace_mark(kernel_printk, "ip %p", __builtin_return_address(0));
+ 	r = vprintk(fmt, args);
+@@ -528,6 +548,9 @@
+ 	static char printk_buf[1024];
+ 	static int log_level_unknown = 1;
+ 
++	if (use_printk == 0)
++	   return 0;
++
+ 	preempt_disable();
+ 	if (unlikely(oops_in_progress) && printk_cpu == smp_processor_id())
+ 		/* If a crash is occurring during printk() on this CPU,

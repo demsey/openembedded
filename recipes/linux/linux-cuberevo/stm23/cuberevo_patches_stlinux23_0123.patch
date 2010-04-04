@@ -1,0 +1,306 @@
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c linux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c
+--- oldlinux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c	2006-06-18 03:49:35.000000000 +0200
++++ linux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c	2007-03-16 19:37:06.000000000 +0100
+@@ -1143,7 +1154,11 @@
+ 			// CAM state machine
+ 			switch (ca->slot_info[slot].slot_state) {
+ 			case DVB_CA_SLOTSTATE_NONE:
++				break;
+ 			case DVB_CA_SLOTSTATE_INVALID:
++#if !defined(CONFIG_SH_CUBEREVO_250HD) && !defined(CONFIG_SH_CUBEREVO_MINI_FTA) && !defined(CONFIG_SH_CUBEREVO_2000HD)
++				dvb_ca_en50221_slot_shutdown(ca,slot);
++#endif
+ 				// no action needed
+ 				break;
+ 
+diff -urN linux-2.6.17.14/sound/stm/fsynth.c linux-dgs/sound/stm/fsynth.c
+--- linux-2.6.17.14/sound/stm/fsynth.c	2009-09-08 11:26:35.000000000 +0200
++++ linux-dgs/sound/stm/fsynth.c	2009-09-08 11:31:51.000000000 +0200
+@@ -52,7 +52,11 @@
+ 
+ /* PLL inside the synthesizer multiplies input frequency
+  * (which is 30MHz in our case) by 8... */
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA)
++#define PLL_FREQ 8 * 27 * 1000 * 1000
++#else
+ #define PLL_FREQ 8 * 30 * 1000 * 1000
++#endif
+ 
+ 
+ /*
+@@ -577,7 +580,11 @@
+ 	value |= REGFIELD_VALUE(AUDCFG_FSYN_CFG, NPDA, NORMAL);
+ 	value |= REGFIELD_VALUE(AUDCFG_FSYN_CFG, NDIV, 27_30_MHZ);
+ 	value |= REGFIELD_VALUE(AUDCFG_FSYN_CFG, BW_SEL, GOOD_REFERENCE);
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA) 
++	value |= REGFIELD_VALUE(AUDCFG_FSYN_CFG, REF_CLK_IN, SYSBCLKINALT);
++#else
+ 	value |= REGFIELD_VALUE(AUDCFG_FSYN_CFG, REF_CLK_IN, 30_MHZ_CLOCK);
++#endif
+ 
+ 	REGISTER_POKE(fsynth->base, AUDCFG_FSYN_CFG, value);
+ 	barrier();
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Kconfig linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Kconfig
+--- linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Kconfig	2008-10-10 22:39:55.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Kconfig	2008-06-25 21:12:05.000000000 +0200
+@@ -634,6 +634,50 @@
+ 	  STx5197-MBOARD, ST board ID: mb704). More information at:
+ 	  <http://www.stlinux.com/boards/mb704/>
+ 
++comment "DGStation Boards"
++
++config SH_CUBEREVO
++	bool "cuberevo board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo.
++
++config SH_CUBEREVO_MINI
++	bool "cuberevo-mini board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-mini.
++
++config SH_CUBEREVO_MINI2
++	bool "cuberevo-mini2 board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-3000hd.
++
++config SH_CUBEREVO_MINI_FTA
++	bool "cuberevo-mini-fta board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-200hd.
++
++config SH_CUBEREVO_250HD
++	bool "cuberevo-250hd board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-250hd.
++
++config SH_CUBEREVO_2000HD
++	bool "cuberevo-2000hd board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-2000hd.
++
++config SH_CUBEREVO_9500HD
++	bool "cuberevo-9500hd board"
++	depends on CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-7000hd.
++
+ comment "ST Peripheral Boards"
+ 
+ config SH_ST_DB641
+@@ -786,6 +830,7 @@
+ 	depends on CPU_SUBTYPE_STB7100 || CPU_SUBTYPE_STX7200
+ 	default "30000000" if SH_ST_MB442
+ 	default "27000000" if SH_ST_HMP7100
++	default "27000000" if SH_CUBEREVO || SH_CUBEREVO_MINI || SH_CUBEREVO_MINI2 || SH_CUBEREVO_MINI_FTA || SH_CUBEREVO_250HD || SH_CUBEREVO_2000HD || SH_CUBEREVO_9500HD
+ 	default "27000000"
+ 	help
+ 	  The kernel needs to know what the frequency of chip's external
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Makefile linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Makefile
+--- linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Makefile	2008-10-10 22:30:25.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Makefile	2008-06-25 21:12:05.000000000 +0200
+@@ -157,6 +157,14 @@
+ machdir-$(CONFIG_SH_ST_5197CAB)			+= st/5197cab
+ machdir-$(CONFIG_SH_ST_MB837)			+= st/mb837
+ machdir-$(CONFIG_SH_ST_MB839)			+= st/mb839
++# DGStation Boards
++machdir-$(CONFIG_SH_CUBEREVO)			+= dgstation/cuberevo
++machdir-$(CONFIG_SH_CUBEREVO_MINI)		+= dgstation/cuberevo-mini
++machdir-$(CONFIG_SH_CUBEREVO_MINI2)		+= dgstation/cuberevo-mini2
++machdir-$(CONFIG_SH_CUBEREVO_MINI_FTA)		+= dgstation/cuberevo-mini-fta
++machdir-$(CONFIG_SH_CUBEREVO_250HD)		+= dgstation/cuberevo-250hd
++machdir-$(CONFIG_SH_CUBEREVO_2000HD)		+= dgstation/cuberevo-2000hd
++machdir-$(CONFIG_SH_CUBEREVO_9500HD)		+= dgstation/cuberevo-9500hd
+ 
+ incdir-y	:= $(notdir $(firstword $(machdir-y)))
+ 
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/drivers/net/stmmac/Kconfig linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/net/stmmac/Kconfig
+--- linux-2.6.17.14_stm22_0040_allpatch/drivers/net/stmmac/Kconfig	2008-10-10 22:39:56.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/net/stmmac/Kconfig	2008-06-25 21:12:51.000000000 +0200
+@@ -2,7 +2,7 @@
+ 	tristate "STMicroelectronics 10/100/1000 Ethernet driver"
+ 	select MII
+ 	select PHYLIB
+-	depends on NETDEVICES && CPU_SUBTYPE_ST40
++	depends on NETDEVICES && (CPU_SUBTYPE_ST40 || SH_CUBEREVO || SH_CUBEREVO_MINI || SH_CUBEREVO_MINI2 || SH_CUBEREVO_MINI_FTA || SH_CUBEREVO_250HD || SH_CUBEREVO_2000HD || SH_CUBEREVO_9500HD)
+ 	help
+ 	  This is the driver for the MAC 10/100/1000 on-chip Ethernet
+ 	  controllers (Synopsys Core).
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/include/asm-sh/setup.h linux-2.6.17.14/include/asm-sh/setup.h
+--- linux-2.6.17.14_stm22_0041/include/asm-sh/setup.h	2009-04-07 16:40:49.000000000 +0200
++++ linux-2.6.17.14/include/asm-sh/setup.h	2009-01-30 09:38:49.000000000 +0100
+@@ -10,4 +10,38 @@
+ 
+ #endif /* __KERNEL__ */
+ 
++typedef struct bd_info
++{
++	int bi_baudrate;        /* serial console baudrate */
++	unsigned long bi_ip_addr;       /* IP Address */
++	unsigned char bi_enetaddr[6];   /* Ethernet adress */
++	unsigned long bi_arch_number;   /* unique id for this board */
++	unsigned long bi_boot_params;   /* where this board expects params */
++	unsigned long bi_memstart;      /* start of DRAM memory */
++	unsigned long bi_memsize;       /* size  of DRAM memory in bytes */
++	unsigned long bi_flashstart;    /* start of FLASH memory */
++	unsigned long bi_flashsize;     /* size  of FLASH memory */
++	unsigned long bi_flashoffset;   /* reserved area for startup monitor */
++#if defined(CONFIG_CPU_SUBTYPE_STB7100)
++	unsigned long bi_devid;
++	unsigned long bi_pll0frq;
++	unsigned long bi_pll1frq;
++	unsigned long bi_st40cpufrq;
++	unsigned long bi_st40busfrq;
++	unsigned long bi_st40perfrq;
++	unsigned long bi_st231frq;
++	unsigned long bi_stbusfrq;
++	unsigned long bi_emifrq;
++	unsigned long bi_lmifrq;
++#elif defined(CONFIG_CPU_SUBTYPE_STI5528)
++	unsigned long bi_pll1frq;
++	unsigned long bi_st40cpufrq;
++	unsigned long bi_st40busfrq;
++	unsigned long bi_st40perfrq;
++	unsigned long bi_emifrq;
++#endif
++}__attribute__ ((packed)) bd_t;
++
++extern bd_t bd; 
++
+ #endif /* _SH_SETUP_H */
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/arch/sh/kernel/setup.c linux-2.6.17.14/arch/sh/kernel/setup.c
+--- linux-2.6.17.14_stm22_0041/arch/sh/kernel/setup.c	2009-09-08 10:05:35.000000000 +0200
++++ linux-2.6.17.14/arch/sh/kernel/setup.c	2009-09-08 17:31:17.000000000 +0200
+@@ -68,6 +68,7 @@
+ #define LOADER_TYPE (*(unsigned long *) (PARAM+0x00c))
+ #define INITRD_START (*(unsigned long *) (PARAM+0x010))
+ #define INITRD_SIZE (*(unsigned long *) (PARAM+0x014))
++#define BDINFO                  ((char*)PARAM+0x018)
+ /* ... */
+ #define COMMAND_LINE ((char *) (PARAM+0x100))
+ 
+@@ -90,6 +91,8 @@
+ 	.flags	= IORESOURCE_BUSY | IORESOURCE_MEM,
+ };
+ 
++bd_t bd;
++
+ unsigned long memory_start;
+ EXPORT_SYMBOL(memory_start);
+ 
+@@ -285,6 +288,9 @@
+ 
+ 	request_standard_resources();
+ 
++	/* copy bdinfo */
++ 	memcpy((char*)&bd, BDINFO, sizeof(bd));
++
+ 	sh_mv_setup();
+ 
+ 	/*
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/drivers/net/stmmac.c linux-2.6.17.14/drivers/net/stmmac.c
+--- linux-2.6.17.14_stm22_0041/drivers/net/stmmac/stmmac_main.c	2009-09-08 10:05:36.000000000 +0200
++++ linux-2.6.17.14/drivers/net/stmmac/stmmac_main.c	2009-09-08 17:42:24.000000000 +0200
+@@ -33,6 +33,7 @@
+ #include <linux/mii.h>
+ #include <linux/phy.h>
+ #include <linux/stm/soc.h>
++#include <asm/setup.h>	/* board info structure */
+ #include <linux/dma-mapping.h>
+ #include "stmmac.h"
+ 
+@@ -1883,7 +1884,15 @@
+ 	dev->weight = 64;
+ 
+ 	/* Get the MAC address */
+-	priv->mac_type->ops->get_umac_addr(dev->base_addr, dev->dev_addr, 0);
++	//priv->mac_type->ops->get_umac_addr(dev->base_addr, dev->dev_addr, 0);
++	printk(KERN_INFO "\tHW MAC address: ");
++	/* copy mac address from u-boot */
++	dev->dev_addr[0] = bd.bi_enetaddr[0];
++	dev->dev_addr[1] = bd.bi_enetaddr[1];
++	dev->dev_addr[2] = bd.bi_enetaddr[2];
++	dev->dev_addr[3] = bd.bi_enetaddr[3];
++	dev->dev_addr[4] = bd.bi_enetaddr[4];
++	dev->dev_addr[5] = bd.bi_enetaddr[5];
+ 	stmmac_init_coalescence(priv->is_gmac, dev->mtu);
+ 
+ 	if (!is_valid_ether_addr(dev->dev_addr)) {
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/arch/sh/Makefile linux-2.6.17.14/arch/sh/Makefile
+--- linux-2.6.17.14_stm22_0041/arch/sh/Makefile	2009-09-16 10:09:16.000000000 +0200
++++ linux-2.6.17.14_stm22_0041/arch/sh/Makefile	2009-09-16 10:57:54.000000000 +0200
+@@ -66,7 +66,7 @@
+ cflags-$(CONFIG_MORE_COMPILE_OPTIONS)	+= \
+ 	$(shell echo $(CONFIG_COMPILE_OPTIONS) | sed -e 's/"//g')
+ 
+-OBJCOPYFLAGS	:= -O binary -R .note -R .note.gnu.build-id -R .comment -R .stab -R .stabstr -S
++OBJCOPYFLAGS	:= -O binary -R .note -R .note.gnu.build-id -R .comment -R .stab -R .stabstr -S -R .empty_zero_page
+ 
+ #
+ # arch/sh/defconfig doesn't reflect any real hardware, and as such should
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/include/linux/stm/pio.h linux-2.6.17.14/include/linux/stm/pio.h
+--- linux-2.6.17.14_stm22_0041/include/linux/stm/pio.h	2009-09-14 11:31:50.000000000 +0200
++++ linux-2.6.17.14/include/linux/stm/pio.h	2009-09-16 18:40:52.000000000 +0200
+@@ -36,8 +36,10 @@
+ struct stpio_pin;
+ 
+ /* Request and release exclusive use of a PIO pin */
+-#define stpio_request_pin(portno, pinno, name, direction) \
+-		__stpio_request_pin(portno, pinno, name, direction, 0, 0)
++struct stpio_pin *stpio_request_pin(unsigned int portno,
++		unsigned int pinno, const char *name, int direction);
++/*#define stpio_request_pin(portno, pinno, name, direction) \
++		__stpio_request_pin(portno, pinno, name, direction, 0, 0)*/
+ #define stpio_request_set_pin(portno, pinno, name, direction, value) \
+ 		__stpio_request_pin(portno, pinno, name, direction, 1, value)
+ struct stpio_pin *__stpio_request_pin(unsigned int portno,
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/drivers/stm/pio.c linux-2.6.17.14/drivers/stm/pio.c
+--- linux-2.6.17.14_stm22_0041/drivers/stm/pio.c	2009-09-14 11:31:50.000000000 +0200
++++ linux-2.6.17.14/drivers/stm/pio.c	2009-09-16 18:42:10.000000000 +0200
+@@ -159,6 +159,13 @@
+ }
+ EXPORT_SYMBOL(__stpio_request_pin);
+ 
++struct stpio_pin *stpio_request_pin(unsigned int portno,
++		unsigned int pinno, const char *name, int direction)
++{
++	return __stpio_request_pin(portno, pinno, name, direction, 0, 0);
++}
++EXPORT_SYMBOL(stpio_request_pin);
++
+ void stpio_free_pin(struct stpio_pin *pin)
+ {
+ 	stpio_configure_pin(pin, STPIO_IN);
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/mm/bpa2.c linux-2.6.17.14/mm/bpa2.c
+--- linux-2.6.17.14_stm22_0041/mm/bpa2.c	2009-09-14 11:31:50.000000000 +0200
++++ linux-2.6.17.14/mm/bpa2.c	2009-09-16 18:42:10.000000000 +0200
+@@ -360,7 +360,7 @@
+ 
+ 	return 1;
+ }
+-__setup("bigphysarea=", bpa2_bigphys_setup);
++//__setup("bigphysarea=", bpa2_bigphys_setup);
+ 
+ /*
+  * Create "bpa2parts"-defined partitions
+diff -u --recursive --new-file linux-sh4-2.6.23.17_stm23_0119-orig/arch/sh/kernel/cpu/sh4/setup-stb7100.c linux-sh4/arch/sh/kernel/cpu/sh4/setup-stb7100.c
+--- linux-sh4-2.6.23.17_stm23_0119-orig/arch/sh/kernel/cpu/sh4/setup-stb7100.c	2009-06-06 20:17:15.000000000 +0200
++++ linux-sh4/arch/sh/kernel/cpu/sh4/setup-stb7100.c	2009-06-10 23:17:19.000000000 +0200
+@@ -127,7 +127,11 @@
+ 	 * software work around is required.)
+ 	 */
+ 	pin = stpio_request_pin(5,7, "USBPWR", STPIO_OUT);
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA) || defined(CONFIG_SH_CUBEREVO_2000HD)
++	stpio_set_pin(pin, 0);
++#else
+ 	stpio_set_pin(pin, 1);
++#endif
+ 
+ #ifndef CONFIG_PM
+ 	sc = sysconf_claim(SYS_CFG, 2, 1, 1, "usb");

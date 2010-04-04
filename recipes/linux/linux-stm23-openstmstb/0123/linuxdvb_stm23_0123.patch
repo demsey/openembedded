@@ -1,0 +1,6047 @@
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/compat.h UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/compat.h
+*** linux-sh4/drivers/media/dvb/dvb-core/compat.h	1970-01-01 01:00:00.000000000 +0100
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/compat.h	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 0 ****
+--- 1,378 ----
++ /*
++  * $Id: compat.h,v 1.44 2006/01/15 09:35:16 mchehab Exp $
++  */
++ 
++ #ifndef _COMPAT_H
++ #define _COMPAT_H
++ 
++ /* sylvester */
++ #include <linux/version.h>
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,18)
++ # define minor(x) MINOR(x)
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
++ # include <linux/delay.h>
++ # define need_resched() (current->need_resched)
++ # define work_struct tq_struct
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,19)
++ # define BUG_ON(condition) do { if ((condition)!=0) BUG(); } while(0)
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,23)
++ # define irqreturn_t void
++ # define IRQ_RETVAL(foobar)
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,71)
++ # define strlcpy(dest,src,len) strncpy(dest,src,(len)-1)
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
++ # define iminor(inode) minor(inode->i_rdev)
++ #endif
++ 
++ #if defined(I2C_ADAP_CLASS_TV_ANALOG) && !defined(I2C_CLASS_TV_ANALOG)
++ # define  I2C_CLASS_TV_ANALOG  I2C_ADAP_CLASS_TV_ANALOG
++ # define  I2C_CLASS_TV_DIGITAL I2C_ADAP_CLASS_TV_DIGITAL
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
++ # define __user
++ # define __kernel
++ # define __iomem
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,11)
++ # define pm_message_t                      u32
++ # define pci_choose_state(pci_dev, state)  (state)
++ # define PCI_D0                            (0)
++ # define assert_spin_locked(foobar)
++ #endif
++ 
++ /* Since v4l-dvb now includes it's own copy of linux/i2c-id.h these
++    are no longer necessary */
++ /*
++ #if !defined(I2C_ALGO_SAA7134)
++ #define I2C_ALGO_SAA7134 I2C_HW_B_BT848
++ #endif
++ #if !defined(I2C_HW_B_CX2388x)
++ # define I2C_HW_B_CX2388x I2C_HW_B_BT848
++ #endif
++ #if !defined(I2C_HW_SAA7134)
++ # define I2C_HW_SAA7134 I2C_ALGO_SAA7134
++ #endif
++ #if !defined(I2C_HW_SAA7146)
++ # define I2C_HW_SAA7146 I2C_ALGO_SAA7146
++ #endif
++ #if !defined(I2C_HW_B_EM2820)
++ #define I2C_HW_B_EM2820 0x99
++ #endif
++ */
++ 
++ #ifndef I2C_M_IGNORE_NAK
++ # define I2C_M_IGNORE_NAK 0x1000
++ #endif
++ 
++ /* v4l-dvb uses an out of kernel copy of i2c-id.h, which does not have
++    some stuff that previous versions of i2c-id.h defined. */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,14) && defined(LINUX_I2C_ID_H)
++ # define I2C_ALGO_BIT 0x010000
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
++ #define __le32 __u32
++ #endif
++ 
++ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,7))
++ static inline unsigned long msecs_to_jiffies(const unsigned int m)
++ {
++ #if HZ <= 1000 && !(1000 % HZ)
++ 	return (m + (1000 / HZ) - 1) / (1000 / HZ);
++ #else
++ #if HZ > 1000 && !(HZ % 1000)
++ 	return m * (HZ / 1000);
++ #else
++ 	return (m * HZ + 999) / 1000;
++ #endif
++ #endif
++ }
++ static inline unsigned int jiffies_to_msecs(const unsigned long j)
++ {
++ #if HZ <= 1000 && !(1000 % HZ)
++ 	return (1000 / HZ) * j;
++ #else
++ #if HZ > 1000 && !(HZ % 1000)
++ 	return (j + (HZ / 1000) - 1)/(HZ / 1000);
++ #else
++ 	return (j * 1000) / HZ;
++ #endif
++ #endif
++ }
++ static inline void msleep(unsigned int msecs)
++ {
++ 	unsigned long timeout = msecs_to_jiffies(msecs);
++ 	while (timeout) {
++ 		set_current_state(TASK_UNINTERRUPTIBLE);
++ 		timeout = schedule_timeout(timeout);
++ 	}
++ }
++ #endif
++ 
++ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
++ static inline unsigned long msleep_interruptible(unsigned int msecs)
++ {
++ 	unsigned long timeout = msecs_to_jiffies(msecs);
++ 
++ 	while (timeout) {
++ 		set_current_state(TASK_INTERRUPTIBLE);
++ 		timeout = schedule_timeout(timeout);
++ 	}
++ 	return jiffies_to_msecs(timeout);
++ }
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
++ /* some keys from 2.6.x which are not (yet?) in 2.4.x */
++ # define KEY_PLAY                207
++ # define KEY_PRINT		 210
++ # define KEY_EMAIL         215
++ # define KEY_SEARCH              217
++ # define KEY_SELECT 		 0x161
++ # define KEY_GOTO                0x162
++ # define KEY_INFO                0x166
++ # define KEY_CHANNEL             0x16b
++ # define KEY_LANGUAGE            0x170
++ # define KEY_SUBTITLE		 0x172
++ # define KEY_ZOOM                0x174
++ # define KEY_MODE		 0x175
++ # define KEY_TV                  0x179
++ # define KEY_CD                  0x17f
++ # define KEY_TUNER               0x182
++ # define KEY_TEXT                0x184
++ # define KEY_DVD		 0x185
++ # define KEY_AUDIO               0x188
++ # define KEY_VIDEO               0x189
++ # define KEY_RED                 0x18e
++ # define KEY_GREEN               0x18f
++ # define KEY_YELLOW              0x190
++ # define KEY_BLUE                0x191
++ # define KEY_CHANNELUP           0x192
++ # define KEY_CHANNELDOWN         0x193
++ # define KEY_RESTART		 0x198
++ # define KEY_SHUFFLE     	 0x19a
++ # define KEY_NEXT                0x197
++ # define KEY_RADIO               0x181
++ # define KEY_PREVIOUS            0x19c
++ # define KEY_MHP                 0x16f
++ # define KEY_EPG                 0x16d
++ # define KEY_FASTFORWARD         208
++ # define KEY_LIST                0x18b
++ # define KEY_LAST                0x195
++ # define KEY_CLEAR               0x163
++ # define KEY_AUX                 0x186
++ # define KEY_SCREEN              0x177
++ # define KEY_PC                  0x178
++ # define KEY_MEDIA               226
++ # define KEY_SLOW                0x199
++ # define KEY_OK                  0x160
++ # define KEY_DIGITS              0x19d
++ #endif
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,14)
++ # define KEY_SEND		231
++ # define KEY_REPLY		232
++ # define KEY_FORWARDMAIL	233
++ # define KEY_SAVE		234
++ # define KEY_DOCUMENTS		235
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
++ #define container_of(ptr, type, member) ({                      \
++ 	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
++ 	(type *)( (char *)__mptr - offsetof(type,member) );})
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,10)
++ #include <linux/mm.h>
++ static inline unsigned long vmalloc_to_pfn(void * vmalloc_addr)
++ {
++     return page_to_pfn(vmalloc_to_page(vmalloc_addr));
++ }
++ 
++ #ifndef wait_event_timeout
++ #define wait_event_timeout(wq, condition, timeout)                   	     \
++ ({                                                                           \
++      long __ret = timeout;                                                   \
++      if (!(condition))                                                       \
++      do {                                                                    \
++ 	     DEFINE_WAIT(__wait);                                            \
++ 	     for (;;) {                                                      \
++ 		     prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);    \
++ 		     if (condition)                                          \
++ 			 break;                                              \
++ 		     __ret = schedule_timeout(__ret);                        \
++ 		     if (!__ret)                                             \
++ 			 break;                                              \
++ 	     }                                                               \
++ 	     finish_wait(&wq, &__wait);                                      \
++      } while (0);							     \
++      __ret;                                                                  \
++ })
++ #endif
++ 
++ #define remap_pfn_range remap_page_range
++ 
++ #endif
++ 
++ /* vm_insert_page() was added in 2.6.15 */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15) && defined(_LINUX_MM_H)
++ static inline int vm_insert_page(struct vm_area_struct *vma,
++ 	unsigned long addr, struct page *page)
++ {
++ 	return remap_pfn_range(vma, addr, page_to_pfn(page), PAGE_SIZE,
++ 			       vma->vm_page_prot);
++ }
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
++ #ifndef kcalloc
++ #define kcalloc(n,size,flags)			\
++ ({						\
++   void * __ret = NULL;				\
++   __ret = kmalloc(n * size, flags);		\
++   if (__ret)					\
++ 	 memset(__ret, 0, n * size);		\
++   __ret;					\
++ })
++ #endif
++ #endif
++ 
++ /* try_to_freeze() lost its argument.  Must appear after linux/sched.h */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,13) && defined(_LINUX_SCHED_H)
++ # if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
++ #  define try_to_freeze() try_to_freeze(PF_FREEZE)
++ # else
++ #  define try_to_freeze() (0)
++ # endif
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,14)
++ #ifndef kzalloc
++ #define kzalloc(size, flags)				\
++ ({							\
++ 	void *__ret = kmalloc(size, flags);		\
++ 	if (__ret)					\
++ 		memset(__ret, 0, size);			\
++ 	__ret;						\
++ })
++ #endif
++ #endif
++ 
++ /* The class_device system didn't appear until 2.5.69 */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
++ #define class_device_create_file(a, b) (0)
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,13)
++ # define class_device_create(a, b, c, d, e, f, g, h) class_simple_device_add(a, c, d, e, f, g, h)
++ # define class_device_destroy(a, b) class_simple_device_remove(b)
++ # define class_create(a, b) class_simple_create(a, b)
++ # define class_destroy(a) class_simple_destroy(a)
++ #else
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15)
++ # define class_device_create(a, b, c, d, e, f, g, h) class_device_create(a, c, d, e, f, g, h)
++ #endif
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15)
++ # define input_allocate_device() kzalloc(sizeof(struct input_dev),GFP_KERNEL);
++ # define input_free_device(input_dev) kfree(input_dev)
++ # ifdef _INPUT_H  /* input.h must be included _before_ compat.h for this to work */
++    /* input_register_device() was changed to return an error code in 2.6.15 */
++ #  define input_register_device(x) (input_register_device(x), 0)
++ # endif
++ #endif
++ 
++ #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,15)
++ #define DEFINE_MUTEX(a) DECLARE_MUTEX(a)
++ #define mutex_lock_interruptible(a) down_interruptible(a)
++ #define mutex_unlock(a) up(a)
++ #define mutex_lock(a) down(a)
++ #define mutex_init(a) init_MUTEX(a)
++ #define mutex_trylock(a) down_trylock(a)
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,14) && defined(_LINUX_SCHED_H)
++ static inline signed long __sched
++ schedule_timeout_interruptible(signed long timeout)
++ {
++ 	__set_current_state(TASK_INTERRUPTIBLE);
++ 	return schedule_timeout(timeout);
++ }
++ #endif
++ 
++ /* New 4GB DMA zone was added in 2.6.15-rc2 */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15)
++ #  define __GFP_DMA32	__GFP_DMA
++ #endif
++ 
++ /* setup_timer() helper added 10/31/05, 2.6.15-rc1 */
++ /* Need linux/timer.h to be included for struct timer_list */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15) && defined(_LINUX_TIMER_H)
++ static inline void setup_timer(struct timer_list * timer,
++ 			       void (*function)(unsigned long),
++ 			       unsigned long data)
++ {
++ 	timer->function = function;
++ 	timer->data = data;
++ 	init_timer(timer);
++ }
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)
++ #define IRQF_SHARED		SA_SHIRQ
++ #define IRQF_DISABLED		SA_INTERRUPT
++ #endif
++ 
++ /* linux/usb.h must be included _before_ compat.h for this code to get
++    turned on.  We can not just include usb.h here, because there is a
++    lot of code which will not compile if it has usb.h included, due to
++    conflicts with symbol names.  */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,13) && \
++     defined(__LINUX_USB_H) && defined(_INPUT_H)
++ #include <linux/input.h>
++ /* Found in linux/usb_input.h in 2.6.13 */
++ /* Moved to linux/usb/input.h in 2.6.18 */
++ static inline void
++ usb_to_input_id(const struct usb_device *dev, struct input_id *id)
++ {
++ 	id->bustype = BUS_USB;
++ 	id->vendor = le16_to_cpu(dev->descriptor.idVendor);
++ 	id->product = le16_to_cpu(dev->descriptor.idProduct);
++ 	id->version = le16_to_cpu(dev->descriptor.bcdDevice);
++ }
++ #endif
++ 
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
++ # define PCIAGP_FAIL 0
++ 
++ #define vmalloc_32_user(a) vmalloc_32(a)
++ 
++ #endif
++ 
++ /* bool type and enum-based definition of true and false was added in 2.6.19 */
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
++ typedef int bool;
++ #define true 1
++ #define false 0
++ #endif
++ 
++ #endif
++ /*
++  * Local variables:
++  * c-basic-offset: 8
++  * End:
++  */
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dmxdev.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dmxdev.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dmxdev.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dmxdev.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 97,103 ****
+  		if (avail > todo)
+  			avail = todo;
+  
+! 		ret = dvb_ringbuffer_read(src, (u8 *)buf, avail, 1);
+  		if (ret < 0)
+  			break;
+  
+--- 97,103 ----
+  		if (avail > todo)
+  			avail = todo;
+  
+! 		ret = dvb_ringbuffer_read(src, buf, avail, 1);
+  		if (ret < 0)
+  			break;
+  
+***************
+*** 132,142 ****
+  	if (mutex_lock_interruptible(&dmxdev->mutex))
+  		return -ERESTARTSYS;
+  
+- 	if (dmxdev->exit) {
+- 		mutex_unlock(&dmxdev->mutex);
+- 		return -ENODEV;
+- 	}
+- 
+  	if ((file->f_flags & O_ACCMODE) == O_RDWR) {
+  		if (!(dmxdev->capabilities & DMXDEV_CAP_DUPLEX)) {
+  			mutex_unlock(&dmxdev->mutex);
+--- 132,137 ----
+***************
+*** 176,182 ****
+  		dmxdev->demux->disconnect_frontend(dmxdev->demux);
+  		dmxdev->demux->connect_frontend(dmxdev->demux, front);
+  	}
+- 	dvbdev->users++;
+  	mutex_unlock(&dmxdev->mutex);
+  	return 0;
+  }
+--- 171,176 ----
+***************
+*** 204,219 ****
+  			vfree(mem);
+  		}
+  	}
+! 	/* TODO */
+! 	dvbdev->users--;
+! 	if(dvbdev->users==-1 && dmxdev->exit==1) {
+! 		fops_put(file->f_op);
+! 		file->f_op = NULL;
+! 		mutex_unlock(&dmxdev->mutex);
+! 		wake_up(&dvbdev->wait_queue);
+! 	} else
+! 		mutex_unlock(&dmxdev->mutex);
+! 
+  	return 0;
+  }
+  
+--- 198,204 ----
+  			vfree(mem);
+  		}
+  	}
+! 	mutex_unlock(&dmxdev->mutex);
+  	return 0;
+  }
+  
+***************
+*** 230,240 ****
+  		return -EINVAL;
+  	if (mutex_lock_interruptible(&dmxdev->mutex))
+  		return -ERESTARTSYS;
+- 
+- 	if (dmxdev->exit) {
+- 		mutex_unlock(&dmxdev->mutex);
+- 		return -ENODEV;
+- 	}
+  	ret = dmxdev->demux->write(dmxdev->demux, buf, count);
+  	mutex_unlock(&dmxdev->mutex);
+  	return ret;
+--- 215,220 ----
+***************
+*** 247,257 ****
+  	struct dmxdev *dmxdev = dvbdev->priv;
+  	int ret;
+  
+- 	if (dmxdev->exit) {
+- 		mutex_unlock(&dmxdev->mutex);
+- 		return -ENODEV;
+- 	}
+- 
+  	//mutex_lock(&dmxdev->mutex);
+  	ret = dvb_dmxdev_buffer_read(&dmxdev->dvr_buffer,
+  				     file->f_flags & O_NONBLOCK,
+--- 227,232 ----
+***************
+*** 690,697 ****
+  	dmxdevfilter->feed.ts = NULL;
+  	init_timer(&dmxdevfilter->timer);
+  
+- 	dvbdev->users++;
+- 
+  	mutex_unlock(&dmxdev->mutex);
+  	return 0;
+  }
+--- 665,670 ----
+***************
+*** 970,990 ****
+  	struct dmxdev_filter *dmxdevfilter = file->private_data;
+  	struct dmxdev *dmxdev = dmxdevfilter->dev;
+  
+! 	int ret;
+! 
+! 	ret = dvb_dmxdev_filter_free(dmxdev, dmxdevfilter);
+! 
+! 	mutex_lock(&dmxdev->mutex);
+! 	dmxdev->dvbdev->users--;
+! 	if(dmxdev->dvbdev->users==1 && dmxdev->exit==1) {
+! 		fops_put(file->f_op);
+! 		file->f_op = NULL;
+! 		mutex_unlock(&dmxdev->mutex);
+! 		wake_up(&dmxdev->dvbdev->wait_queue);
+! 	} else
+! 		mutex_unlock(&dmxdev->mutex);
+! 
+! 	return ret;
+  }
+  
+  static struct file_operations dvb_demux_fops = {
+--- 943,949 ----
+  	struct dmxdev_filter *dmxdevfilter = file->private_data;
+  	struct dmxdev *dmxdev = dmxdevfilter->dev;
+  
+! 	return dvb_dmxdev_filter_free(dmxdev, dmxdevfilter);
+  }
+  
+  static struct file_operations dvb_demux_fops = {
+***************
+*** 1068,1074 ****
+  static struct dvb_device dvbdev_dvr = {
+  	.priv = NULL,
+  	.readers = 1,
+- 	.users = 1,
+  	.fops = &dvb_dvr_fops
+  };
+  
+--- 1027,1032 ----
+***************
+*** 1106,1121 ****
+  
+  void dvb_dmxdev_release(struct dmxdev *dmxdev)
+  {
+- 	dmxdev->exit=1;
+- 	if (dmxdev->dvbdev->users > 1) {
+- 		wait_event(dmxdev->dvbdev->wait_queue,
+- 				dmxdev->dvbdev->users==1);
+- 	}
+- 	if (dmxdev->dvr_dvbdev->users > 1) {
+- 		wait_event(dmxdev->dvr_dvbdev->wait_queue,
+- 				dmxdev->dvr_dvbdev->users==1);
+- 	}
+- 
+  	dvb_unregister_device(dmxdev->dvbdev);
+  	dvb_unregister_device(dmxdev->dvr_dvbdev);
+  
+--- 1064,1069 ----
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dmxdev.h UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dmxdev.h
+*** linux-sh4/drivers/media/dvb/dvb-core/dmxdev.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dmxdev.h	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 30,36 ****
+--- 30,39 ----
+  #include <linux/wait.h>
+  #include <linux/fs.h>
+  #include <linux/string.h>
++ #include "compat.h"
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  #include <linux/mutex.h>
++ #endif
+  
+  #include <linux/dvb/dmx.h>
+  
+***************
+*** 73,79 ****
+--- 76,86 ----
+  	struct dmxdev *dev;
+  	struct dvb_ringbuffer buffer;
+  
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  	struct mutex mutex;
++ #else
++ 	struct semaphore mutex;
++ #endif
+  
+  	/* only for sections */
+  	struct timer_list timer;
+***************
+*** 91,105 ****
+  
+  	int filternum;
+  	int capabilities;
+- 
+- 	unsigned int exit:1;
+  #define DMXDEV_CAP_DUPLEX 1
+  	struct dmx_frontend *dvr_orig_fe;
+  
+  	struct dvb_ringbuffer dvr_buffer;
+  #define DVR_BUFFER_SIZE (10*188*1024)
+  
+  	struct mutex mutex;
+  	spinlock_t lock;
+  };
+  
+--- 98,114 ----
+  
+  	int filternum;
+  	int capabilities;
+  #define DMXDEV_CAP_DUPLEX 1
+  	struct dmx_frontend *dvr_orig_fe;
+  
+  	struct dvb_ringbuffer dvr_buffer;
+  #define DVR_BUFFER_SIZE (10*188*1024)
+  
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  	struct mutex mutex;
++ #else
++ 	struct semaphore mutex;
++ #endif
+  	spinlock_t lock;
+  };
+  
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_ca_en50221.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_ca_en50221.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_ca_en50221.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_ca_en50221.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 41,54 ****
+  #include "dvb_ca_en50221.h"
+  #include "dvb_ringbuffer.h"
+  
+! static int dvb_ca_en50221_debug;
+  
+  module_param_named(cam_debug, dvb_ca_en50221_debug, int, 0644);
+  MODULE_PARM_DESC(cam_debug, "enable verbose debug messages");
+  
+  #define dprintk if (dvb_ca_en50221_debug) printk
+  
+! #define INIT_TIMEOUT_SECS 10
+  
+  #define HOST_LINK_BUF_SIZE 0x200
+  
+--- 41,58 ----
+  #include "dvb_ca_en50221.h"
+  #include "dvb_ringbuffer.h"
+  
+! //Dagobert
+! #include <linux/proc_fs.h>  	/* proc fs */
+! 
+! static int dvb_ca_en50221_debug = 1;
+  
+  module_param_named(cam_debug, dvb_ca_en50221_debug, int, 0644);
+  MODULE_PARM_DESC(cam_debug, "enable verbose debug messages");
+  
+  #define dprintk if (dvb_ca_en50221_debug) printk
+  
+! static int INIT_TIMEOUT_SECS = 10;
+! static int WAIT_FREE_TIMEOUT_SECS = 3;
+  
+  #define HOST_LINK_BUF_SIZE 0x200
+  
+***************
+*** 114,123 ****
+--- 118,159 ----
+  	/* buffer for incoming packets */
+  	struct dvb_ringbuffer rx_buffer;
+  
++ 	/* wait queues for read() and write() operations */
++ 	wait_queue_head_t wait_queue;
++ 
+  	/* timer used during various states of the slot */
+  	unsigned long timeout;
++ 
++ 	/* Dagobert: Proc Entry */
++ 	struct proc_dir_entry* entry;
++ 
++ 	/* Dagobert Error Counters */
++ 	int	errorWaitReady;
++ 	int	errorStateValidate;
++ 	int	errorConfigOption;
++ 	int	errorWriteCamControl;
++ 	int	errorWaitFree;
++ 	int	errorInit;
++ 	int	errorRxBuffer;
++ 	int	errorLinkBufferSize;
++ 	int	errorLinkBufferSizeToSmall;
++ 	int	errorBufferEcount;
++ 
++ 	/* Dagobert Error Ignoring Status */
++ 	int	ignoreStateValidate;
++ 	int 	ignoreConfigOption;
++ 	int	ignoreWriteCamControl;
++ 	int 	ignoreWaitFree;
++ 	int	ignoreInit;
++ 
++ 	int	pollTime;
++ 
++ 	int	waitWrite;
++ 	int	camPollin;
++ 	int	camPollout;
+  };
+  
++ 
+  /* Private CA-interface information */
+  struct dvb_ca_private {
+  
+***************
+*** 127,132 ****
+--- 163,172 ----
+  	/* the DVB device */
+  	struct dvb_device *dvbdev;
+  
++ 	/* Dagobert: the DVB CI devices */
++ 	struct dvb_device *dvbdev_ci[2];
++ 	int slot_states[2];
++ 
+  	/* Flags describing the interface (DVB_CA_FLAG_*) */
+  	u32 flags;
+  
+***************
+*** 145,150 ****
+--- 185,195 ----
+  	/* Wait queue used when shutting thread down */
+  	wait_queue_head_t thread_queue;
+  
++ 	/* dagobert: since we have multiple (logical) devices
++ 	 * we should protect them
++ 	 */
++ 	struct mutex io_mutex;
++ 
+  	/* Flag indicating when thread should exit */
+  	unsigned int exit:1;
+  
+***************
+*** 165,170 ****
+--- 210,220 ----
+  static int dvb_ca_en50221_read_data(struct dvb_ca_private *ca, int slot, u8 * ebuf, int ecount);
+  static int dvb_ca_en50221_write_data(struct dvb_ca_private *ca, int slot, u8 * ebuf, int ecount);
+  
++ //Dagobert: Hack
++ struct proc_dir_entry*  ci_dir;
++ 
++ struct dvb_ca_slot *ci0;
++ struct dvb_ca_slot *ci1;
+  
+  /**
+   * Safely find needle in haystack.
+***************
+*** 175,181 ****
+   * @param nlen Number of bytes in needle.
+   * @return Pointer into haystack needle was found at, or NULL if not found.
+   */
+! static char *findstr(char * haystack, int hlen, char * needle, int nlen)
+  {
+  	int i;
+  
+--- 225,231 ----
+   * @param nlen Number of bytes in needle.
+   * @return Pointer into haystack needle was found at, or NULL if not found.
+   */
+! static u8 *findstr(u8 * haystack, int hlen, u8 * needle, int nlen)
+  {
+  	int i;
+  
+***************
+*** 368,375 ****
+  	/* grab the next tuple length and type */
+  	if ((_tupleType = ca->pub->read_attribute_mem(ca->pub, slot, _address)) < 0)
+  		return _tupleType;
+  	if (_tupleType == 0xff) {
+! 		dprintk("END OF CHAIN TUPLE type:0x%x\n", _tupleType);
+  		*address += 2;
+  		*tupleType = _tupleType;
+  		*tupleLength = 0;
+--- 418,426 ----
+  	/* grab the next tuple length and type */
+  	if ((_tupleType = ca->pub->read_attribute_mem(ca->pub, slot, _address)) < 0)
+  		return _tupleType;
++ 
+  	if (_tupleType == 0xff) {
+! 		dprintk("END OF CHAIN TUPLE type (%d) :0x%x\n", slot,_tupleType);
+  		*address += 2;
+  		*tupleType = _tupleType;
+  		*tupleLength = 0;
+***************
+*** 482,488 ****
+  	}
+  
+  	/* check it contains the correct DVB string */
+! 	dvb_str = findstr((char *)tuple, tupleLength, "DVB_CI_V", 8);
+  	if (dvb_str == NULL)
+  		return -EINVAL;
+  	if (tupleLength < ((dvb_str - (char *) tuple) + 12))
+--- 533,539 ----
+  	}
+  
+  	/* check it contains the correct DVB string */
+! 	dvb_str = findstr(tuple, tupleLength, "DVB_CI_V", 8);
+  	if (dvb_str == NULL)
+  		return -EINVAL;
+  	if (tupleLength < ((dvb_str - (char *) tuple) + 12))
+***************
+*** 513,520 ****
+  			ca->slot_info[slot].config_option = tuple[0] & 0x3f;
+  
+  			/* OK, check it contains the correct strings */
+! 			if ((findstr((char *)tuple, tupleLength, "DVB_HOST", 8) == NULL) ||
+! 			    (findstr((char *)tuple, tupleLength, "DVB_CI_MODULE", 13) == NULL))
+  				break;
+  
+  			got_cftableentry = 1;
+--- 564,571 ----
+  			ca->slot_info[slot].config_option = tuple[0] & 0x3f;
+  
+  			/* OK, check it contains the correct strings */
+! 			if ((findstr(tuple, tupleLength, "DVB_HOST", 8) == NULL) ||
+! 			    (findstr(tuple, tupleLength, "DVB_CI_MODULE", 13) == NULL))
+  				break;
+  
+  			got_cftableentry = 1;
+***************
+*** 593,599 ****
+  	u8 buf[HOST_LINK_BUF_SIZE];
+  	int i;
+  
+! 	dprintk("%s\n", __FUNCTION__);
+  
+  	/* check if we have space for a link buf in the rx_buffer */
+  	if (ebuf == NULL) {
+--- 644,653 ----
+  	u8 buf[HOST_LINK_BUF_SIZE];
+  	int i;
+  
+! 	/*dprintk("%s\n", __FUNCTION__);*/
+! 
+! 	/* dagobert */
+!         mutex_lock(&ca->io_mutex);
+  
+  	/* check if we have space for a link buf in the rx_buffer */
+  	if (ebuf == NULL) {
+***************
+*** 616,621 ****
+--- 670,706 ----
+  		goto exit;
+  	if (!(status & STATUSREG_DA)) {
+  		/* no data */
++ 
++ #ifdef mit
++ 
++ //if I try this next time I must remove
++ //I must think about the data to send
++ //byte[0] is not the connection I think
++ //byte[0] must be 0xa0 ?!?!?
++ 
++ 		/* so poll it */
++ 
++ 		/* dagobert: poll
++ 		 * ->see Spec Page 69 A.4.1.12
++ 		 * ->not sure if we meet all the parts in the spec (100ms ...)
++ 		 */
++ 		char fragbuf[HOST_LINK_BUF_SIZE];
++ 
++ 		fragbuf[0] = slot + 1 /* connection_id */;
++ 		fragbuf[1] = 0x00;
++ 		fragbuf[2] = 0xa0;
++ 		fragbuf[3] = 0x01 /* len */ ;
++ 		fragbuf[4] = slot + 1 /* connection_id */;
++ 
++ 		status = dvb_ca_en50221_write_data(ca, slot, fragbuf, 5);
++ 
++ 		if (status == 5)
++ 		{
++ 			printk("POLL Module %d\n", slot);
++ 		} else
++ 			printk("POLL FAILED for Module %d\n", slot);
++ 
++ #endif
+  		status = 0;
+  		goto exit;
+  	}
+***************
+*** 631,643 ****
+  	/* check it will fit */
+  	if (ebuf == NULL) {
+  		if (bytes_read > ca->slot_info[slot].link_buf_size) {
+! 			printk("dvb_ca adapter %d: CAM tried to send a buffer larger than the link buffer size (%i > %i)!\n",
+! 			       ca->dvbdev->adapter->num, bytes_read, ca->slot_info[slot].link_buf_size);
+  			ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+  			status = -EIO;
+  			goto exit;
+  		}
+  		if (bytes_read < 2) {
+  			printk("dvb_ca adapter %d: CAM sent a buffer that was less than 2 bytes!\n",
+  			       ca->dvbdev->adapter->num);
+  			ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+--- 716,732 ----
+  	/* check it will fit */
+  	if (ebuf == NULL) {
+  		if (bytes_read > ca->slot_info[slot].link_buf_size) {
+! 			printk("dvb_ca adapter %d: CAM tried to send a buffer larger than the link buffer size (%i > %i) slot = %d!\n",
+! 			       ca->dvbdev->adapter->num, bytes_read, ca->slot_info[slot].link_buf_size, slot);
+  			ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
++ 			//Dagobert
++ 			ca->slot_info[slot].errorLinkBufferSize++;
+  			status = -EIO;
+  			goto exit;
+  		}
+  		if (bytes_read < 2) {
++ 			//Dagobert
++ 			ca->slot_info[slot].errorLinkBufferSizeToSmall++;
+  			printk("dvb_ca adapter %d: CAM sent a buffer that was less than 2 bytes!\n",
+  			       ca->dvbdev->adapter->num);
+  			ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+***************
+*** 646,653 ****
+  		}
+  	} else {
+  		if (bytes_read > ecount) {
+! 			printk("dvb_ca adapter %d: CAM tried to send a buffer larger than the ecount size!\n",
+! 			       ca->dvbdev->adapter->num);
+  			status = -EIO;
+  			goto exit;
+  		}
+--- 735,743 ----
+  		}
+  	} else {
+  		if (bytes_read > ecount) {
+! 			ca->slot_info[slot].errorBufferEcount++;
+! 			printk("dvb_ca adapter %d: CAM tried to send a buffer larger than the ecount size (slot = %d)!\n",
+! 			       ca->dvbdev->adapter->num, slot);
+  			status = -EIO;
+  			goto exit;
+  		}
+***************
+*** 667,672 ****
+--- 757,763 ----
+  	if ((status = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS)) < 0)
+  		goto exit;
+  	if (status & STATUSREG_RE) {
++ 		printk("read on slot %d failed ->state now linkinit\n", slot);
+  		ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+  		status = -EIO;
+  		goto exit;
+***************
+*** 688,698 ****
+--- 779,793 ----
+  
+  	/* wake up readers when a last_fragment is received */
+  	if ((buf[1] & 0x80) == 0x00) {
++ 		wake_up_interruptible(&ca->slot_info[slot].wait_queue);
+  		wake_up_interruptible(&ca->wait_queue);
+  	}
+  	status = bytes_read;
+  
+  exit:
++ 	/* dagobert */
++         mutex_unlock(&ca->io_mutex);
++ 
+  	return status;
+  }
+  
+***************
+*** 716,725 ****
+  
+  	dprintk("%s\n", __FUNCTION__);
+  
+- 
+  	// sanity check
+  	if (bytes_write > ca->slot_info[slot].link_buf_size)
+  		return -EINVAL;
+  
+  	/* check if interface is actually waiting for us to read from it, or if a read is in progress */
+  	if ((status = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS)) < 0)
+--- 811,825 ----
+  
+  	dprintk("%s\n", __FUNCTION__);
+  
+  	// sanity check
+  	if (bytes_write > ca->slot_info[slot].link_buf_size)
++ 	{
++ 		printk("3. EINVAL\n");
+  		return -EINVAL;
++ 	}
++ 
++ 	/* dagobert */
++         mutex_lock(&ca->io_mutex);
+  
+  	/* check if interface is actually waiting for us to read from it, or if a read is in progress */
+  	if ((status = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS)) < 0)
+***************
+*** 760,765 ****
+--- 860,866 ----
+  	if ((status = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS)) < 0)
+  		goto exit;
+  	if (status & STATUSREG_WE) {
++ 		printk("write on slot %d failed ->state now linkinit\n", slot);
+  		ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+  		status = -EIO;
+  		goto exit;
+***************
+*** 773,778 ****
+--- 874,882 ----
+  	ca->pub->write_cam_control(ca->pub, slot, CTRLIF_COMMAND, IRQEN);
+  
+  exitnowrite:
++ 	/* dagobert */
++         mutex_unlock(&ca->io_mutex);
++ 
+  	return status;
+  }
+  EXPORT_SYMBOL(dvb_ca_en50221_camchange_irq);
+***************
+*** 791,803 ****
+   */
+  static int dvb_ca_en50221_slot_shutdown(struct dvb_ca_private *ca, int slot)
+  {
+! 	dprintk("%s\n", __FUNCTION__);
+  
+  	ca->pub->slot_shutdown(ca->pub, slot);
+  	ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_NONE;
+  
+  	/* need to wake up all processes to check if they're now
+  	   trying to write to a defunct CAM */
+  	wake_up_interruptible(&ca->wait_queue);
+  
+  	dprintk("Slot %i shutdown\n", slot);
+--- 895,908 ----
+   */
+  static int dvb_ca_en50221_slot_shutdown(struct dvb_ca_private *ca, int slot)
+  {
+! 	dprintk("%s (slot %d)\n", __FUNCTION__, slot);
+  
+  	ca->pub->slot_shutdown(ca->pub, slot);
+  	ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_NONE;
+  
+  	/* need to wake up all processes to check if they're now
+  	   trying to write to a defunct CAM */
++ 	wake_up_interruptible(&ca->slot_info[slot].wait_queue);
+  	wake_up_interruptible(&ca->wait_queue);
+  
+  	dprintk("Slot %i shutdown\n", slot);
+***************
+*** 1043,1057 ****
+--- 1148,1167 ----
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_UNINITIALISED:
++ 				printk("DVB_CA_SLOTSTATE_UNINITIALISED %d\n", slot);
+  				ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_WAITREADY;
+  				ca->pub->slot_reset(ca->pub, slot);
+  				ca->slot_info[slot].timeout = jiffies + (INIT_TIMEOUT_SECS * HZ);
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_WAITREADY:
++ 				printk("DVB_CA_SLOTSTATE_WAITREADY %d\n", slot);
+  				if (time_after(jiffies, ca->slot_info[slot].timeout)) {
+  					printk("dvb_ca adaptor %d: PC card did not respond :(\n",
+  					       ca->dvbdev->adapter->num);
++ 
++ 					ca->slot_info[slot].errorWaitReady++;
++ 
+  					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+  					dvb_ca_en50221_thread_update_delay(ca);
+  					break;
+***************
+*** 1060,1065 ****
+--- 1170,1182 ----
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_VALIDATE:
++ 				printk("DVB_CA_SLOTSTATE_VALIDATE %d\n", slot);
++ 
++ 				/*GustavGans: it seems that the validation process comes to early
++ 				  if MPEG stream is turned on and MPEG bypassing is disabled
++ 				  (the first tuple is invalid) */
++ 				mdelay(100);
++ 
+  				if (dvb_ca_en50221_parse_attributes(ca, slot) != 0) {
+  					/* we need this extra check for annoying interfaces like the budget-av */
+  					if ((!(ca->flags & DVB_CA_EN50221_FLAG_IRQ_CAMCHANGE)) &&
+***************
+*** 1072,1112 ****
+  						}
+  					}
+  
+! 					printk("dvb_ca adapter %d: Invalid PC card inserted :(\n",
+! 					       ca->dvbdev->adapter->num);
+! 					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 					dvb_ca_en50221_thread_update_delay(ca);
+! 					break;
+  				}
+  				if (dvb_ca_en50221_set_configoption(ca, slot) != 0) {
+  					printk("dvb_ca adapter %d: Unable to initialise CAM :(\n",
+  					       ca->dvbdev->adapter->num);
+! 					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 					dvb_ca_en50221_thread_update_delay(ca);
+! 					break;
+  				}
+  				if (ca->pub->write_cam_control(ca->pub, slot,
+  							       CTRLIF_COMMAND, CMDREG_RS) != 0) {
+  					printk("dvb_ca adapter %d: Unable to reset CAM IF\n",
+  					       ca->dvbdev->adapter->num);
+! 					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 					dvb_ca_en50221_thread_update_delay(ca);
+! 					break;
+  				}
+! 				dprintk("DVB CAM validated successfully\n");
+  
+! 				ca->slot_info[slot].timeout = jiffies + (INIT_TIMEOUT_SECS * HZ);
+  				ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_WAITFR;
+  				ca->wakeup = 1;
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_WAITFR:
+  				if (time_after(jiffies, ca->slot_info[slot].timeout)) {
+  					printk("dvb_ca adapter %d: DVB CAM did not respond :(\n",
+  					       ca->dvbdev->adapter->num);
+! 					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 					dvb_ca_en50221_thread_update_delay(ca);
+! 					break;
+  				}
+  
+  				flags = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS);
+--- 1189,1270 ----
+  						}
+  					}
+  
+! 					printk("dvb_ca adapter %d: Invalid PC card inserted (slot = %d) :(\n",
+! 					       ca->dvbdev->adapter->num, slot);
+! 
+! 					//Dagobert
+! 					ca->slot_info[slot].errorStateValidate++;
+! 					if (ca->slot_info[slot].ignoreStateValidate == 0)
+! 					{
+! 				 	   ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 					   dvb_ca_en50221_thread_update_delay(ca);
+! 				 	   break;
+! 				        }
+  				}
+  				if (dvb_ca_en50221_set_configoption(ca, slot) != 0) {
+  					printk("dvb_ca adapter %d: Unable to initialise CAM :(\n",
+  					       ca->dvbdev->adapter->num);
+! 					//Dagobert
+! 					ca->slot_info[slot].errorConfigOption++;
+! 					if (ca->slot_info[slot].ignoreConfigOption == 0)
+! 					{
+! 						ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 						dvb_ca_en50221_thread_update_delay(ca);
+! 						break;
+! 					}
+  				}
+  				if (ca->pub->write_cam_control(ca->pub, slot,
+  							       CTRLIF_COMMAND, CMDREG_RS) != 0) {
++ 
+  					printk("dvb_ca adapter %d: Unable to reset CAM IF\n",
+  					       ca->dvbdev->adapter->num);
+! 
+! 					//Dagobert
+! 					ca->slot_info[slot].errorWriteCamControl++;
+! 					if (ca->slot_info[slot].ignoreWriteCamControl == 0)
+! 					{
+! 						ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 						dvb_ca_en50221_thread_update_delay(ca);
+! 					        break;
+! 					} else
+! 					{
+! 						//noop
+! 					}
+  				}
+! 				dprintk("DVB CAM validated successfully (slot = %d)\n", slot);
+  
+! 				ca->slot_info[slot].timeout = jiffies + (WAIT_FREE_TIMEOUT_SECS * HZ);
+  				ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_WAITFR;
+  				ca->wakeup = 1;
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_WAITFR:
++ 				printk("DVB_CA_SLOTSTATE_WAITFR %d\n", slot);
++ #define old
++ #ifdef old
++ /* Dagobert: The Norm says that after setting the RS Bit (see state before) the module
++  * clears the buffer and sets the free bit (FR). But it seems so that older modules does not so,
++  * they set this bit after starting the negotiation.
++  * So we wait here and get a timeout. pvrmain does'nt this and starts the negotiation
++  * (bit SR) directly. Ok first it clears all bits but this seems not necessary at all.
++  */
+  				if (time_after(jiffies, ca->slot_info[slot].timeout)) {
+  					printk("dvb_ca adapter %d: DVB CAM did not respond :(\n",
+  					       ca->dvbdev->adapter->num);
+! 
+! 					//Dagobert
+! 					ca->slot_info[slot].errorWaitFree++;
+! 					if (ca->slot_info[slot].ignoreWaitFree == 0)
+! 					{
+! 						ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 						dvb_ca_en50221_thread_update_delay(ca);
+! 						break;
+! 					} else
+! 					{
+! 					    ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+! 					    ca->wakeup = 1;
+! 					    break;
+! 					}
+  				}
+  
+  				flags = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS);
+***************
+*** 1114,1122 ****
+--- 1272,1286 ----
+  					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
+  					ca->wakeup = 1;
+  				}
++ #else
++ 					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_LINKINIT;
++ 					ca->wakeup = 1;
++ #endif
++ 
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_LINKINIT:
++ 				printk("DVB_CA_SLOTSTATE_LINKINIT %d\n", slot);
+  				if (dvb_ca_en50221_link_init(ca, slot) != 0) {
+  					/* we need this extra check for annoying interfaces like the budget-av */
+  					if ((!(ca->flags & DVB_CA_EN50221_FLAG_IRQ_CAMCHANGE)) &&
+***************
+*** 1130,1144 ****
+  					}
+  
+  					printk("dvb_ca adapter %d: DVB CAM link initialisation failed :(\n", ca->dvbdev->adapter->num);
+! 					ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 					dvb_ca_en50221_thread_update_delay(ca);
+! 					break;
+  				}
+  
+  				if (ca->slot_info[slot].rx_buffer.data == NULL) {
+  					rxbuf = vmalloc(RX_BUFFER_SIZE);
+  					if (rxbuf == NULL) {
+  						printk("dvb_ca adapter %d: Unable to allocate CAM rx buffer :(\n", ca->dvbdev->adapter->num);
+  						ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+  						dvb_ca_en50221_thread_update_delay(ca);
+  						break;
+--- 1294,1317 ----
+  					}
+  
+  					printk("dvb_ca adapter %d: DVB CAM link initialisation failed :(\n", ca->dvbdev->adapter->num);
+! 					//Dagobert
+! 					ca->slot_info[slot].errorInit++;
+! 					if (ca->slot_info[slot].ignoreInit == 0)
+! 					{
+! 						ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+! 						dvb_ca_en50221_thread_update_delay(ca);
+! 						break;
+! 					}
+  				}
+  
+  				if (ca->slot_info[slot].rx_buffer.data == NULL) {
+  					rxbuf = vmalloc(RX_BUFFER_SIZE);
+  					if (rxbuf == NULL) {
+  						printk("dvb_ca adapter %d: Unable to allocate CAM rx buffer :(\n", ca->dvbdev->adapter->num);
++ 
++ 						//Dagobert: this one cant be ignored I think
++ 						ca->slot_info[slot].errorRxBuffer++;
++ 
+  						ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_INVALID;
+  						dvb_ca_en50221_thread_update_delay(ca);
+  						break;
+***************
+*** 1149,1155 ****
+  				ca->pub->slot_ts_enable(ca->pub, slot);
+  				ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_RUNNING;
+  				dvb_ca_en50221_thread_update_delay(ca);
+! 				printk("dvb_ca adapter %d: DVB CAM detected and initialised successfully\n", ca->dvbdev->adapter->num);
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_RUNNING:
+--- 1322,1328 ----
+  				ca->pub->slot_ts_enable(ca->pub, slot);
+  				ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_RUNNING;
+  				dvb_ca_en50221_thread_update_delay(ca);
+! 				printk("dvb_ca adapter %d: DVB CAM detected and initialised successfully (slot = %d)\n", ca->dvbdev->adapter->num, slot);
+  				break;
+  
+  			case DVB_CA_SLOTSTATE_RUNNING:
+***************
+*** 1159,1164 ****
+--- 1332,1342 ----
+  				// poll slots for data
+  				pktcount = 0;
+  				while ((status = dvb_ca_en50221_read_data(ca, slot, NULL, 0)) > 0) {
++ 					mutex_lock(&ca->io_mutex);
++ 					ca->slot_info[slot].camPollin = 1;
++ 					mutex_unlock(&ca->io_mutex);
++ 					//printk("\nPI\n\n");
++ 
+  					if (!ca->open)
+  						break;
+  
+***************
+*** 1176,1181 ****
+--- 1354,1376 ----
+  						break;
+  					}
+  				}
++ 
++ 				/* wg pollwri: wake up poll waiters if there is nothing todo, so he can write some data */
++ 		 		if ((status = ca->pub->read_cam_control(ca->pub, slot, CTRLIF_STATUS)) >= 0)
++ 		 		{
++ 	            			if (!(status & STATUSREG_DA))
++ 						if (!(status & STATUSREG_RE))
++ 		           				if (status & STATUSREG_FR)
++ 			   				{
++ 								mutex_lock(&ca->io_mutex);
++ 								ca->slot_info[slot].camPollout = 1;
++ 								mutex_unlock(&ca->io_mutex);
++ 
++ 								wake_up_interruptible(&ca->slot_info[slot].wait_queue);
++ 								wake_up_interruptible(&ca->wait_queue);
++ 							}
++ 		 		}
++ 
+  				break;
+  			}
+  		}
+***************
+*** 1216,1221 ****
+--- 1411,1419 ----
+  
+  	switch (cmd) {
+  	case CA_RESET:
++ 
++ //Dagobert: resetting only requested slot is good idea maybe :-/
++ #ifdef alt
+  		for (slot = 0; slot < ca->slot_count; slot++) {
+  			if (ca->slot_info[slot].slot_state != DVB_CA_SLOTSTATE_NONE) {
+  				dvb_ca_en50221_slot_shutdown(ca, slot);
+***************
+*** 1225,1230 ****
+--- 1423,1443 ----
+  								     DVB_CA_EN50221_CAMCHANGE_INSERTED);
+  			}
+  		}
++ #else
++ 		for (slot = 0; slot < ca->slot_count; slot++) {
++ 			int mySlot = ((int) parg);
++ 
++ 			dprintk("mySlot = %d, searched %d\n", mySlot, slot);
++ 
++ 			if (mySlot != slot)
++ 			    continue;
++ 
++ 			dprintk("->reset %d\n", mySlot);
++ 
++ 			//dagobert: rest will be done in loop
++ 			ca->slot_info[slot].slot_state = DVB_CA_SLOTSTATE_UNINITIALISED;
++ 		}
++ #endif
+  		ca->next_read_slot = 0;
+  		dvb_ca_en50221_thread_wakeup(ca);
+  		break;
+***************
+*** 1251,1256 ****
+--- 1464,1474 ----
+  			&& (ca->slot_info[info->num].slot_state != DVB_CA_SLOTSTATE_INVALID)) {
+  			info->flags = CA_CI_MODULE_PRESENT;
+  		}
++ 		//Dagobert
++ 		else
++ 		if (ca->slot_info[info->num].slot_state == DVB_CA_SLOTSTATE_INVALID)
++ 			info->flags = CA_CI_MODULE_INVALID;
++ 
+  		if (ca->slot_info[info->num].slot_state == DVB_CA_SLOTSTATE_RUNNING) {
+  			info->flags |= CA_CI_MODULE_READY;
+  		}
+***************
+*** 1300,1306 ****
+  	struct dvb_ca_private *ca = dvbdev->priv;
+  	u8 slot, connection_id;
+  	int status;
+! 	u8 fragbuf[HOST_LINK_BUF_SIZE];
+  	int fragpos = 0;
+  	int fraglen;
+  	unsigned long timeout;
+--- 1518,1524 ----
+  	struct dvb_ca_private *ca = dvbdev->priv;
+  	u8 slot, connection_id;
+  	int status;
+! 	char fragbuf[HOST_LINK_BUF_SIZE];
+  	int fragpos = 0;
+  	int fraglen;
+  	unsigned long timeout;
+***************
+*** 1310,1331 ****
+  
+  	/* Incoming packet has a 2 byte header. hdr[0] = slot_id, hdr[1] = connection_id */
+  	if (count < 2)
+  		return -EINVAL;
+! 
+  	/* extract slot & connection id */
+  	if (copy_from_user(&slot, buf, 1))
+  		return -EFAULT;
+  	if (copy_from_user(&connection_id, buf + 1, 1))
+  		return -EFAULT;
+  	buf += 2;
+  	count -= 2;
+  
+  	/* check if the slot is actually running */
+  	if (ca->slot_info[slot].slot_state != DVB_CA_SLOTSTATE_RUNNING)
+  		return -EINVAL;
+  
+  	/* fragment the packets & store in the buffer */
+  	while (fragpos < count) {
+  		fraglen = ca->slot_info[slot].link_buf_size - 2;
+  		if ((count - fragpos) < fraglen)
+  			fraglen = count - fragpos;
+--- 1528,1560 ----
+  
+  	/* Incoming packet has a 2 byte header. hdr[0] = slot_id, hdr[1] = connection_id */
+  	if (count < 2)
++ 	{
++ 		printk("1. EINVAL\n");
+  		return -EINVAL;
+! 	}
+  	/* extract slot & connection id */
+  	if (copy_from_user(&slot, buf, 1))
+  		return -EFAULT;
++ 
+  	if (copy_from_user(&connection_id, buf + 1, 1))
+  		return -EFAULT;
++ 
++ 	//Dagobert write out the message so we can debug problems better
++ 	//dprintk("0x%02x 0x%02x", slot, connection_id);
++ 
+  	buf += 2;
+  	count -= 2;
+  
+  	/* check if the slot is actually running */
+  	if (ca->slot_info[slot].slot_state != DVB_CA_SLOTSTATE_RUNNING)
++ 	{
++ 		printk("2. EINVAL (slot = %d)\n", slot);
+  		return -EINVAL;
++ 	}
+  
+  	/* fragment the packets & store in the buffer */
+  	while (fragpos < count) {
++ 		int vLoop;
+  		fraglen = ca->slot_info[slot].link_buf_size - 2;
+  		if ((count - fragpos) < fraglen)
+  			fraglen = count - fragpos;
+***************
+*** 1335,1340 ****
+--- 1564,1575 ----
+  		if ((status = copy_from_user(fragbuf + 2, buf + fragpos, fraglen)) != 0)
+  			goto exit;
+  
++ 		//Dagobert write out the message so we can debug problems better
++ 		dprintk("<fraglen = %d\n", fraglen);
++ 		for (vLoop = 0; vLoop < fraglen; vLoop++)
++ 			dprintk(" 0x%02x", fragbuf[vLoop + 2]);
++ 		dprintk("\nfraglen>\n");
++ 
+  		timeout = jiffies + HZ / 2;
+  		written = 0;
+  		while (!time_after(jiffies, timeout)) {
+***************
+*** 1364,1369 ****
+--- 1599,1605 ----
+  	status = count + 2;
+  
+  exit:
++ 	ca->slot_info[slot].waitWrite = 0;
+  	return status;
+  }
+  
+***************
+*** 1415,1420 ****
+--- 1651,1688 ----
+  }
+  
+  
++ //Dagobert
++ static int dvb_ca_en50221_io_read_condition_for_slot(struct dvb_ca_private *ca, int slot)
++ {
++ 	int idx;
++ 	size_t fraglen;
++ 	int connection_id = -1;
++ 	int found = 0;
++ 	u8 hdr[2];
++ 
++ 	if (ca->slot_info[slot].slot_state != DVB_CA_SLOTSTATE_RUNNING)
++ 		return 0;
++ 
++ 	if (ca->slot_info[slot].rx_buffer.data == NULL) {
++ 		return 0;
++ 	}
++ 
++ 	idx = dvb_ringbuffer_pkt_next(&ca->slot_info[slot].rx_buffer, -1, &fraglen);
++ 	while (idx != -1) {
++ 		dvb_ringbuffer_pkt_read(&ca->slot_info[slot].rx_buffer, idx, 0, hdr, 2, 0);
++ 		if (connection_id == -1)
++ 			connection_id = hdr[0];
++ 		if ((hdr[0] == connection_id) && ((hdr[1] & 0x80) == 0)) {
++ 			found = 1;
++ 			break;
++ 		}
++ 
++ 		idx = dvb_ringbuffer_pkt_next(&ca->slot_info[slot].rx_buffer, idx, &fraglen);
++ 	}
++ 
++ 	return found;
++ }
++ 
+  /**
+   * Implementation of read() syscall.
+   *
+***************
+*** 1440,1445 ****
+--- 1708,1715 ----
+  	size_t fraglen;
+  	int pktlen;
+  	int dispose = 0;
++ 	/* Dagobert */
++ 	int ci_slot = -1;
+  
+  	dprintk("%s\n", __FUNCTION__);
+  
+***************
+*** 1447,1464 ****
+  	if (count < 2)
+  		return -EINVAL;
+  
+  	/* wait for some data */
+  	if ((status = dvb_ca_en50221_io_read_condition(ca, &result, &slot)) == 0) {
+  
+  		/* if we're in nonblocking mode, exit immediately */
+  		if (file->f_flags & O_NONBLOCK)
+  			return -EWOULDBLOCK;
+! 
+  		/* wait for some data */
+! 		status = wait_event_interruptible(ca->wait_queue,
+  						  dvb_ca_en50221_io_read_condition
+  						  (ca, &result, &slot));
+  	}
+  	if ((status < 0) || (result < 0)) {
+  		if (result)
+  			return result;
+--- 1717,1822 ----
+  	if (count < 2)
+  		return -EINVAL;
+  
++ 	/* Dagobert */
++         if (dvbdev == ca->dvbdev_ci[0])
++ 		ci_slot = 0;
++ 	else
++         if (dvbdev == ca->dvbdev_ci[1])
++ 		ci_slot = 1;
++ 
++ 	if (ci_slot != -1)
++ 	{
++ 		/* is there something to read ? */
++ 		if ((status = dvb_ca_en50221_io_read_condition_for_slot(ca, ci_slot)) == 0) {
++ 
++ 		   /* if we're in nonblocking mode, exit immediately */
++ 		   if (file->f_flags & O_NONBLOCK)
++ 		   {
++ 			   return -EWOULDBLOCK;
++ 		   }
++ 
++ 		   /* wait for some data */
++ 		   status = wait_event_interruptible(ca->slot_info[ci_slot].wait_queue,
++ 						     dvb_ca_en50221_io_read_condition_for_slot
++ 						     (ca, ci_slot));
++ 
++ 		   dprintk("status = %d\n", status);	
++ 
++ 		}
++ 
++ 		if ((status < 0)) {
++ 			return status;
++ 		}
++ 
++ 		slot = ci_slot;
++ 
++ 		idx = dvb_ringbuffer_pkt_next(&ca->slot_info[slot].rx_buffer, -1, &fraglen);
++ 		pktlen = 2;
++ 		do {
++ 			if (idx == -1) {
++ 				printk("dvb_ca adapter %d: BUG: read packet ended before last_fragment encountered\n", ca->dvbdev->adapter->num);
++ 
++ 		                printk("pktlen = %d, fraglen = %d, count = %d, con_id = %d\n", pktlen, fraglen, count, connection_id);	
++ 		
++ 				status = -EIO;
++ 				goto exit;
++ 			}
++ 
++ 			dvb_ringbuffer_pkt_read(&ca->slot_info[slot].rx_buffer, idx, 0, hdr, 2, 0);
++ 			if (connection_id == -1)
++ 				connection_id = hdr[0];
++ 			if (hdr[0] == connection_id) {
++ 				if (pktlen < count) {
++ 					if ((pktlen + fraglen - 2) > count) {
++ 						fraglen = count - pktlen;
++ 					} else {
++ 						fraglen -= 2;
++ 					}
++ 
++ 					if ((status = dvb_ringbuffer_pkt_read(&ca->slot_info[slot].rx_buffer, idx, 2,
++ 									      buf + pktlen, fraglen, 1)) < 0) {
++ 						goto exit;
++ 					}
++ 					pktlen += fraglen;
++ 				}
++ 
++ 				if ((hdr[1] & 0x80) == 0)
++ 					last_fragment = 1;
++ 				dispose = 1;
++ 			}
++ 
++ 			idx2 = dvb_ringbuffer_pkt_next(&ca->slot_info[slot].rx_buffer, idx, &fraglen);
++ 			if (dispose)
++ 				dvb_ringbuffer_pkt_dispose(&ca->slot_info[slot].rx_buffer, idx);
++ 			idx = idx2;
++ 			dispose = 0;
++ 		} while (!last_fragment);
++ 
++ 		hdr[0] = slot;
++ 		hdr[1] = connection_id;
++ 
++ 		if ((status = copy_to_user(buf, hdr, 2)) != 0)
++ 			goto exit;
++ 
++ 		status = pktlen;
++ 
++ 		return status;
++ 	}
++ 
+  	/* wait for some data */
+  	if ((status = dvb_ca_en50221_io_read_condition(ca, &result, &slot)) == 0) {
+  
+  		/* if we're in nonblocking mode, exit immediately */
+  		if (file->f_flags & O_NONBLOCK)
++ 		{
+  			return -EWOULDBLOCK;
+! 		}
+  		/* wait for some data */
+! 		status = wait_event_interruptible(ca->slot_info[slot].wait_queue,
+  						  dvb_ca_en50221_io_read_condition
+  						  (ca, &result, &slot));
+  	}
++ 
+  	if ((status < 0) || (result < 0)) {
+  		if (result)
+  			return result;
+***************
+*** 1486,1492 ****
+  				}
+  
+  				if ((status = dvb_ringbuffer_pkt_read(&ca->slot_info[slot].rx_buffer, idx, 2,
+! 								      (u8 *)buf + pktlen, fraglen, 1)) < 0) {
+  					goto exit;
+  				}
+  				pktlen += fraglen;
+--- 1844,1850 ----
+  				}
+  
+  				if ((status = dvb_ringbuffer_pkt_read(&ca->slot_info[slot].rx_buffer, idx, 2,
+! 								      buf + pktlen, fraglen, 1)) < 0) {
+  					goto exit;
+  				}
+  				pktlen += fraglen;
+***************
+*** 1506,1515 ****
+--- 1864,1884 ----
+  
+  	hdr[0] = slot;
+  	hdr[1] = connection_id;
++ 
+  	if ((status = copy_to_user(buf, hdr, 2)) != 0)
+  		goto exit;
+  	status = pktlen;
+  
++ #if 0
++ 	//Dagobert write out the message so we can debug problems better
++ 	{
++ 	   int vLoop;
++ 	   for (vLoop = 0; vLoop < pktlen; vLoop++)
++ 	      dprintk("0x%02x ", hdr[vLoop]);
++ 	   dprintk("\n");
++         }
++ #endif
++ 
+  exit:
+  	return status;
+  }
+***************
+*** 1594,1608 ****
+   *
+   * @return Standard poll mask.
+   */
+  static unsigned int dvb_ca_en50221_io_poll(struct file *file, poll_table * wait)
+  {
+  	struct dvb_device *dvbdev = file->private_data;
+  	struct dvb_ca_private *ca = dvbdev->priv;
+  	unsigned int mask = 0;
+- 	int slot;
+  	int result = 0;
+  
+! 	dprintk("%s\n", __FUNCTION__);
+  
+  	if (dvb_ca_en50221_io_read_condition(ca, &result, &slot) == 1) {
+  		mask |= POLLIN;
+--- 1963,2098 ----
+   *
+   * @return Standard poll mask.
+   */
++ #define x_debug
+  static unsigned int dvb_ca_en50221_io_poll(struct file *file, poll_table * wait)
+  {
+  	struct dvb_device *dvbdev = file->private_data;
+  	struct dvb_ca_private *ca = dvbdev->priv;
+  	unsigned int mask = 0;
+  	int result = 0;
++ 	int slot;
++ 	/* Dagobert */
++ 	int ci_slot = -1;
+  
+! #ifdef x_debug
+! 	//dprintk("%s\n", __FUNCTION__);
+! #endif
+! 	/* Dagobert */
+!         if (dvbdev == ca->dvbdev_ci[0])
+! 		ci_slot = 0;
+! 	else
+!         if (dvbdev == ca->dvbdev_ci[1])
+! 		ci_slot = 1;
+! 
+! 	if (ci_slot != -1)
+! 	{
+! #ifdef x_debug
+! 		//dprintk("CI Slot = %d\n", ci_slot);
+! 		//dprintk("%d ", ci_slot);
+! #endif
+! 
+! 		/* get the desired slot from list and check for changed status
+! 		 * ->e2 seems to want this only on removal of module and on errors
+! 		 */
+! 		if (ca->slot_info[ci_slot].slot_state != ca->slot_states[ci_slot])
+! 		{
+! #ifdef x_debug
+! 			//dprintk("old %d, new %d (type %d)\n", ca->slot_states[ci_slot], ca->slot_info[ci_slot].slot_state, ca->slot_info[ci_slot].camchange_type);
+! #endif
+! 
+! 			ca->slot_states[ci_slot] = ca->slot_info[ci_slot].slot_state;
+! 
+! 			if (ca->slot_info[ci_slot].camchange_type == DVB_CA_EN50221_CAMCHANGE_REMOVED)
+! 			{
+! 			   mask |= POLLPRI;
+! #ifdef x_debug
+! 			   printk("return POLLPRI on slot %d ->removed\n", ci_slot);
+! #endif
+! 
+! 			   return mask;
+! 			} else
+! 			if (ca->slot_info[ci_slot].camchange_type == DVB_CA_EN50221_CAMCHANGE_INSERTED)
+! 			{
+! 			   if (ca->slot_info[ci_slot].slot_state == DVB_CA_SLOTSTATE_RUNNING)
+! 			   {
+! 			   	mask |= POLLPRI;
+! #ifdef x_debug
+! 			   printk("return POLLPRI on slot %d ->inserted\n", ci_slot);
+! #endif
+! 
+! 			   	return mask;
+! 			   }
+! 			}
+! 		}
+! 
+! 		mutex_lock(&ca->io_mutex);
+! 		if(ca->slot_info[ci_slot].camPollout)
+! 			mask |= POLLOUT;
+! 
+! 		if(ca->slot_info[ci_slot].camPollin)
+! 			mask |= POLLIN;
+! 
+! 		ca->slot_info[ci_slot].camPollin = 0;
+! 		ca->slot_info[ci_slot].camPollout = 0;
+! 		mutex_unlock(&ca->io_mutex);
+! 
+! 		if(mask != 0)
+! 		{
+! 			return mask;
+! 		}
+! 
+! 		/* wait for something to happen */
+! 		poll_wait(file, &ca->slot_info[ci_slot].wait_queue, wait);
+! 
+! 		/* get the desired slot from list and check for changed status
+! 		 * ->e2 seems to want this only on removal of module and on errors
+! 		 */
+! 		if (ca->slot_info[ci_slot].slot_state != ca->slot_states[ci_slot])
+! 		{
+! #ifdef x_debug
+! 			dprintk("old %d, new %d (type %d)\n", ca->slot_states[ci_slot], ca->slot_info[ci_slot].slot_state, ca->slot_info[ci_slot].camchange_type);
+! #endif
+! 
+! 			ca->slot_states[ci_slot] = ca->slot_info[ci_slot].slot_state;
+! 
+! 			if (ca->slot_info[ci_slot].camchange_type == DVB_CA_EN50221_CAMCHANGE_REMOVED)
+! 			{
+! 			   mask |= POLLPRI;
+! #ifdef x_debug
+! 			   printk("return POLLPRI on slot %d ->removed\n", ci_slot);
+! #endif
+! 
+! 			   return mask;
+! 			} else
+! 			if (ca->slot_info[ci_slot].camchange_type == DVB_CA_EN50221_CAMCHANGE_INSERTED)
+! 			{
+! 			   if (ca->slot_info[ci_slot].slot_state == DVB_CA_SLOTSTATE_RUNNING)
+! 			   {
+! 			   	mask |= POLLPRI;
+! #ifdef x_debug
+! 			   printk("return POLLPRI on slot %d ->inserted\n", ci_slot);
+! #endif
+! 
+! 			   	return mask;
+! 			   }
+! 			}
+! 		}
+! 
+! 		mutex_lock(&ca->io_mutex);
+! 		if(ca->slot_info[ci_slot].camPollout)
+! 			mask |= POLLOUT;
+! 
+! 		if(ca->slot_info[ci_slot].camPollin)
+! 			mask |= POLLIN;
+! 
+! 		ca->slot_info[ci_slot].camPollin = 0;
+! 		ca->slot_info[ci_slot].camPollout = 0;
+! 		mutex_unlock(&ca->io_mutex);
+! 
+! 		return mask;
+! 	}
+! 	
+! 	/* normal caN handling */
+  
+  	if (dvb_ca_en50221_io_read_condition(ca, &result, &slot) == 1) {
+  		mask |= POLLIN;
+***************
+*** 1642,1647 ****
+--- 2132,2359 ----
+  	.fops = &dvb_ca_fops,
+  };
+  
++ /* Dagobert */
++ static struct dvb_device dvbdev_ci[2] = {
++ {
++ 	.priv = NULL,
++ 	.users = 1,
++ 	.readers = 1,
++ 	.writers = 1,
++ 	.fops = &dvb_ca_fops,
++ },
++ {
++ 	.priv = NULL,
++ 	.users = 1,
++ 	.readers = 1,
++ 	.writers = 1,
++ 	.fops = &dvb_ca_fops,
++ }};
++ 
++ /* Dagobert proc */
++ #define stateValid 	"ignoreStateValidate"
++ #define configOption 	"ignoreConfigOption"
++ #define writeCamControl "ignoreWriteCamControl"
++ #define waitFree 	"ignoreWaitFree"
++ #define init 		"ignoreInit"
++ #define initTimeout     "initTimeout"
++ #define waitFreeTimeout "waitFreeTimeout"
++ #define cPollTime 	"pollTime"
++ 
++ void setValue(struct dvb_ca_slot * ci, char* str)
++ {
++ 	int value;
++ 
++ 	if (strncmp(str, stateValid, strlen(stateValid)) == 0)
++ 	{
++ 		sscanf(str + strlen(stateValid) + 1, "%d", &value);
++ 		printk("Set ignoreStateValidate to %d\n", value);
++ 		ci->ignoreStateValidate = value;
++ 	}
++ 	else
++ 	if (strncmp(str, configOption, strlen(configOption)) == 0)
++ 	{
++ 		sscanf(str + strlen(configOption) + 1, "%d", &value);
++ 		printk("Set ignoreConfigOption to %d\n", value);
++ 		ci->ignoreConfigOption = value;
++ 	}
++ 	else
++ 	if (strncmp(str, writeCamControl, strlen(writeCamControl)) == 0)
++ 	{
++ 		sscanf(str + strlen(writeCamControl) + 1, "%d", &value);
++ 		printk("Set ignoreWriteCamControl to %d\n", value);
++ 		ci->ignoreWriteCamControl = value;
++ 	}
++ 	else
++ 	if (strncmp(str, waitFree, strlen(waitFree)) == 0)
++ 	{
++ 		sscanf(str + strlen(waitFree) + 1, "%d", &value);
++ 		printk("Set ignoreWaitFree to %d\n", value);
++ 		ci->ignoreWaitFree = value;
++ 	}
++ 	else
++ 	if (strncmp(str, init, strlen(init)) == 0)
++ 	{
++ 		sscanf(str + strlen(init) + 1, "%d", &value);
++ 		printk("Set ignoreInit to %d\n", value);
++ 		ci->ignoreInit = value;
++ 	}
++ 	else
++ 	if (strncmp(str, initTimeout, strlen(initTimeout)) == 0)
++ 	{
++ 		sscanf(str + strlen(initTimeout) + 1, "%d", &value);
++ 		printk("Set initTimeout to %d\n", value);
++ 		INIT_TIMEOUT_SECS = value;
++ 	} else
++ 	if (strncmp(str, waitFreeTimeout, strlen(waitFreeTimeout)) == 0)
++ 	{
++ 		sscanf(str + strlen(waitFreeTimeout) + 1, "%d", &value);
++ 		printk("Set waitFreeTimeout to %d\n", value);
++ 		WAIT_FREE_TIMEOUT_SECS = value;
++ 	} else
++ 	if (strncmp(str, cPollTime, strlen(cPollTime)) == 0)
++ 	{
++ 		sscanf(str + strlen(cPollTime) + 1, "%d", &value);
++ 		printk("Set pollTime to %d\n", value);
++ 		ci->pollTime = value;
++ 	} else
++ 	  printk("not found\n");
++ }
++ 
++ char* strStatus(int state)
++ {
++ 	if (state == DVB_CA_SLOTSTATE_NONE)
++ 		return "NONE";
++ 	if (state == DVB_CA_SLOTSTATE_UNINITIALISED)
++ 		return "UNINITIALISED";
++ 	if (state == DVB_CA_SLOTSTATE_RUNNING)
++ 		return "RUNNING";
++ 	if (state == DVB_CA_SLOTSTATE_INVALID)
++ 		return "INVALID";
++ 	if (state == DVB_CA_SLOTSTATE_WAITREADY)
++ 		return "WAITREADY";
++ 	if (state == DVB_CA_SLOTSTATE_VALIDATE)
++ 		return "VALIDATE";
++ 	if (state == DVB_CA_SLOTSTATE_WAITFR)
++ 		return "WAITFR";
++ 	if (state == DVB_CA_SLOTSTATE_LINKINIT)
++ 		return "LINKINIT";
++ 	return "UNKNOWN";
++ }
++ 
++ int proc_ci0_read(char *page, char **start, off_t off, int count,int *eof, void *data_unused)
++ {
++ 	int len = 0;
++ 	printk("%s %d\n", __FUNCTION__, count);
++ 
++ 	len = sprintf(page, "ci0:\nCurrentStatus = %s\n\terrorWaitReady: %d\n\terrorStateValidate: %d\n\terrorConfigOption: %d\n\t\
++ errorWriteCamControl: %d\n\terrorWaitFree: %d\n\terrorInit: %d\n\terrorRxBuffer: %d\
++ \n\terrorLinkBufferSize: %d\n\terrorLinkBufferSizeToSmall: %d\n\terrorBufferEcount: %d\
++ \n\tignoreStateValidate: %d\n\tignoreConfigOption: %d\n\tignoreWriteCamControl: %d\
++ \n\tignoreWaitFree: %d\n\tignoreInit: %d\n\
++ \n\tinitTimeout (global): %d\n\twaitFreeTimeout (global): %d\n",
++ 			strStatus(ci0->slot_state),
++ 			ci0->errorWaitReady, ci0->errorStateValidate, ci0->errorConfigOption, ci0->errorWriteCamControl,
++ 			ci0->errorWaitFree, ci0->errorInit, ci0->errorRxBuffer,
++ 			ci0->errorLinkBufferSize, ci0->errorLinkBufferSizeToSmall, ci0->errorBufferEcount,
++ 			ci0->ignoreStateValidate, ci0->ignoreConfigOption, ci0->ignoreWriteCamControl,
++ 			ci0->ignoreWaitFree, ci0->ignoreInit,
++ 			INIT_TIMEOUT_SECS, WAIT_FREE_TIMEOUT_SECS);
++ 
++         return len;
++ }
++ 
++ int proc_ci0_write(struct file *file, const char __user *buf, unsigned long count, void *data)
++ {
++ 	char 		*page;
++ 	char		*myString;
++ 	ssize_t 	ret = -ENOMEM;
++ 
++ 	printk("%s %ld - ", __FUNCTION__, count);
++ 
++ 	page = (char *)__get_free_page(GFP_KERNEL);
++ 	if (page)
++ 	{
++ 		ret = -EFAULT;
++ 		if (copy_from_user(page, buf, count))
++ 			goto out;
++ 
++ 		myString = (char *) kmalloc(count + 1, GFP_KERNEL);
++ 
++ 		strncpy(myString, page, count);
++ 		myString[count] = '\0';
++ 
++ 		printk("%s\n", myString);
++ 
++ 		setValue(ci0, myString);
++ 
++ 		kfree(myString);
++ 	}
++ 
++ 	ret = count;
++ out:
++ 
++ 	free_page((unsigned long)page);
++ 	return ret;
++ 
++ }
++ 
++ int proc_ci1_read(char *page, char **start, off_t off, int count,int *eof, void *data_unused)
++ {
++ 	int len = 0;
++ 	printk("%s %d\n", __FUNCTION__, count);
++ 
++ 	len = sprintf(page, "ci1:\nCurrentStatus = %s\n\terrorWaitReady: %d\n\terrorStateValidate: %d\n\terrorConfigOption: %d\n\t\
++ errorWriteCamControl: %d\n\terrorWaitFree: %d\n\terrorInit: %d\n\terrorRxBuffer: %d\
++ \n\terrorLinkBufferSize: %d\n\terrorLinkBufferSizeToSmall: %d\n\terrorBufferEcount: %d\
++ \n\tignoreStateValidate: %d\n\tignoreConfigOption: %d\n\tignoreWriteCamControl: %d\
++ \n\tignoreWaitFree: %d\n\tignoreInit: %d\n\
++ \n\tinitTimeout (global): %d\n\twaitFreeTimeout (global): %d\n",
++ 			strStatus(ci1->slot_state),
++ 			ci1->errorWaitReady, ci1->errorStateValidate, ci1->errorConfigOption, ci1->errorWriteCamControl,
++ 			ci1->errorWaitFree, ci1->errorInit, ci1->errorRxBuffer,
++ 			ci1->errorLinkBufferSize, ci1->errorLinkBufferSizeToSmall, ci1->errorBufferEcount,
++ 			ci1->ignoreStateValidate, ci1->ignoreConfigOption, ci1->ignoreWriteCamControl,
++ 			ci1->ignoreWaitFree, ci1->ignoreInit,
++ 			INIT_TIMEOUT_SECS, WAIT_FREE_TIMEOUT_SECS);
++ 
++ 
++         return len;
++ }
++ 
++ int proc_ci1_write(struct file *file, const char __user *buf, unsigned long count, void *data)
++ {
++ 	char 		*page;
++ 	char		*myString;
++ 	ssize_t 	ret = -ENOMEM;
++ 
++ 	printk("%s %ld - ", __FUNCTION__, count);
++ 
++ 	page = (char *)__get_free_page(GFP_KERNEL);
++ 	if (page)
++ 	{
++ 		ret = -EFAULT;
++ 		if (copy_from_user(page, buf, count))
++ 			goto out;
++ 
++ 		myString = (char *) kmalloc(count + 1, GFP_KERNEL);
++ 
++ 		strncpy(myString, page, count);
++ 		myString[count] = '\0';
++ 
++ 		printk("%s\n", myString);
++ 
++ 		setValue(ci1, myString);
++ 
++ 		kfree(myString);
++ 	}
++ 
++ 	ret = count;
++ out:
++ 
++ 	free_page((unsigned long)page);
++ 	return ret;
++ 
++ }
+  
+  /* ******************************************************************************** */
+  /* Initialisation/shutdown functions */
+***************
+*** 1681,1686 ****
+--- 2393,2402 ----
+  		ret = -ENOMEM;
+  		goto error;
+  	}
++ 
++ 	/* dagobert */
++         mutex_init(&ca->io_mutex);
++ 
+  	init_waitqueue_head(&ca->wait_queue);
+  	ca->thread_pid = 0;
+  	init_waitqueue_head(&ca->thread_queue);
+***************
+*** 1695,1706 ****
+--- 2411,2456 ----
+  	if (ret)
+  		goto error;
+  
++ 	/* add proc entries for debug and for settings on different modules */
++ 	ci_dir = proc_mkdir("ci" ,  NULL);
++ 
+  	/* now initialise each slot */
+  	for (i = 0; i < slot_count; i++) {
+  		memset(&ca->slot_info[i], 0, sizeof(struct dvb_ca_slot));
++ 
++ 		init_waitqueue_head(&ca->slot_info[i].wait_queue);
+  		ca->slot_info[i].slot_state = DVB_CA_SLOTSTATE_NONE;
+  		atomic_set(&ca->slot_info[i].camchange_count, 0);
+  		ca->slot_info[i].camchange_type = DVB_CA_EN50221_CAMCHANGE_REMOVED;
++ 
++ 		/* Dagobert and add a ci device entry */
++ 	        ret = dvb_register_device(dvb_adapter, &ca->dvbdev_ci[i], &dvbdev_ci[i], ca, DVB_DEVICE_CI);
++ 		ca->slot_states[i] = DVB_CA_EN50221_CAMCHANGE_REMOVED;
++ 	        if (ret)
++ 		    printk("error creating ci device for slot %d\n", i);
++ 
++ 		//Dagobert: Hacky: dont know how to get data from proc read write functions so I share this here
++ 		//(maybe over kdev)?
++ 		if (i == 0)
++ 		{
++ 		   ca->slot_info[i].entry = create_proc_entry("ci0", 0, ci_dir);
++ 		   ci0 = &ca->slot_info[i];
++ 		   ci0->ignoreWaitFree = 1;
++ 		   ci0->pollTime = 100;
++ 		   ci0->waitWrite = 0;
++ 		   ca->slot_info[i].entry->read_proc = proc_ci0_read;
++ 		   ca->slot_info[i].entry->write_proc = proc_ci0_write;
++ 		} else
++ 		{
++ 		   ca->slot_info[i].entry = create_proc_entry("ci1", 0, ci_dir);
++ 		   ci1 = &ca->slot_info[i];
++ 		   ci1->ignoreWaitFree = 1;
++ 		   ci1->pollTime = 100;
++ 		   ci1->waitWrite = 0;
++ 		   ca->slot_info[i].entry->read_proc = proc_ci1_read;
++ 		   ca->slot_info[i].entry->write_proc = proc_ci1_write;
++ 
++ 		}
+  	}
+  
+  	if (signal_pending(current)) {
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_demux.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_demux.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_demux.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_demux.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 335,363 ****
+  }
+  
+  static inline void dvb_dmx_swfilter_packet_type(struct dvb_demux_feed *feed,
+! 						const u8 *buf)
+  {
+  	switch (feed->type) {
+  	case DMX_TYPE_TS:
+  		if (!feed->feed.ts.is_filtering)
+  			break;
+  		if (feed->ts_type & TS_PACKET) {
+  			if (feed->ts_type & TS_PAYLOAD_ONLY)
+! 				dvb_dmx_swfilter_payload(feed, buf);
+  			else
+! 				feed->cb.ts(buf, 188, NULL, 0, &feed->feed.ts,
+  					    DMX_OK);
+  		}
+  		if (feed->ts_type & TS_DECODER)
+  			if (feed->demux->write_to_decoder)
+! 				feed->demux->write_to_decoder(feed, buf, 188);
+  		break;
+  
+  	case DMX_TYPE_SEC:
+  		if (!feed->feed.sec.is_filtering)
+  			break;
+! 		if (dvb_dmx_swfilter_section_packet(feed, buf) < 0)
+  			feed->feed.sec.seclen = feed->feed.sec.secbufp = 0;
+  		break;
+  
+  	default:
+--- 335,378 ----
+  }
+  
+  static inline void dvb_dmx_swfilter_packet_type(struct dvb_demux_feed *feed,
+! 						const u8 *buf, int count)
+  {
++ 	int i = 0;
++ 
+  	switch (feed->type) {
+  	case DMX_TYPE_TS:
+  		if (!feed->feed.ts.is_filtering)
+  			break;
+  		if (feed->ts_type & TS_PACKET) {
+  			if (feed->ts_type & TS_PAYLOAD_ONLY)
+! 			{
+! 				/* TODO: pass data en bloc */
+! 				while(count > 0)
+! 				{
+! 				  dvb_dmx_swfilter_payload(feed, buf + i);
+! 				  i += 188;
+! 				  count -= 188;
+! 				}
+! 			}
+  			else
+! 				feed->cb.ts(buf, count, NULL, 0, &feed->feed.ts,
+  					    DMX_OK);
+  		}
+  		if (feed->ts_type & TS_DECODER)
+  			if (feed->demux->write_to_decoder)
+! 				feed->demux->write_to_decoder(feed, buf, count);
+  		break;
+  
+  	case DMX_TYPE_SEC:
+  		if (!feed->feed.sec.is_filtering)
+  			break;
+! 		while(count > 0)
+! 		{
+! 		  if (dvb_dmx_swfilter_section_packet(feed, buf + i) < 0)
+  			feed->feed.sec.seclen = feed->feed.sec.secbufp = 0;
++ 		  i += 188;
++ 		  count -= 188;
++ 		}
+  		break;
+  
+  	default:
+***************
+*** 370,376 ****
+  	((f)->feed.ts.is_filtering) &&					\
+  	(((f)->ts_type & (TS_PACKET|TS_PAYLOAD_ONLY)) == TS_PACKET))
+  
+! static void dvb_dmx_swfilter_packet(struct dvb_demux *demux, const u8 *buf)
+  {
+  	struct dvb_demux_feed *feed;
+  	struct list_head *pos, *head = &demux->feed_list;
+--- 385,391 ----
+  	((f)->feed.ts.is_filtering) &&					\
+  	(((f)->ts_type & (TS_PACKET|TS_PAYLOAD_ONLY)) == TS_PACKET))
+  
+! static void dvb_dmx_swfilter_packet(struct dvb_demux *demux, const u8 *buf, int count)
+  {
+  	struct dvb_demux_feed *feed;
+  	struct list_head *pos, *head = &demux->feed_list;
+***************
+*** 389,416 ****
+  			continue;
+  
+  		if (feed->pid == pid) {
+! 			dvb_dmx_swfilter_packet_type(feed, buf);
+  			if (DVR_FEED(feed))
+  				continue;
+  		}
+  
+  		if (feed->pid == 0x2000)
+! 			feed->cb.ts(buf, 188, NULL, 0, &feed->feed.ts, DMX_OK);
+  	}
+  }
+  
+  void dvb_dmx_swfilter_packets(struct dvb_demux *demux, const u8 *buf,
+  			      size_t count)
+  {
+! 	spin_lock(&demux->lock);
+! 
+! 	while (count--) {
+! 		if (buf[0] == 0x47)
+! 			dvb_dmx_swfilter_packet(demux, buf);
+! 		buf += 188;
+  	}
+  
+! 	spin_unlock(&demux->lock);
+  }
+  
+  EXPORT_SYMBOL(dvb_dmx_swfilter_packets);
+--- 404,450 ----
+  			continue;
+  
+  		if (feed->pid == pid) {
+! 			dvb_dmx_swfilter_packet_type(feed, buf, count);
+  			if (DVR_FEED(feed))
+  				continue;
+  		}
+  
+  		if (feed->pid == 0x2000)
+! 			feed->cb.ts(buf, count, NULL, 0, &feed->feed.ts, DMX_OK);
+  	}
+  }
+  
+  void dvb_dmx_swfilter_packets(struct dvb_demux *demux, const u8 *buf,
+  			      size_t count)
+  {
+! 	int first = 0;
+! 	int next = 0;
+! 	u16 pid, first_pid;
+! 	int done = 0;
+! //	spin_lock(&demux->lock);
+! 
+! 	while (count > 0) {
+! 		first = next;
+! 		first_pid = ts_pid(&buf[first]);
+! 		while(count > 0)
+! 		{
+! 			count--;
+! 			next += 188;
+! 			done++;
+! 			pid = ts_pid(&buf[next]);
+! 			if((buf[next] != 0x47) || (pid != first_pid) || (done > 8))
+! 			  break;
+! 		}
+! 		done = 0;
+! 		if((buf[first] == 0x47) && ((next - first) > 0))
+! 		{
+! 		      spin_lock(&demux->lock);
+! 		      dvb_dmx_swfilter_packet(demux, buf + first, next - first);
+! 		      spin_unlock(&demux->lock);
+! 		}
+  	}
+  
+! //	spin_unlock(&demux->lock);
+  }
+  
+  EXPORT_SYMBOL(dvb_dmx_swfilter_packets);
+***************
+*** 431,437 ****
+  		}
+  		memcpy(&demux->tsbuf[i], buf, j);
+  		if (demux->tsbuf[0] == 0x47)
+! 			dvb_dmx_swfilter_packet(demux, demux->tsbuf);
+  		demux->tsbufp = 0;
+  		p += j;
+  	}
+--- 465,471 ----
+  		}
+  		memcpy(&demux->tsbuf[i], buf, j);
+  		if (demux->tsbuf[0] == 0x47)
+! 			dvb_dmx_swfilter_packet(demux, demux->tsbuf, 188);
+  		demux->tsbufp = 0;
+  		p += j;
+  	}
+***************
+*** 439,445 ****
+  	while (p < count) {
+  		if (buf[p] == 0x47) {
+  			if (count - p >= 188) {
+! 				dvb_dmx_swfilter_packet(demux, &buf[p]);
+  				p += 188;
+  			} else {
+  				i = count - p;
+--- 473,479 ----
+  	while (p < count) {
+  		if (buf[p] == 0x47) {
+  			if (count - p >= 188) {
+! 				dvb_dmx_swfilter_packet(demux, &buf[p], 188);
+  				p += 188;
+  			} else {
+  				i = count - p;
+***************
+*** 477,483 ****
+  			memcpy(tmppack, demux->tsbuf, 188);
+  			if (tmppack[0] == 0xB8)
+  				tmppack[0] = 0x47;
+! 			dvb_dmx_swfilter_packet(demux, tmppack);
+  		}
+  		demux->tsbufp = 0;
+  		p += j;
+--- 511,517 ----
+  			memcpy(tmppack, demux->tsbuf, 188);
+  			if (tmppack[0] == 0xB8)
+  				tmppack[0] = 0x47;
+! 			dvb_dmx_swfilter_packet(demux, tmppack, 188);
+  		}
+  		demux->tsbufp = 0;
+  		p += j;
+***************
+*** 489,495 ****
+  				memcpy(tmppack, &buf[p], 188);
+  				if (tmppack[0] == 0xB8)
+  					tmppack[0] = 0x47;
+! 				dvb_dmx_swfilter_packet(demux, tmppack);
+  				p += 204;
+  			} else {
+  				i = count - p;
+--- 523,529 ----
+  				memcpy(tmppack, &buf[p], 188);
+  				if (tmppack[0] == 0xB8)
+  					tmppack[0] = 0x47;
+! 				dvb_dmx_swfilter_packet(demux, tmppack, 188);
+  				p += 204;
+  			} else {
+  				i = count - p;
+***************
+*** 1068,1074 ****
+  
+  	if (mutex_lock_interruptible(&dvbdemux->mutex))
+  		return -ERESTARTSYS;
+! 	dvb_dmx_swfilter(dvbdemux, (u8 *)buf, count);
+  	mutex_unlock(&dvbdemux->mutex);
+  
+  	if (signal_pending(current))
+--- 1102,1108 ----
+  
+  	if (mutex_lock_interruptible(&dvbdemux->mutex))
+  		return -ERESTARTSYS;
+! 	dvb_dmx_swfilter(dvbdemux, buf, count);
+  	mutex_unlock(&dvbdemux->mutex);
+  
+  	if (signal_pending(current))
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_demux.h UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_demux.h
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_demux.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_demux.h	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 26,32 ****
+--- 26,35 ----
+  #include <linux/time.h>
+  #include <linux/timer.h>
+  #include <linux/spinlock.h>
++ #include "compat.h"
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  #include <linux/mutex.h>
++ #endif
+  
+  #include "demux.h"
+  
+***************
+*** 125,131 ****
+--- 128,138 ----
+  	u8 tsbuf[204];
+  	int tsbufp;
+  
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  	struct mutex mutex;
++ #else
++ 	struct semaphore mutex;
++ #endif
+  	spinlock_t lock;
+  };
+  
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvbdev.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvbdev.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dvbdev.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvbdev.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 32,38 ****
+--- 32,41 ----
+  #include <linux/device.h>
+  #include <linux/fs.h>
+  #include <linux/cdev.h>
++ #include "compat.h"
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  #include <linux/mutex.h>
++ #endif
+  #include "dvbdev.h"
+  
+  static int dvbdev_debug;
+***************
+*** 45,53 ****
+  static LIST_HEAD(dvb_adapter_list);
+  static DEFINE_MUTEX(dvbdev_register_lock);
+  
+  static const char * const dnames[] = {
+  	"video", "audio", "sec", "frontend", "demux", "dvr", "ca",
+! 	"net", "osd"
+  };
+  
+  #define DVB_MAX_ADAPTERS	8
+--- 48,57 ----
+  static LIST_HEAD(dvb_adapter_list);
+  static DEFINE_MUTEX(dvbdev_register_lock);
+  
++ /* Dagobert: Add ci */
+  static const char * const dnames[] = {
+  	"video", "audio", "sec", "frontend", "demux", "dvr", "ca",
+! 	"net", "osd", "ci"
+  };
+  
+  #define DVB_MAX_ADAPTERS	8
+***************
+*** 55,61 ****
+--- 59,69 ----
+  #define nums2minor(num,type,id)	((num << 6) | (id << 4) | type)
+  #define MAX_DVB_MINORS		(DVB_MAX_ADAPTERS*64)
+  
++ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
+  static struct class *dvb_class;
++ #else
++ static struct class_simple *dvb_class;
++ #endif
+  
+  static struct dvb_device* dvbdev_find_device (int minor)
+  {
+***************
+*** 85,91 ****
+--- 93,103 ----
+  
+  	if (dvbdev && dvbdev->fops) {
+  		int err = 0;
++ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
+  		const struct file_operations *old_fops;
++ #else
++ 		struct file_operations *old_fops;
++ #endif
+  
+  		file->private_data = dvbdev;
+  		old_fops = file->f_op;
+***************
+*** 200,206 ****
+  {
+  	struct dvb_device *dvbdev;
+  	struct file_operations *dvbdevfops;
+! 	struct class_device *clsdev;
+  	int id;
+  
+  	mutex_lock(&dvbdev_register_lock);
+--- 212,218 ----
+  {
+  	struct dvb_device *dvbdev;
+  	struct file_operations *dvbdevfops;
+! 
+  	int id;
+  
+  	mutex_lock(&dvbdev_register_lock);
+***************
+*** 208,214 ****
+  	if ((id = dvbdev_get_free_id (adap, type)) < 0){
+  		mutex_unlock(&dvbdev_register_lock);
+  		*pdvbdev = NULL;
+! 		printk(KERN_ERR "%s: couldn't find free device id\n", __FUNCTION__);
+  		return -ENFILE;
+  	}
+  
+--- 220,226 ----
+  	if ((id = dvbdev_get_free_id (adap, type)) < 0){
+  		mutex_unlock(&dvbdev_register_lock);
+  		*pdvbdev = NULL;
+! 		printk ("%s: could get find free device id...\n", __FUNCTION__);
+  		return -ENFILE;
+  	}
+  
+***************
+*** 233,239 ****
+  	dvbdev->adapter = adap;
+  	dvbdev->priv = priv;
+  	dvbdev->fops = dvbdevfops;
+- 	init_waitqueue_head (&dvbdev->wait_queue);
+  
+  	memcpy(dvbdev->fops, template->fops, sizeof(struct file_operations));
+  	dvbdev->fops->owner = adap->module;
+--- 245,250 ----
+***************
+*** 242,258 ****
+  
+  	mutex_unlock(&dvbdev_register_lock);
+  
+! 	clsdev = class_device_create(dvb_class, NULL, MKDEV(DVB_MAJOR,
+! 				     nums2minor(adap->num, type, id)),
+! 				     adap->device, "dvb%d.%s%d", adap->num,
+! 				     dnames[type], id);
+! 	if (IS_ERR(clsdev)) {
+! 		printk(KERN_ERR "%s: failed to create device dvb%d.%s%d (%ld)\n",
+! 		       __FUNCTION__, adap->num, dnames[type], id, PTR_ERR(clsdev));
+! 		return PTR_ERR(clsdev);
+! 	}
+  
+! 	dprintk(KERN_DEBUG "DVB: register adapter%d/%s%d @ minor: %i (0x%02x)\n",
+  		adap->num, dnames[type], id, nums2minor(adap->num, type, id),
+  		nums2minor(adap->num, type, id));
+  
+--- 253,262 ----
+  
+  	mutex_unlock(&dvbdev_register_lock);
+  
+! 	class_device_create(dvb_class, NULL, MKDEV(DVB_MAJOR, nums2minor(adap->num, type, id)),
+! 			    adap->device, "dvb%d.%s%d", adap->num, dnames[type], id);
+  
+! 	printk("DVB: register adapter%d/%s%d @ minor: %i (0x%02x)\n",
+  		adap->num, dnames[type], id, nums2minor(adap->num, type, id),
+  		nums2minor(adap->num, type, id));
+  
+***************
+*** 311,317 ****
+  	memset (adap, 0, sizeof(struct dvb_adapter));
+  	INIT_LIST_HEAD (&adap->device_list);
+  
+! 	printk(KERN_INFO "DVB: registering new adapter (%s)\n", name);
+  
+  	adap->num = num;
+  	adap->name = name;
+--- 315,321 ----
+  	memset (adap, 0, sizeof(struct dvb_adapter));
+  	INIT_LIST_HEAD (&adap->device_list);
+  
+! 	printk ("DVB: registering new adapter (%s).\n", name);
+  
+  	adap->num = num;
+  	adap->name = name;
+***************
+*** 407,419 ****
+  	dev_t dev = MKDEV(DVB_MAJOR, 0);
+  
+  	if ((retval = register_chrdev_region(dev, MAX_DVB_MINORS, "DVB")) != 0) {
+! 		printk(KERN_ERR "dvb-core: unable to get major %d\n", DVB_MAJOR);
+  		return retval;
+  	}
+  
+  	cdev_init(&dvb_device_cdev, &dvb_device_fops);
+  	if ((retval = cdev_add(&dvb_device_cdev, dev, MAX_DVB_MINORS)) != 0) {
+! 		printk(KERN_ERR "dvb-core: unable register character device\n");
+  		goto error;
+  	}
+  
+--- 411,423 ----
+  	dev_t dev = MKDEV(DVB_MAJOR, 0);
+  
+  	if ((retval = register_chrdev_region(dev, MAX_DVB_MINORS, "DVB")) != 0) {
+! 		printk("dvb-core: unable to get major %d\n", DVB_MAJOR);
+  		return retval;
+  	}
+  
+  	cdev_init(&dvb_device_cdev, &dvb_device_fops);
+  	if ((retval = cdev_add(&dvb_device_cdev, dev, MAX_DVB_MINORS)) != 0) {
+! 		printk("dvb-core: unable to get major %d\n", DVB_MAJOR);
+  		goto error;
+  	}
+  
+***************
+*** 438,444 ****
+  	unregister_chrdev_region(MKDEV(DVB_MAJOR, 0), MAX_DVB_MINORS);
+  }
+  
+! subsys_initcall(init_dvbdev);
+  module_exit(exit_dvbdev);
+  
+  MODULE_DESCRIPTION("DVB Core Driver");
+--- 442,448 ----
+  	unregister_chrdev_region(MKDEV(DVB_MAJOR, 0), MAX_DVB_MINORS);
+  }
+  
+! module_init(init_dvbdev);
+  module_exit(exit_dvbdev);
+  
+  MODULE_DESCRIPTION("DVB Core Driver");
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvbdev.h UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvbdev.h
+*** linux-sh4/drivers/media/dvb/dvb-core/dvbdev.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvbdev.h	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 28,33 ****
+--- 28,34 ----
+  #include <linux/fs.h>
+  #include <linux/list.h>
+  #include <linux/smp_lock.h>
++ #include "compat.h"
+  
+  #define DVB_MAJOR 212
+  
+***************
+*** 40,45 ****
+--- 41,48 ----
+  #define DVB_DEVICE_CA         6
+  #define DVB_DEVICE_NET        7
+  #define DVB_DEVICE_OSD        8
++ /* Dagobert: Add ci */
++ #define DVB_DEVICE_CI         9
+  
+  
+  struct dvb_adapter {
+***************
+*** 69,75 ****
+  	int writers;
+  	int users;
+  
+- 	wait_queue_head_t	  wait_queue;
+  	/* don't really need those !? -- FIXME: use video_usercopy  */
+  	int (*kernel_ioctl)(struct inode *inode, struct file *file,
+  			    unsigned int cmd, void *arg);
+--- 72,77 ----
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_filter.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_filter.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_filter.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_filter.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 3,9 ****
+  #include <linux/string.h>
+  #include "dvb_filter.h"
+  
+! #if 0
+  static unsigned int bitrates[3][16] =
+  {{0,32,64,96,128,160,192,224,256,288,320,352,384,416,448,0},
+   {0,32,48,56,64,80,96,112,128,160,192,224,256,320,384,0},
+--- 3,9 ----
+  #include <linux/string.h>
+  #include "dvb_filter.h"
+  
+! #if 0 /* keep */
+  static unsigned int bitrates[3][16] =
+  {{0,32,64,96,128,160,192,224,256,288,320,352,384,416,448,0},
+   {0,32,48,56,64,80,96,112,128,160,192,224,256,320,384,0},
+***************
+*** 26,32 ****
+  
+  
+  
+! #if 0
+  static void setup_ts2pes(ipack *pa, ipack *pv, u16 *pida, u16 *pidv,
+  		  void (*pes_write)(u8 *buf, int count, void *data),
+  		  void *priv)
+--- 26,32 ----
+  
+  
+  
+! #if 0 /* keep */
+  static void setup_ts2pes(ipack *pa, ipack *pv, u16 *pida, u16 *pidv,
+  		  void (*pes_write)(u8 *buf, int count, void *data),
+  		  void *priv)
+***************
+*** 40,46 ****
+  }
+  #endif
+  
+! #if 0
+  static void ts_to_pes(ipack *p, u8 *buf) // don't need count (=188)
+  {
+  	u8 off = 0;
+--- 40,46 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  static void ts_to_pes(ipack *p, u8 *buf) // don't need count (=188)
+  {
+  	u8 off = 0;
+***************
+*** 65,71 ****
+  }
+  #endif
+  
+! #if 0
+  /* needs 5 byte input, returns picture coding type*/
+  static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, int pr)
+  {
+--- 65,71 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  /* needs 5 byte input, returns picture coding type*/
+  static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, int pr)
+  {
+***************
+*** 111,117 ****
+  }
+  #endif
+  
+! #if 0
+  /* needs 4 byte input */
+  static int read_gop_header(u8 *headr, struct mpg_picture *pic, int pr)
+  {
+--- 111,117 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  /* needs 4 byte input */
+  static int read_gop_header(u8 *headr, struct mpg_picture *pic, int pr)
+  {
+***************
+*** 142,148 ****
+  }
+  #endif
+  
+! #if 0
+  /* needs 8 byte input */
+  static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
+  {
+--- 142,148 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  /* needs 8 byte input */
+  static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
+  {
+***************
+*** 257,263 ****
+  #endif
+  
+  
+! #if 0
+  static int get_vinfo(u8 *mbuf, int count, struct dvb_video_info *vi, int pr)
+  {
+  	u8 *headr;
+--- 257,263 ----
+  #endif
+  
+  
+! #if 0 /* keep */
+  static int get_vinfo(u8 *mbuf, int count, struct dvb_video_info *vi, int pr)
+  {
+  	u8 *headr;
+***************
+*** 286,292 ****
+  #endif
+  
+  
+! #if 0
+  static int get_ainfo(u8 *mbuf, int count, struct dvb_audio_info *ai, int pr)
+  {
+  	u8 *headr;
+--- 286,292 ----
+  #endif
+  
+  
+! #if 0 /* keep */
+  static int get_ainfo(u8 *mbuf, int count, struct dvb_audio_info *ai, int pr)
+  {
+  	u8 *headr;
+***************
+*** 393,399 ****
+  EXPORT_SYMBOL(dvb_filter_get_ac3info);
+  
+  
+! #if 0
+  static u8 *skip_pes_header(u8 **bufp)
+  {
+  	u8 *inbuf = *bufp;
+--- 393,399 ----
+  EXPORT_SYMBOL(dvb_filter_get_ac3info);
+  
+  
+! #if 0 /* keep */
+  static u8 *skip_pes_header(u8 **bufp)
+  {
+  	u8 *inbuf = *bufp;
+***************
+*** 431,437 ****
+  }
+  #endif
+  
+! #if 0
+  static void initialize_quant_matrix( u32 *matrix )
+  {
+  	int i;
+--- 431,437 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  static void initialize_quant_matrix( u32 *matrix )
+  {
+  	int i;
+***************
+*** 458,464 ****
+  }
+  #endif
+  
+! #if 0
+  static void initialize_mpg_picture(struct mpg_picture *pic)
+  {
+  	int i;
+--- 458,464 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  static void initialize_mpg_picture(struct mpg_picture *pic)
+  {
+  	int i;
+***************
+*** 485,491 ****
+  }
+  #endif
+  
+! #if 0
+  static void mpg_set_picture_parameter( int32_t field_type, struct mpg_picture *pic )
+  {
+  	int16_t last_h_offset;
+--- 485,491 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  static void mpg_set_picture_parameter( int32_t field_type, struct mpg_picture *pic )
+  {
+  	int16_t last_h_offset;
+***************
+*** 523,529 ****
+  }
+  #endif
+  
+! #if 0
+  static void init_mpg_picture( struct mpg_picture *pic, int chan, int32_t field_type)
+  {
+  	pic->picture_header = 0;
+--- 523,529 ----
+  }
+  #endif
+  
+! #if 0 /* keep */
+  static void init_mpg_picture( struct mpg_picture *pic, int chan, int32_t field_type)
+  {
+  	pic->picture_header = 0;
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_frontend.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_frontend.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_frontend.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_frontend.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 9,14 ****
+--- 9,17 ----
+   *
+   * Copyright (C) 2004 Andrew de Quincey (tuning thread cleanup)
+   *
++  * Multi protocol support and backward compatibility
++  * Copyright (C) 2007 Manu Abraham
++  *
+   * This program is free software; you can redistribute it and/or
+   * modify it under the terms of the GNU General Public License
+   * as published by the Free Software Foundation; either version 2
+***************
+*** 34,40 ****
+--- 37,48 ----
+  #include <linux/module.h>
+  #include <linux/moduleparam.h>
+  #include <linux/list.h>
++ #include "compat.h"
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
++ #include <linux/suspend.h>
++ #else
+  #include <linux/freezer.h>
++ #endif
+  #include <linux/jiffies.h>
+  #include <linux/kthread.h>
+  #include <asm/processor.h>
+***************
+*** 96,102 ****
+--- 104,115 ----
+  
+  	/* thread/frontend values */
+  	struct dvb_device *dvbdev;
++ 	/* Legacy datatype, superseded by dvbfe_params		*/
+  	struct dvb_frontend_parameters parameters;
++ 	/* dvbfe_params supersedes dvb_frontend_parameters	*/
++ 	struct dvbfe_params	fe_params;
++ 	struct dvbfe_info	fe_info;
++ 
+  	struct dvb_fe_events events;
+  	struct semaphore sem;
+  	struct list_head list_head;
+***************
+*** 125,134 ****
+--- 138,581 ----
+  	unsigned int step_size;
+  	int quality;
+  	unsigned int check_wrapped;
++ 
++ 	enum dvbfe_search	algo_status;
+  };
+  
+  static void dvb_frontend_wakeup(struct dvb_frontend *fe);
+  
++ struct modcod_table {
++ 	u32 dvbfe_modcod;
++ 	u32 dvbfe_modulation;
++ 	u32 dvbfe_fec;
++ };
++ 
++ static struct modcod_table dvbs2_modcod_lookup[] = {
++ 	{ DVBFE_MODCOD_DUMMY_PLFRAME,	DVBFE_MOD_NONE,		DVBFE_FEC_NONE    },
++ 	{ DVBFE_MODCOD_QPSK_1_4,	DVBFE_MOD_QPSK,		DVBFE_FEC_1_4	  },
++ 	{ DVBFE_MODCOD_QPSK_1_3,	DVBFE_MOD_QPSK,		DVBFE_FEC_1_3	  },
++ 	{ DVBFE_MODCOD_QPSK_2_5,	DVBFE_MOD_QPSK,		DVBFE_FEC_2_5	  },
++ 	{ DVBFE_MODCOD_QPSK_1_2,	DVBFE_MOD_QPSK,		DVBFE_FEC_1_2	  },
++ 	{ DVBFE_MODCOD_QPSK_3_5,	DVBFE_MOD_QPSK,		DVBFE_FEC_3_5	  },
++ 	{ DVBFE_MODCOD_QPSK_2_3,	DVBFE_MOD_QPSK,		DVBFE_FEC_2_3	  },
++ 	{ DVBFE_MODCOD_QPSK_3_4,	DVBFE_MOD_QPSK,		DVBFE_FEC_3_4	  },
++ 	{ DVBFE_MODCOD_QPSK_4_5,	DVBFE_MOD_QPSK,		DVBFE_FEC_4_5	  },
++ 	{ DVBFE_MODCOD_QPSK_5_6,	DVBFE_MOD_QPSK,		DVBFE_FEC_5_6	  },
++ 	{ DVBFE_MODCOD_QPSK_8_9,	DVBFE_MOD_QPSK,		DVBFE_FEC_8_9	  },
++ 	{ DVBFE_MODCOD_QPSK_9_10,	DVBFE_MOD_QPSK,		DVBFE_FEC_9_10	  },
++ 	{ DVBFE_MODCOD_8PSK_3_5,	DVBFE_MOD_8PSK,		DVBFE_FEC_3_5	  },
++ 	{ DVBFE_MODCOD_8PSK_2_3,	DVBFE_MOD_8PSK,		DVBFE_FEC_2_3	  },
++ 	{ DVBFE_MODCOD_8PSK_3_4,	DVBFE_MOD_8PSK,		DVBFE_FEC_3_4	  },
++ 	{ DVBFE_MODCOD_8PSK_5_6,	DVBFE_MOD_8PSK,		DVBFE_FEC_5_6	  },
++ 	{ DVBFE_MODCOD_8PSK_8_9,	DVBFE_MOD_8PSK,		DVBFE_FEC_8_9	  },
++ 	{ DVBFE_MODCOD_8PSK_9_10,	DVBFE_MOD_8PSK,		DVBFE_FEC_9_10	  },
++ 	{ DVBFE_MODCOD_16APSK_2_3,	DVBFE_MOD_16APSK,	DVBFE_FEC_2_3	  },
++ 	{ DVBFE_MODCOD_16APSK_3_4,	DVBFE_MOD_16APSK,	DVBFE_FEC_3_4	  },
++ 	{ DVBFE_MODCOD_16APSK_4_5,	DVBFE_MOD_16APSK,	DVBFE_FEC_4_5	  },
++ 	{ DVBFE_MODCOD_16APSK_5_6,	DVBFE_MOD_16APSK,	DVBFE_FEC_5_6	  },
++ 	{ DVBFE_MODCOD_16APSK_8_9,	DVBFE_MOD_16APSK,	DVBFE_FEC_8_9	  },
++ 	{ DVBFE_MODCOD_16APSK_9_10,	DVBFE_MOD_16APSK,	DVBFE_FEC_9_10	  },
++ 	{ DVBFE_MODCOD_32APSK_3_4,	DVBFE_MOD_32APSK,	DVBFE_FEC_3_4	  },
++ 	{ DVBFE_MODCOD_32APSK_4_5,	DVBFE_MOD_32APSK,	DVBFE_FEC_4_5	  },
++ 	{ DVBFE_MODCOD_32APSK_5_6,	DVBFE_MOD_32APSK,	DVBFE_FEC_5_6	  },
++ 	{ DVBFE_MODCOD_32APSK_8_9,	DVBFE_MOD_32APSK,	DVBFE_FEC_8_9	  },
++ 	{ DVBFE_MODCOD_32APSK_9_10,	DVBFE_MOD_32APSK,	DVBFE_FEC_9_10	  },
++ 	{ DVBFE_MODCOD_RESERVED_1,	DVBFE_MOD_NONE,		DVBFE_FEC_NONE	  },
++ 	{ DVBFE_MODCOD_BPSK_1_3,	DVBFE_MOD_BPSK,		DVBFE_FEC_1_3	  },
++ 	{ DVBFE_MODCOD_BPSK_1_4,	DVBFE_MOD_BPSK,		DVBFE_FEC_1_4	  },
++ 	{ DVBFE_MODCOD_RESERVED_2,	DVBFE_MOD_NONE,		DVBFE_FEC_NONE    }
++ };
++ 
++ void decode_dvbs2_modcod(u32 dvbfe_modcod,
++ 			 enum dvbfe_modulation *modulation,
++ 			 enum dvbfe_fec *fec)
++ {
++ 	BUG_ON(dvbfe_modcod >= ARRAY_SIZE(dvbs2_modcod_lookup));
++ 	*modulation = dvbs2_modcod_lookup[dvbfe_modcod].dvbfe_modulation;
++ 	*fec = dvbs2_modcod_lookup[dvbfe_modcod].dvbfe_fec;
++ }
++ EXPORT_SYMBOL(decode_dvbs2_modcod);
++ 
++ static int newfec_to_oldfec(enum dvbfe_fec new_fec, enum fe_code_rate *old_fec)
++ {
++ 	switch (new_fec) {
++ 	case DVBFE_FEC_NONE:
++ 		*old_fec = FEC_NONE;
++ 		break;
++ 	case DVBFE_FEC_1_2:
++ 		*old_fec = FEC_1_2;
++ 		break;
++ 	case DVBFE_FEC_2_3:
++ 		*old_fec = FEC_2_3;
++ 		break;
++ 	case DVBFE_FEC_3_4:
++ 		*old_fec = FEC_3_4;
++ 		break;
++ 	case DVBFE_FEC_4_5:
++ 		*old_fec = FEC_4_5;
++ 		break;
++ 	case DVBFE_FEC_5_6:
++ 		*old_fec = FEC_5_6;
++ 		break;
++ 	case DVBFE_FEC_6_7:
++ 		*old_fec = FEC_6_7;
++ 		break;
++ 	case DVBFE_FEC_7_8:
++ 		*old_fec = FEC_7_8;
++ 		break;
++ 	case DVBFE_FEC_8_9:
++ 		*old_fec = FEC_8_9;
++ 		break;
++ 	case DVBFE_FEC_AUTO:
++ 		*old_fec = FEC_AUTO;
++ 		break;
++ 	default:
++ 		printk("%s: Unsupported FEC\n", __func__);
++ 		return -EINVAL;
++ 	}
++ 
++ 	return 0;
++ }
++ 
++ static int oldfec_to_newfec(enum fe_code_rate old_fec, enum dvbfe_fec *new_fec)
++ {
++ 	switch (old_fec) {
++ 	case FEC_NONE:
++ 		*new_fec = DVBFE_FEC_NONE;
++ 		break;
++ 	case FEC_1_2:
++ 		*new_fec = DVBFE_FEC_1_2;
++ 		break;
++ 	case FEC_2_3:
++ 		*new_fec = DVBFE_FEC_2_3;
++ 		break;
++ 	case FEC_3_4:
++ 		*new_fec = DVBFE_FEC_3_4;
++ 		break;
++ 	case FEC_4_5:
++ 		*new_fec = DVBFE_FEC_4_5;
++ 		break;
++ 	case FEC_5_6:
++ 		*new_fec = DVBFE_FEC_5_6;
++ 		break;
++ 	case FEC_6_7:
++ 		*new_fec = DVBFE_FEC_6_7;
++ 		break;
++ 	case FEC_7_8:
++ 		*new_fec = DVBFE_FEC_7_8;
++ 		break;
++ 	case FEC_8_9:
++ 		*new_fec = DVBFE_FEC_8_9;
++ 		break;
++ 	case FEC_AUTO:
++ 		*new_fec = DVBFE_FEC_AUTO;
++ 		break;
++ 	default:
++ 		printk("%s: Unsupported FEC\n", __func__);
++ 		return -EINVAL;
++ 	}
++ 
++ 	return 0;
++ }
++ 
++ static int newmod_to_oldmod(enum dvbfe_modulation new_mod, enum fe_modulation *old_mod)
++ {
++ 	switch (new_mod) {
++ 	case DVBFE_MOD_QPSK:
++ 		*old_mod = QPSK;
++ 		break;
++ 	case DVBFE_MOD_QAM16:
++ 		*old_mod = QAM_16;
++ 		break;
++ 	case DVBFE_MOD_QAM32:
++ 		*old_mod = QAM_32;
++ 		break;
++ 	case DVBFE_MOD_QAM64:
++ 		*old_mod = QAM_64;
++ 		break;
++ 	case DVBFE_MOD_QAM128:
++ 		*old_mod = QAM_128;
++ 		break;
++ 	case DVBFE_MOD_QAM256:
++ 		*old_mod = QAM_256;
++ 		break;
++ 	case DVBFE_MOD_QAMAUTO:
++ 		*old_mod = QAM_AUTO;
++ 		break;
++ 	case DVBFE_MOD_VSB8:
++ 		*old_mod = VSB_8;
++ 		break;
++ 	case DVBFE_MOD_VSB16:
++ 		*old_mod = VSB_16;
++ 		break;
++ 	default:
++ 		printk("%s: Unsupported Modulation\n", __func__);
++ 		return -EINVAL;
++ 	}
++ 
++ 	return 0;
++ }
++ 
++ static int oldmod_to_newmod(enum fe_modulation old_mod, enum dvbfe_modulation *new_mod)
++ {
++ 	switch (old_mod) {
++ 	case QPSK:
++ 		*new_mod = DVBFE_MOD_QPSK;
++ 		break;
++ 	case QAM_16:
++ 		*new_mod = DVBFE_MOD_QAM16;
++ 		break;
++ 	case QAM_32:
++ 		*new_mod = DVBFE_MOD_QAM32;
++ 		break;
++ 	case QAM_64:
++ 		*new_mod = DVBFE_MOD_QAM64;
++ 		break;
++ 	case QAM_128:
++ 		*new_mod = DVBFE_MOD_QAM128;
++ 		break;
++ 	case QAM_256:
++ 		*new_mod = DVBFE_MOD_QAM256;
++ 		break;
++ 	case QAM_AUTO:
++ 		*new_mod = DVBFE_MOD_AUTO;
++ 		break;
++ 	case VSB_8:
++ 		*new_mod = DVBFE_MOD_VSB8;
++ 		break;
++ 	case VSB_16:
++ 		*new_mod = DVBFE_MOD_VSB16;
++ 		break;
++ 	default:
++ 		printk("%s: Unsupported Modulation\n", __func__);
++ 		return -EINVAL;
++ 	}
++ 
++ 	return 0;
++ }
++ 
++ int newapi_to_olddrv(struct dvbfe_params *params,
++ 		     struct dvb_frontend_parameters *p,
++ 		     enum dvbfe_delsys delsys)
++ {
++ 	struct dvb_qpsk_parameters	*qpsk	= &p->u.qpsk;
++ 	struct dvb_qam_parameters	*qam	= &p->u.qam;
++ 	struct dvb_ofdm_parameters	*ofdm	= &p->u.ofdm;
++ 	struct dvb_vsb_parameters	*vsb	= &p->u.vsb;
++ 
++ 	struct dvbs_params		*dvbs	= &params->delsys.dvbs;
++ 	struct dvbc_params		*dvbc	= &params->delsys.dvbc;
++ 	struct dvbt_params		*dvbt	= &params->delsys.dvbt;
++ 	struct atsc_params		*atsc	= &params->delsys.atsc;
++ 
++ 	p->frequency = params->frequency;
++ 	p->inversion = params->inversion;
++ 
++ 	switch (delsys) {
++ 	case DVBFE_DELSYS_DVBS:
++ 		qpsk->symbol_rate		= dvbs->symbol_rate;
++ 		newfec_to_oldfec(dvbs->fec, &qpsk->fec_inner);
++ 		break;
++ 	case DVBFE_DELSYS_DVBC:
++ 		qam->symbol_rate		= dvbc->symbol_rate;
++ 		newmod_to_oldmod(dvbc->modulation, &qam->modulation);
++ 		newfec_to_oldfec(dvbc->fec, &qam->fec_inner);
++ 		break;
++ 	case DVBFE_DELSYS_DVBT:
++ 		switch (dvbt->bandwidth) {
++ 		case DVBFE_BANDWIDTH_8_MHZ:
++ 			ofdm->bandwidth		= BANDWIDTH_8_MHZ;
++ 			break;
++ 		case DVBFE_BANDWIDTH_7_MHZ:
++ 			ofdm->bandwidth		= BANDWIDTH_7_MHZ;
++ 			break;
++ 		case DVBFE_BANDWIDTH_6_MHZ:
++ 			ofdm->bandwidth		= BANDWIDTH_6_MHZ;
++ 			break;
++ 		case DVBFE_BANDWIDTH_AUTO:
++ 			ofdm->bandwidth		= BANDWIDTH_AUTO;
++ 			break;
++ 		default:
++ 			dprintk("%s: Unsupported bandwidth\n", __func__);
++ 			return -EINVAL;
++ 		}
++ 		newfec_to_oldfec(dvbt->code_rate_HP, &ofdm->code_rate_HP);
++ 		newfec_to_oldfec(dvbt->code_rate_LP, &ofdm->code_rate_LP);
++ 		newmod_to_oldmod(dvbt->constellation, &ofdm->constellation);
++ 		switch (dvbt->transmission_mode) {
++ 		case DVBFE_TRANSMISSION_MODE_2K:
++ 			ofdm->transmission_mode = TRANSMISSION_MODE_2K;
++ 			break;
++ 		case DVBFE_TRANSMISSION_MODE_8K:
++ 			ofdm->transmission_mode = TRANSMISSION_MODE_8K;
++ 			break;
++ 		case DVBFE_TRANSMISSION_MODE_AUTO:
++ 			ofdm->transmission_mode = TRANSMISSION_MODE_AUTO;
++ 			break;
++ 		default:
++ 			dprintk("%s: Unsupported transmission mode\n", __func__);
++ 			return -EINVAL;
++ 		}
++ 		switch (dvbt->guard_interval) {
++ 		case DVBFE_GUARD_INTERVAL_1_32:
++ 			ofdm->guard_interval	= GUARD_INTERVAL_1_32;
++ 			break;
++ 		case DVBFE_GUARD_INTERVAL_1_16:
++ 			ofdm->guard_interval	= GUARD_INTERVAL_1_16;
++ 			break;
++ 		case DVBFE_GUARD_INTERVAL_1_8:
++ 			ofdm->guard_interval	= GUARD_INTERVAL_1_8;
++ 			break;
++ 		case DVBFE_GUARD_INTERVAL_1_4:
++ 			ofdm->guard_interval	= GUARD_INTERVAL_1_4;
++ 			break;
++ 		case DVBFE_GUARD_INTERVAL_AUTO:
++ 			ofdm->guard_interval	= GUARD_INTERVAL_AUTO;
++ 			break;
++ 		}
++ 		switch (dvbt->hierarchy) {
++ 		case DVBFE_HIERARCHY_OFF:
++ 			ofdm->hierarchy_information		= HIERARCHY_NONE;
++ 			break;
++ 		case DVBFE_HIERARCHY_AUTO:
++ 			ofdm->hierarchy_information		= HIERARCHY_AUTO;
++ 			break;
++ 		case DVBFE_HIERARCHY_ON:
++ 			switch (dvbt->alpha) {
++ 			case DVBFE_ALPHA_1:
++ 				ofdm->hierarchy_information	= HIERARCHY_1;
++ 				break;
++ 			case DVBFE_ALPHA_2:
++ 				ofdm->hierarchy_information	= HIERARCHY_2;
++ 				break;
++ 			case DVBFE_ALPHA_4:
++ 				ofdm->hierarchy_information	= HIERARCHY_4;
++ 				break;
++ 			}
++ 			break;
++ 		}
++ 	case DVBFE_DELSYS_ATSC:
++ 		newmod_to_oldmod(atsc->modulation, &vsb->modulation);
++ 		break;
++ 	case DVBFE_DELSYS_DVBS2:
++ 	case DVBFE_DELSYS_DSS:
++ 	case DVBFE_DELSYS_DVBH:
++ 		printk("%s: SORRY ! Backward compatibility unavailable for these delivery systems !!\n", __func__);
++ 		break;
++ 	default:
++ 		dprintk("%s: Unsupported delivery system\n", __func__);
++ 		return -EINVAL;
++ 		break;
++ 	}
++ 	return 0;
++ }
++ 
++ int olddrv_to_newapi(struct dvb_frontend *fe,
++ 		     struct dvbfe_params *params,
++ 		     struct dvb_frontend_parameters *p,
++ 		     enum fe_type fe_type)
++ {
++ 	struct dvb_qpsk_parameters	*qpsk	= &p->u.qpsk;
++ 	struct dvb_qam_parameters	*qam	= &p->u.qam;
++ 	struct dvb_ofdm_parameters	*ofdm	= &p->u.ofdm;
++ 	struct dvb_vsb_parameters	*vsb	= &p->u.vsb;
++ 
++ 	struct dvbs_params		*dvbs	= &params->delsys.dvbs;
++ 	struct dvbc_params		*dvbc	= &params->delsys.dvbc;
++ 	struct dvbt_params		*dvbt	= &params->delsys.dvbt;
++ 	struct atsc_params		*atsc	= &params->delsys.atsc;
++ 
++ 	params->frequency = p->frequency;
++ 	params->inversion = p->inversion;
++ 
++ 	switch (fe_type) {
++ 	case FE_QPSK:
++ 		dvbs->symbol_rate		= qpsk->symbol_rate;
++ 		oldfec_to_newfec(qpsk->fec_inner, &dvbs->fec);
++ 		break;
++ 	case FE_QAM:
++ 		dvbc->symbol_rate		= qam->symbol_rate;
++ 		oldmod_to_newmod(qam->modulation, &dvbc->modulation);
++ 		oldfec_to_newfec(qam->fec_inner, &dvbc->fec);
++ 		break;
++ 	case FE_OFDM:
++ 		switch (ofdm->bandwidth) {
++ 		case BANDWIDTH_8_MHZ:
++ 			dvbt->bandwidth		= DVBFE_BANDWIDTH_8_MHZ;
++ 			break;
++ 		case BANDWIDTH_7_MHZ:
++ 			dvbt->bandwidth		= DVBFE_BANDWIDTH_7_MHZ;
++ 			break;
++ 		case BANDWIDTH_6_MHZ:
++ 			dvbt->bandwidth		= DVBFE_BANDWIDTH_6_MHZ;
++ 			break;
++ 		case BANDWIDTH_AUTO:
++ 			dvbt->bandwidth		= DVBFE_BANDWIDTH_AUTO;
++ 			break;
++ 		}
++ 		oldfec_to_newfec(ofdm->code_rate_HP, &dvbt->code_rate_HP);
++ 		oldfec_to_newfec(ofdm->code_rate_LP, &dvbt->code_rate_LP);
++ 		oldmod_to_newmod(ofdm->constellation, &dvbt->constellation);
++ 		switch (ofdm->transmission_mode) {
++ 		case TRANSMISSION_MODE_2K:
++ 			dvbt->transmission_mode	= DVBFE_TRANSMISSION_MODE_2K;
++ 			break;
++ 		case TRANSMISSION_MODE_8K:
++ 			dvbt->transmission_mode = DVBFE_TRANSMISSION_MODE_8K;
++ 			break;
++ 		case TRANSMISSION_MODE_AUTO:
++ 			dvbt->transmission_mode	= DVBFE_TRANSMISSION_MODE_AUTO;
++ 			break;
++ 		}
++ 		switch (ofdm->guard_interval) {
++ 		case GUARD_INTERVAL_1_32:
++ 			dvbt->guard_interval	= DVBFE_GUARD_INTERVAL_1_32;
++ 			break;
++ 		case GUARD_INTERVAL_1_16:
++ 			dvbt->guard_interval	= DVBFE_GUARD_INTERVAL_1_16;
++ 			break;
++ 		case GUARD_INTERVAL_1_8:
++ 			dvbt->guard_interval	= DVBFE_GUARD_INTERVAL_1_8;
++ 			break;
++ 		case GUARD_INTERVAL_1_4:
++ 			dvbt->guard_interval	= DVBFE_GUARD_INTERVAL_1_4;
++ 			break;
++ 		case GUARD_INTERVAL_AUTO:
++ 			dvbt->guard_interval	= DVBFE_GUARD_INTERVAL_AUTO;
++ 			break;
++ 		}
++ 		switch (ofdm->hierarchy_information) {
++ 		case HIERARCHY_NONE:
++ 			dvbt->hierarchy		= DVBFE_HIERARCHY_OFF;
++ 			break;
++ 		case HIERARCHY_AUTO:
++ 			dvbt->hierarchy		= DVBFE_HIERARCHY_AUTO;
++ 			break;
++ 		case HIERARCHY_1:
++ 			dvbt->hierarchy		= DVBFE_HIERARCHY_ON;
++ 			dvbt->alpha		= DVBFE_ALPHA_1;
++ 			break;
++ 		case HIERARCHY_2:
++ 			dvbt->hierarchy		= DVBFE_HIERARCHY_ON;
++ 			dvbt->alpha		= DVBFE_ALPHA_2;
++ 			break;
++ 		case HIERARCHY_4:
++ 			dvbt->hierarchy		= DVBFE_HIERARCHY_ON;
++ 			dvbt->alpha		= DVBFE_ALPHA_4;
++ 			break;
++ 		}
++ 		break;
++ 	case FE_ATSC:
++ 		newmod_to_oldmod(atsc->modulation, &vsb->modulation);
++ 		break;
++ 	default:
++ 		dprintk("%s: Unsupported delivery system\n", __func__);
++ 		return -EINVAL;
++ 		break;
++ 	}
++ 	return 0;
++ }
++ 
+  static void dvb_frontend_add_event(struct dvb_frontend *fe, fe_status_t status)
+  {
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+***************
+*** 150,171 ****
+  
+  	e = &events->events[events->eventw];
+  
+! 	memcpy (&e->parameters, &fepriv->parameters,
+! 		sizeof (struct dvb_frontend_parameters));
+! 
+! 	if (status & FE_HAS_LOCK)
+! 		if (fe->ops.get_frontend)
+! 			fe->ops.get_frontend(fe, &e->parameters);
+  
+  	events->eventw = wp;
+- 
+  	up (&events->sem);
+- 
+  	e->status = status;
+- 
+  	wake_up_interruptible (&events->wait_queue);
+  }
+  
+  static int dvb_frontend_get_event(struct dvb_frontend *fe,
+  			    struct dvb_frontend_event *event, int flags)
+  {
+--- 597,690 ----
+  
+  	e = &events->events[events->eventw];
+  
+! 	if (fe->legacy)
+! 		memcpy(&e->parameters, &fepriv->parameters, sizeof (struct dvb_frontend_parameters));
+! 	else
+! 		memcpy(&e->fe_params, &fepriv->fe_params, sizeof (struct dvbfe_params));
+  
++ 	if (fe->legacy) {
++ 		/* Legacy	*/
++ 		if (status & FE_HAS_LOCK)
++ 			if (fe->ops.get_frontend)
++ 				fe->ops.get_frontend(fe, &e->parameters);
++ 	} else {
++ 		if (status & FE_HAS_LOCK)
++ 			if (fe->ops.get_params)
++ 				fe->ops.get_params(fe, &e->fe_params);
++ 	}
+  	events->eventw = wp;
+  	up (&events->sem);
+  	e->status = status;
+  	wake_up_interruptible (&events->wait_queue);
+  }
+  
++ static int dvbfe_sanity_check(struct dvb_frontend *fe)
++ {
++ 	struct dvb_frontend_private *fepriv = fe->frontend_priv;
++ 
++ 	/* Sanity checks	*/
++ 	if ((fepriv->fe_params.frequency < fepriv->fe_info.frequency_min) ||
++ 	    (fepriv->fe_params.frequency > fepriv->fe_info.frequency_max))
++ 		return -EINVAL;
++ 
++ 	switch (fepriv->fe_params.delivery) {
++ 	case DVBFE_DELSYS_DVBS:
++ 		if (!(fepriv->fe_params.delsys.dvbs.modulation &
++ 		      fepriv->fe_info.delsys.dvbs.modulation))
++ 			return -EINVAL;
++ 		if (!(fepriv->fe_params.delsys.dvbs.fec &
++ 		      fepriv->fe_info.delsys.dvbs.fec))
++ 			return -EINVAL;
++ 		break;
++ 	case DVBFE_DELSYS_DVBS2:
++ 		if (!(fepriv->fe_params.delsys.dvbs2.modulation &
++ 		      fepriv->fe_info.delsys.dvbs2.modulation))
++ 			return -EINVAL;
++ 		if (!(fepriv->fe_params.delsys.dvbs2.fec &
++ 		      fepriv->fe_info.delsys.dvbs2.fec))
++ 			return -EINVAL;
++ 		break;
++ 	case DVBFE_DELSYS_DSS:
++ 		if (!(fepriv->fe_params.delsys.dss.modulation &
++ 		      fepriv->fe_info.delsys.dss.modulation))
++ 			return -EINVAL;
++ 		if (!(fepriv->fe_params.delsys.dss.fec &
++ 		      fepriv->fe_info.delsys.dss.fec))
++ 			return -EINVAL;
++ 		break;
++ 	case DVBFE_DELSYS_DVBC:
++ 		if (!(fepriv->fe_params.delsys.dvbc.modulation &
++ 		      fepriv->fe_info.delsys.dvbc.modulation))
++ 			return -EINVAL;
++ 		break;
++ 	case DVBFE_DELSYS_DVBT:
++ 		if (!(fepriv->fe_params.delsys.dvbt.constellation &
++ 		      fepriv->fe_info.delsys.dvbt.modulation))
++ 		      return -EINVAL;
++ 		if (!(fepriv->fe_params.delsys.dvbt.priority &
++ 		      fepriv->fe_info.delsys.dvbt.stream_priority))
++ 		      return -EINVAL;
++ 		break;
++ 	case DVBFE_DELSYS_DVBH:
++ 		if (!(fepriv->fe_params.delsys.dvbh.constellation &
++ 		      fepriv->fe_info.delsys.dvbh.modulation))
++ 		      return -EINVAL;
++ 		if (!(fepriv->fe_params.delsys.dvbh.priority &
++ 		      fepriv->fe_info.delsys.dvbh.stream_priority))
++ 		      return -EINVAL;
++ 		break;
++ 	case DVBFE_DELSYS_ATSC:
++ 		if (!(fepriv->fe_params.delsys.atsc.modulation &
++ 		      fepriv->fe_info.delsys.atsc.modulation))
++ 			return -EINVAL;
++ 		break;
++ 	default:
++ 		return -EINVAL;
++ 	}
++ 
++ 	return 0;
++ }
++ 
+  static int dvb_frontend_get_event(struct dvb_frontend *fe,
+  			    struct dvb_frontend_event *event, int flags)
+  {
+***************
+*** 263,274 ****
+  	int autoinversion;
+  	int ready = 0;
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+- 	int original_inversion = fepriv->parameters.inversion;
+- 	u32 original_frequency = fepriv->parameters.frequency;
+  
+! 	/* are we using autoinversion? */
+! 	autoinversion = ((!(fe->ops.info.caps & FE_CAN_INVERSION_AUTO)) &&
+! 			 (fepriv->parameters.inversion == INVERSION_AUTO));
+  
+  	/* setup parameters correctly */
+  	while(!ready) {
+--- 782,809 ----
+  	int autoinversion;
+  	int ready = 0;
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+  
+! 	int original_inversion;
+! 	u32 original_frequency;
+! 
+! 	if (fe->legacy) {
+! 		/* Legacy	*/
+! 		original_inversion = fepriv->parameters.inversion;
+! 		original_frequency = fepriv->parameters.frequency;
+! 		/* are we using autoinversion ?	*/
+! 		/* Legacy	*/
+! 		autoinversion = ((!(fe->ops.info.caps & FE_CAN_INVERSION_AUTO)) &&
+! 				 (fepriv->parameters.inversion == INVERSION_AUTO));
+! 	} else {
+! 		/* Superseding	*/
+! 		original_inversion = fepriv->fe_params.inversion;
+! 		original_frequency = fepriv->fe_params.frequency;
+! 		if (fe->ops.get_info) {
+! 			fe->ops.get_info(fe, &fepriv->fe_info);
+! 		}
+! 		autoinversion = ((!(fepriv->fe_info.inversion & INVERSION_AUTO)) &&
+! 				 (fepriv->fe_params.inversion == INVERSION_AUTO));
+! 	}
+  
+  	/* setup parameters correctly */
+  	while(!ready) {
+***************
+*** 330,353 ****
+  
+  	dprintk("%s: drift:%i inversion:%i auto_step:%i "
+  		"auto_sub_step:%i started_auto_step:%i\n",
+! 		__FUNCTION__, fepriv->lnb_drift, fepriv->inversion,
+! 		fepriv->auto_step, fepriv->auto_sub_step, fepriv->started_auto_step);
+! 
+! 	/* set the frontend itself */
+! 	fepriv->parameters.frequency += fepriv->lnb_drift;
+! 	if (autoinversion)
+! 		fepriv->parameters.inversion = fepriv->inversion;
+! 	if (fe->ops.set_frontend)
+! 		fe->ops.set_frontend(fe, &fepriv->parameters);
+  
+! 	fepriv->parameters.frequency = original_frequency;
+! 	fepriv->parameters.inversion = original_inversion;
+  
+  	fepriv->auto_sub_step++;
+  	return 0;
+  }
+  
+! static void dvb_frontend_swzigzag(struct dvb_frontend *fe)
+  {
+  	fe_status_t s = 0;
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+--- 865,917 ----
+  
+  	dprintk("%s: drift:%i inversion:%i auto_step:%i "
+  		"auto_sub_step:%i started_auto_step:%i\n",
+! 		__func__, fepriv->lnb_drift, fepriv->inversion,
+! 		fepriv->auto_step, fepriv->auto_sub_step,
+! 		fepriv->started_auto_step);
+! 
+! 	/* set the frontend itself	*/
+! 	/* Legacy	*/
+! 	if (fe->legacy)
+! 		fepriv->parameters.frequency += fepriv->lnb_drift;
+! 	else
+! 		/* Supeseding	*/
+! 		fepriv->fe_params.frequency += fepriv->lnb_drift;
+  
+! 	if (autoinversion) {
+! 		/* Legacy	*/
+! 		if (fe->legacy)
+! 			fepriv->parameters.inversion = fepriv->inversion;
+! 		else
+! 			/* Superseding	*/
+! 			fepriv->fe_params.inversion = fepriv->inversion;
+! 	}
+! 	/* Legacy	*/
+! 	if (fe->legacy) {
+! 		if (fe->ops.set_frontend)
+! 			fe->ops.set_frontend(fe, &fepriv->parameters);
+! 	} else {
+! //		if ((dvbfe_sanity_check(fe) == 0)) {
+! 			/* Superseding	*/
+! 			if (fe->ops.set_params)
+! 				fe->ops.set_params(fe, &fepriv->fe_params);
+! //		} else
+! //			return -EINVAL;
+! 	}
+! 	/* Legacy	*/
+! 	if (fe->legacy) {
+! 		fepriv->parameters.frequency = original_frequency;
+! 		fepriv->parameters.inversion = original_inversion;
+! 	} else {
+! 		/* Superseding	*/
+! 		fepriv->fe_params.frequency = original_frequency;
+! 		fepriv->fe_params.inversion = original_inversion;
+! 	}
+  
+  	fepriv->auto_sub_step++;
+  	return 0;
+  }
+  
+! static int dvb_frontend_swzigzag(struct dvb_frontend *fe)
+  {
+  	fe_status_t s = 0;
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+***************
+*** 356,374 ****
+  	if (fepriv->state & FESTATE_IDLE) {
+  		fepriv->delay = 3*HZ;
+  		fepriv->quality = 0;
+! 		return;
+  	}
+  
+  	/* in SCAN mode, we just set the frontend when asked and leave it alone */
+  	if (fepriv->tune_mode_flags & FE_TUNE_MODE_ONESHOT) {
+  		if (fepriv->state & FESTATE_RETUNE) {
+! 			if (fe->ops.set_frontend)
+! 				fe->ops.set_frontend(fe, &fepriv->parameters);
+  			fepriv->state = FESTATE_TUNED;
+  		}
+  		fepriv->delay = 3*HZ;
+  		fepriv->quality = 0;
+! 		return;
+  	}
+  
+  	/* get the frontend status */
+--- 920,948 ----
+  	if (fepriv->state & FESTATE_IDLE) {
+  		fepriv->delay = 3*HZ;
+  		fepriv->quality = 0;
+! 		return 0;
+  	}
+  
+  	/* in SCAN mode, we just set the frontend when asked and leave it alone */
+  	if (fepriv->tune_mode_flags & FE_TUNE_MODE_ONESHOT) {
+  		if (fepriv->state & FESTATE_RETUNE) {
+! 			if (fe->legacy) {
+! 				/* Legacy	*/
+! 				if (fe->ops.set_frontend)
+! 					fe->ops.set_frontend(fe, &fepriv->parameters);
+! 			} else {
+! 				if (dvbfe_sanity_check(fe) == 0) {
+! 					/* Superseding	*/
+! 					if (fe->ops.set_params)
+! 						fe->ops.set_params(fe, &fepriv->fe_params);
+! 				} else
+! 					return -EINVAL;
+! 			}
+  			fepriv->state = FESTATE_TUNED;
+  		}
+  		fepriv->delay = 3*HZ;
+  		fepriv->quality = 0;
+! 		return 0;
+  	}
+  
+  	/* get the frontend status */
+***************
+*** 389,399 ****
+  		fepriv->state = FESTATE_TUNED;
+  
+  		/* if we're tuned, then we have determined the correct inversion */
+! 		if ((!(fe->ops.info.caps & FE_CAN_INVERSION_AUTO)) &&
+! 		    (fepriv->parameters.inversion == INVERSION_AUTO)) {
+! 			fepriv->parameters.inversion = fepriv->inversion;
+  		}
+! 		return;
+  	}
+  
+  	/* if we are tuned already, check we're still locked */
+--- 963,984 ----
+  		fepriv->state = FESTATE_TUNED;
+  
+  		/* if we're tuned, then we have determined the correct inversion */
+! 		/* Legacy	*/
+! 		if (fe->legacy) {
+! 			if ((!(fe->ops.info.caps & FE_CAN_INVERSION_AUTO)) &&
+! 			    (fepriv->parameters.inversion == INVERSION_AUTO)) {
+! 				fepriv->parameters.inversion = fepriv->inversion;
+! 			}
+! 		} else {
+! 			/* Superseding	*/
+! 			if (fe->ops.get_info) {
+! 				fe->ops.get_info(fe, &fepriv->fe_info);
+! 				if ((!(fepriv->fe_info.inversion & INVERSION_AUTO)) &&
+! 				    (fepriv->fe_params.inversion == INVERSION_AUTO))
+! 					fepriv->fe_params.inversion = fepriv->inversion;
+! 			}
+  		}
+! 		return 0;
+  	}
+  
+  	/* if we are tuned already, check we're still locked */
+***************
+*** 402,408 ****
+  
+  		/* we're tuned, and the lock is still good... */
+  		if (s & FE_HAS_LOCK) {
+! 			return;
+  		} else { /* if we _WERE_ tuned, but now don't have a lock */
+  			fepriv->state = FESTATE_ZIGZAG_FAST;
+  			fepriv->started_auto_step = fepriv->auto_step;
+--- 987,993 ----
+  
+  		/* we're tuned, and the lock is still good... */
+  		if (s & FE_HAS_LOCK) {
+! 			return 0;
+  		} else { /* if we _WERE_ tuned, but now don't have a lock */
+  			fepriv->state = FESTATE_ZIGZAG_FAST;
+  			fepriv->started_auto_step = fepriv->auto_step;
+***************
+*** 411,434 ****
+  	}
+  
+  	/* don't actually do anything if we're in the LOSTLOCK state,
+! 	 * the frontend is set to FE_CAN_RECOVER, and the max_drift is 0 */
+! 	if ((fepriv->state & FESTATE_LOSTLOCK) &&
+! 	    (fe->ops.info.caps & FE_CAN_RECOVER) && (fepriv->max_drift == 0)) {
+! 		dvb_frontend_swzigzag_update_delay(fepriv, s & FE_HAS_LOCK);
+! 		return;
+  	}
+  
+  	/* don't do anything if we're in the DISEQC state, since this
+  	 * might be someone with a motorized dish controlled by DISEQC.
+! 	 * If its actually a re-tune, there will be a SET_FRONTEND soon enough.	*/
+  	if (fepriv->state & FESTATE_DISEQC) {
+  		dvb_frontend_swzigzag_update_delay(fepriv, s & FE_HAS_LOCK);
+! 		return;
+  	}
+  
+  	/* if we're in the RETUNE state, set everything up for a brand
+  	 * new scan, keeping the current inversion setting, as the next
+! 	 * tune is _very_ likely to require the same */
+  	if (fepriv->state & FESTATE_RETUNE) {
+  		fepriv->lnb_drift = 0;
+  		fepriv->auto_step = 0;
+--- 996,1038 ----
+  	}
+  
+  	/* don't actually do anything if we're in the LOSTLOCK state,
+! 	 * the frontend is set to FE_CAN_RECOVER, and the max_drift is 0
+! 	 */
+! 	/* Legacy	*/
+! 	if (fe->legacy) {
+! 		if ((fepriv->state & FESTATE_LOSTLOCK) && (fepriv->max_drift == 0)) {
+! 			if (fe->ops.get_frontend_algo)
+! 				if (fe->ops.get_frontend_algo(fe) == DVBFE_ALGO_RECOVERY)
+! 					dvb_frontend_swzigzag_update_delay(fepriv, s & FE_HAS_LOCK);
+! 
+! 			return 0;
+! 		}
+! 	} else {
+! 		if (fepriv->state & FESTATE_LOSTLOCK) {
+! 			if (fe->ops.get_frontend_algo) {
+! 				if ((fe->ops.get_frontend_algo(fe) == DVBFE_ALGO_RECOVERY) &&
+! 				    (fepriv->max_drift == 0)) {
+! 
+! 					dvb_frontend_swzigzag_update_delay(fepriv, s & DVBFE_HAS_LOCK);
+! 					return 0;
+! 				}
+! 			}
+! 		}
+  	}
+  
+  	/* don't do anything if we're in the DISEQC state, since this
+  	 * might be someone with a motorized dish controlled by DISEQC.
+! 	 * If its actually a re-tune, there will be a SET_FRONTEND soon enough.
+! 	 */
+  	if (fepriv->state & FESTATE_DISEQC) {
+  		dvb_frontend_swzigzag_update_delay(fepriv, s & FE_HAS_LOCK);
+! 		return 0;
+  	}
+  
+  	/* if we're in the RETUNE state, set everything up for a brand
+  	 * new scan, keeping the current inversion setting, as the next
+! 	 * tune is _very_ likely to require the same
+! 	 */
+  	if (fepriv->state & FESTATE_RETUNE) {
+  		fepriv->lnb_drift = 0;
+  		fepriv->auto_step = 0;
+***************
+*** 444,460 ****
+  		/* peform a tune */
+  		if (dvb_frontend_swzigzag_autotune(fe, fepriv->check_wrapped)) {
+  			/* OK, if we've run out of trials at the fast speed.
+! 			 * Drop back to slow for the _next_ attempt */
+  			fepriv->state = FESTATE_SEARCHING_SLOW;
+  			fepriv->started_auto_step = fepriv->auto_step;
+! 			return;
+  		}
+  		fepriv->check_wrapped = 1;
+  
+  		/* if we've just retuned, enter the ZIGZAG_FAST state.
+  		 * This ensures we cannot return from an
+  		 * FE_SET_FRONTEND ioctl before the first frontend tune
+! 		 * occurs */
+  		if (fepriv->state & FESTATE_RETUNE) {
+  			fepriv->state = FESTATE_TUNING_FAST;
+  		}
+--- 1048,1066 ----
+  		/* peform a tune */
+  		if (dvb_frontend_swzigzag_autotune(fe, fepriv->check_wrapped)) {
+  			/* OK, if we've run out of trials at the fast speed.
+! 			 * Drop back to slow for the _next_ attempt
+! 			 */
+  			fepriv->state = FESTATE_SEARCHING_SLOW;
+  			fepriv->started_auto_step = fepriv->auto_step;
+! 			return 0;
+  		}
+  		fepriv->check_wrapped = 1;
+  
+  		/* if we've just retuned, enter the ZIGZAG_FAST state.
+  		 * This ensures we cannot return from an
+  		 * FE_SET_FRONTEND ioctl before the first frontend tune
+! 		 * occurs
+! 		 */
+  		if (fepriv->state & FESTATE_RETUNE) {
+  			fepriv->state = FESTATE_TUNING_FAST;
+  		}
+***************
+*** 465,473 ****
+  		dvb_frontend_swzigzag_update_delay(fepriv, s & FE_HAS_LOCK);
+  
+  		/* Note: don't bother checking for wrapping; we stay in this
+! 		 * state until we get a lock */
+  		dvb_frontend_swzigzag_autotune(fe, 0);
+  	}
+  }
+  
+  static int dvb_frontend_is_exiting(struct dvb_frontend *fe)
+--- 1071,1082 ----
+  		dvb_frontend_swzigzag_update_delay(fepriv, s & FE_HAS_LOCK);
+  
+  		/* Note: don't bother checking for wrapping; we stay in this
+! 		 * state until we get a lock
+! 		 */
+  		dvb_frontend_swzigzag_autotune(fe, 0);
+  	}
++ 
++ 	return 0;
+  }
+  
+  static int dvb_frontend_is_exiting(struct dvb_frontend *fe)
+***************
+*** 510,516 ****
+--- 1119,1130 ----
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+  	unsigned long timeout;
+  	fe_status_t s;
++ 	enum dvbfe_algo algo;
++ 
++ 	/* Legacy datatype	*/
+  	struct dvb_frontend_parameters *params;
++ 	/* Superseding datatype	*/
++ 	struct dvbfe_params *fe_params = &fepriv->fe_params;
+  
+  	dprintk("%s\n", __FUNCTION__);
+  
+***************
+*** 523,529 ****
+  
+  	dvb_frontend_init(fe);
+  
+- 	set_freezable();
+  	while (1) {
+  		up(&fepriv->sem);	    /* is locked when we enter the thread... */
+  restart:
+--- 1137,1142 ----
+***************
+*** 555,577 ****
+  
+  		/* do an iteration of the tuning loop */
+  		if (fe->ops.get_frontend_algo) {
+! 			if (fe->ops.get_frontend_algo(fe) == FE_ALGO_HW) {
+! 				/* have we been asked to retune? */
+! 				params = NULL;
+  				if (fepriv->state & FESTATE_RETUNE) {
+  					params = &fepriv->parameters;
+  					fepriv->state = FESTATE_TUNED;
+  				}
+  
+- 				fe->ops.tune(fe, params, fepriv->tune_mode_flags, &fepriv->delay, &s);
+  				if (s != fepriv->status) {
+  					dvb_frontend_add_event(fe, s);
+  					fepriv->status = s;
+  				}
+! 			} else
+  				dvb_frontend_swzigzag(fe);
+! 		} else
+  			dvb_frontend_swzigzag(fe);
+  	}
+  
+  	if (dvb_shutdown_timeout) {
+--- 1168,1245 ----
+  
+  		/* do an iteration of the tuning loop */
+  		if (fe->ops.get_frontend_algo) {
+! 			algo = fe->ops.get_frontend_algo(fe);
+! 			switch (algo) {
+! 			case DVBFE_ALGO_HW:
+! 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_HW\n", __func__);
+! 				params = NULL; /* have we been asked to RETUNE ?	*/
+! 
+  				if (fepriv->state & FESTATE_RETUNE) {
++ 					dprintk("%s: Retune requested, FESTAT_RETUNE\n", __func__);
+  					params = &fepriv->parameters;
+  					fepriv->state = FESTATE_TUNED;
+  				}
++ 				if (fe->ops.tune) {
++ 					fe->ops.tune(fe, params, fepriv->tune_mode_flags, &fepriv->delay, &s);
++ 					dprintk("%s: TUNE callback exists at 0x%p\n", __func__, fe->ops.tune);
++ 				}
+  
+  				if (s != fepriv->status) {
++ 					dprintk("%s: state changed, adding current state\n", __func__);
+  					dvb_frontend_add_event(fe, s);
+  					fepriv->status = s;
+  				}
+! 				break;
+! 			case DVBFE_ALGO_SW:
+! 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_SW\n", __func__);
+  				dvb_frontend_swzigzag(fe);
+! 				break;
+! 			case DVBFE_ALGO_CUSTOM:
+! 				params = NULL; /* have we been asked to RETUNE ?	*/
+! 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_CUSTOM, state=%d\n", __func__, fepriv->state);
+! 				if (fepriv->state & FESTATE_RETUNE) {
+! 					dprintk("%s: Retune requested, FESTAT_RETUNE\n", __func__);
+! 					fe_params = &fepriv->fe_params;
+! 					fepriv->state = FESTATE_TUNED;
+! 				}
+! 				/* Two cases where we are going to search for a carrier
+! 				 *
+! 				 * 1. Previous search failed. We need to probably search again
+! 				 *
+! 				 * 2. User asked us to retune again for some reason, possibly
+! 				 *    requesting a search with a new set of parameters
+! 				 */
+! 				if ((!(fepriv->algo_status & DVBFE_ALGO_SEARCH_SUCCESS)) ||
+! 				      (fepriv->algo_status & DVBFE_ALGO_SEARCH_AGAIN)) {
+! 
+! 					if (fe->ops.search) {
+! 						fepriv->algo_status = fe->ops.search(fe, fe_params);
+! 						dprintk("%s: SEARCH callback exists at 0x%p\n", __func__, fe->ops.search);
+! 						/* We did do a search as was requested, the flags are
+! 						 * now unset as well and has the flags wrt to search.
+! 						 */
+! 					}
+! 				}
+! 				/* Track the carrier if the search was successful	*/
+! 				if (fepriv->algo_status == DVBFE_ALGO_SEARCH_SUCCESS) {
+! 					dprintk("%s: status = DVBFE_ALGO_SEARCH_SUCCESS\n", __func__);
+! 					if (fe->ops.track) {
+! 						dprintk("%s: TRACK callback exists at 0x%p\n", __func__, fe->ops.track);
+! 						fe->ops.track(fe, fe_params);
+! 						dvb_frontend_add_event(fe, s); /* update event list	*/
+! 						fepriv->status = s;
+! 					}
+! 				}
+! 				break;
+! 			default:
+! 				dprintk("%s: UNDEFINED ALGO !\n", __func__);
+! 				break;
+! 			}
+! 
+! 		} else {
+! 
+  			dvb_frontend_swzigzag(fe);
++ 		}
+  	}
+  
+  	if (dvb_shutdown_timeout) {
+***************
+*** 590,595 ****
+--- 1258,1264 ----
+  	fepriv->thread = NULL;
+  	mb();
+  
++ 	dprintk("%s: frontend_wakeup\n", __func__);
+  	dvb_frontend_wakeup(fe);
+  	return 0;
+  }
+***************
+*** 607,613 ****
+  		return;
+  
+  	kthread_stop(fepriv->thread);
+- 
+  	init_MUTEX (&fepriv->sem);
+  	fepriv->state = FESTATE_IDLE;
+  
+--- 1276,1281 ----
+***************
+*** 704,709 ****
+--- 1372,1378 ----
+  	struct dvb_frontend *fe = dvbdev->priv;
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+  	int err = -EOPNOTSUPP;
++ 	enum dvbfe_delsys delsys = 0;
+  
+  	dprintk ("%s\n", __FUNCTION__);
+  
+***************
+*** 882,894 ****
+  
+  	case FE_SET_FRONTEND: {
+  		struct dvb_frontend_tune_settings fetunesettings;
+  
+! 		memcpy (&fepriv->parameters, parg,
+! 			sizeof (struct dvb_frontend_parameters));
+! 
+  		memset(&fetunesettings, 0, sizeof(struct dvb_frontend_tune_settings));
+! 		memcpy(&fetunesettings.parameters, parg,
+! 		       sizeof (struct dvb_frontend_parameters));
+  
+  		/* force auto frequency inversion if requested */
+  		if (dvb_force_auto_inversion) {
+--- 1551,1561 ----
+  
+  	case FE_SET_FRONTEND: {
+  		struct dvb_frontend_tune_settings fetunesettings;
++ 		fe->legacy = 1;
+  
+! 		memcpy(&fepriv->parameters, parg, sizeof (struct dvb_frontend_parameters));
+  		memset(&fetunesettings, 0, sizeof(struct dvb_frontend_tune_settings));
+! 		memcpy(&fetunesettings.parameters, parg, sizeof (struct dvb_frontend_parameters));
+  
+  		/* force auto frequency inversion if requested */
+  		if (dvb_force_auto_inversion) {
+***************
+*** 951,956 ****
+--- 1618,1624 ----
+  		break;
+  
+  	case FE_GET_FRONTEND:
++ 		fe->legacy = 1;
+  		if (fe->ops.get_frontend) {
+  			memcpy (parg, &fepriv->parameters, sizeof (struct dvb_frontend_parameters));
+  			err = fe->ops.get_frontend(fe, (struct dvb_frontend_parameters*) parg);
+***************
+*** 961,972 ****
+  		fepriv->tune_mode_flags = (unsigned long) parg;
+  		err = 0;
+  		break;
+- 	};
+  
+  	up (&fepriv->sem);
+  	return err;
+  }
+  
+  static unsigned int dvb_frontend_poll(struct file *file, struct poll_table_struct *wait)
+  {
+  	struct dvb_device *dvbdev = file->private_data;
+--- 1629,1752 ----
+  		fepriv->tune_mode_flags = (unsigned long) parg;
+  		err = 0;
+  		break;
+  
++ 	case DVBFE_SET_PARAMS: {
++ 		struct dvb_frontend_tune_settings fetunesettings;
++ 
++ 		fe->legacy = 0;
++ 		memcpy(&fepriv->fe_params, parg, sizeof (struct dvbfe_params));
++ 		memset(&fetunesettings, 0, sizeof (struct dvb_frontend_tune_settings));
++ 		memcpy(&fetunesettings.fe_params, parg, sizeof (struct dvbfe_params));
++ 
++ 		if (newapi_to_olddrv(&fepriv->fe_params, &fepriv->parameters, fepriv->fe_info.delivery)  == -EINVAL)
++ 			printk("%s: ERROR !!! Converting New parameters --> Old parameters\n", __func__);
++ 
++ 		/* Request the search algorithm to search	*/
++ 		fepriv->algo_status |= DVBFE_ALGO_SEARCH_AGAIN;
++ 
++ 		/* force auto frequency inversion if requested */
++ 		if (dvb_force_auto_inversion) {
++ 			fepriv->fe_params.inversion = DVBFE_INVERSION_AUTO;
++ 			fetunesettings.fe_params.inversion = DVBFE_INVERSION_AUTO;
++ 		}
++ 		if (fe->ops.get_delsys) {
++ 			fe->ops.get_delsys(fe, &delsys);
++ 			if ((delsys == DVBFE_DELSYS_DVBT) ||
++ 			    (delsys == DVBFE_DELSYS_DVBH)) {
++ 
++ 				/* without hierachical coding code_rate_LP is irrelevant,
++ 				 * so we tolerate the otherwise invalid FEC_NONE setting */
++ 				if (fepriv->fe_params.delsys.dvbt.hierarchy == DVBFE_HIERARCHY_OFF &&
++ 				    fepriv->fe_params.delsys.dvbt.code_rate_LP == DVBFE_FEC_NONE)
++ 
++ 					fepriv->fe_params.delsys.dvbt.code_rate_LP = DVBFE_FEC_AUTO;
++ 			}
++ 		}
++ 
++ 		/* get frontend-specific tuning settings */
++ 		if (fe->ops.get_tune_settings &&
++ 		   (fe->ops.get_tune_settings(fe, &fetunesettings) == 0)) {
++ 
++ 			fepriv->min_delay = (fetunesettings.min_delay_ms * HZ) / 1000;
++ 			fepriv->max_drift = fetunesettings.max_drift;
++ 			fepriv->step_size = fetunesettings.step_size;
++ 		} else {
++ 			/* default values */
++ 			switch (fepriv->fe_info.delivery) {
++ 			case DVBFE_DELSYS_DVBS:
++ 			case DVBFE_DELSYS_DSS:
++ 			case DVBFE_DELSYS_DVBS2:
++ 				fepriv->min_delay = HZ / 20;
++ 				fepriv->step_size = fepriv->fe_params.delsys.dvbs.symbol_rate / 16000;
++ 				fepriv->max_drift = fepriv->fe_params.delsys.dvbs.symbol_rate / 2000;
++ 				break;
++ 			case DVBFE_DELSYS_DVBC:
++ 				fepriv->min_delay = HZ / 20;
++ 				fepriv->step_size = 0; /* no zigzag */
++ 				fepriv->max_drift = 0;
++ 				break;
++ 			case DVBFE_DELSYS_DVBT:
++ 			case DVBFE_DELSYS_DVBH:
++ 				fepriv->min_delay = HZ / 20;
++ 				fepriv->step_size = fepriv->fe_info.frequency_step * 2;
++ 				fepriv->max_drift = (fepriv->fe_info.frequency_step * 2) + 1;
++ 				break;
++ 				break;
++ 			case DVBFE_DELSYS_ATSC:
++ 				fepriv->min_delay = HZ / 20;
++ 				fepriv->step_size = 0;
++ 				fepriv->max_drift = 0;
++ 				break;
++ 			default:
++ 				return -EINVAL;
++ 			}
++ 		}
++ 		if (dvb_override_tune_delay > 0)
++ 			fepriv->min_delay = (dvb_override_tune_delay * HZ) / 1000;
++ 
++ 		fepriv->state = FESTATE_RETUNE;
++ 		printk("%s: FESTATE_RETUNE: fepriv->state=%d\n", __func__, fepriv->state);
++ 		dvb_frontend_wakeup(fe);
++ 		dvb_frontend_add_event(fe, 0);
++ 		fepriv->status = 0;
++ 		err = 0;
++ 		break;
++ 	}
++ 
++ 	case DVBFE_GET_PARAMS:
++ 		fe->legacy = 0;
++ 		if (fe->ops.get_params) {
++ 			memcpy(parg, &fepriv->fe_params, sizeof (struct dvbfe_params));
++ 			err = fe->ops.get_params(fe, (struct dvbfe_params *) parg);
++ 
++ 		} else if (fe->ops.get_frontend) {
++ 			memcpy (parg, &fepriv->parameters, sizeof (struct dvb_frontend_parameters));
++ 			err = fe->ops.get_frontend(fe, (struct dvb_frontend_parameters*) parg);
++ 			if (olddrv_to_newapi(fe, &fepriv->fe_params, &fepriv->parameters, fe->ops.info.type) == -EINVAL)
++ 				printk("%s: ERROR !!! Converting Old parameters --> New parameters\n", __func__);
++ 		}
++ 		break;
++ 	case DVBFE_GET_DELSYS:
++ 		fe->legacy = 0;
++ 		if (fe->ops.get_delsys) {
++ 			err = fe->ops.get_delsys(fe, (enum dvbfe_delsys *) parg);
++ 		}
++ 		break;
++ 	case DVBFE_GET_INFO:
++ 		printk("%s: DVBFE_GET_INFO\n", __func__);
++ 		fe->legacy = 0;
++ 		if (fe->ops.get_info) {
++ 			memcpy(&fepriv->fe_info, (struct dvbfe_info *) parg, sizeof (struct dvbfe_info));
++ 			err = fe->ops.get_info(fe, &fepriv->fe_info);
++ 			memcpy((struct dvbfe_info *) parg, &fepriv->fe_info, sizeof (struct dvbfe_info));
++ 		}
++ 		break;
++ 	};
+  	up (&fepriv->sem);
+  	return err;
+  }
+  
++ 
+  static unsigned int dvb_frontend_poll(struct file *file, struct poll_table_struct *wait)
+  {
+  	struct dvb_device *dvbdev = file->private_data;
+***************
+*** 1025,1031 ****
+  	struct dvb_device *dvbdev = file->private_data;
+  	struct dvb_frontend *fe = dvbdev->priv;
+  	struct dvb_frontend_private *fepriv = fe->frontend_priv;
+- 	int ret;
+  
+  	dprintk ("%s\n", __FUNCTION__);
+  
+--- 1805,1810 ----
+***************
+*** 1035,1048 ****
+  	if (fe->ops.ts_bus_ctrl)
+  		fe->ops.ts_bus_ctrl (fe, 0);
+  
+! 	ret = dvb_generic_release (inode, file);
+! 
+! 	if (dvbdev->users==-1 && fepriv->exit==1) {
+! 		fops_put(file->f_op);
+! 		file->f_op = NULL;
+! 		wake_up(&dvbdev->wait_queue);
+! 	}
+! 	return ret;
+  }
+  
+  static struct file_operations dvb_frontend_fops = {
+--- 1814,1820 ----
+  	if (fe->ops.ts_bus_ctrl)
+  		fe->ops.ts_bus_ctrl (fe, 0);
+  
+! 	return dvb_generic_release (inode, file);
+  }
+  
+  static struct file_operations dvb_frontend_fops = {
+***************
+*** 1102,1116 ****
+  	dprintk ("%s\n", __FUNCTION__);
+  
+  	mutex_lock(&frontend_mutex);
+- 	dvb_frontend_stop (fe);
+- 	mutex_unlock(&frontend_mutex);
+- 
+- 	if (fepriv->dvbdev->users < -1)
+- 		wait_event(fepriv->dvbdev->wait_queue,
+- 				fepriv->dvbdev->users==-1);
+- 
+- 	mutex_lock(&frontend_mutex);
+  	dvb_unregister_device (fepriv->dvbdev);
+  
+  	/* fe is invalid now */
+  	kfree(fepriv);
+--- 1874,1881 ----
+  	dprintk ("%s\n", __FUNCTION__);
+  
+  	mutex_lock(&frontend_mutex);
+  	dvb_unregister_device (fepriv->dvbdev);
++ 	dvb_frontend_stop (fe);
+  
+  	/* fe is invalid now */
+  	kfree(fepriv);
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_frontend.h UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_frontend.h
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_frontend.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_frontend.h	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 8,13 ****
+--- 8,16 ----
+   * Overhauled by Holger Waechtler
+   * Kernel I2C stuff by Michael Hunold <hunold@convergence.de>
+   *
++  * Overhauled for Silicon Tuners, Search Algorithms and multiprotocol
++  * support by Manu Abraham <abraham.manu@gmail.com>
++  *
+   * This program is free software; you can redistribute it and/or
+   * modify it under the terms of the GNU Lesser General Public License
+   * as published by the Free Software Foundation; either version 2.1
+***************
+*** 45,50 ****
+--- 48,54 ----
+  	int step_size;
+  	int max_drift;
+  	struct dvb_frontend_parameters parameters;
++ 	struct dvbfe_params fe_params;
+  };
+  
+  struct dvb_frontend;
+***************
+*** 61,66 ****
+--- 65,188 ----
+  	u32 bandwidth_step;
+  };
+  
++ enum dvbfe_modcod {
++ 	DVBFE_MODCOD_DUMMY_PLFRAME	= 0,
++ 	DVBFE_MODCOD_QPSK_1_4,
++ 	DVBFE_MODCOD_QPSK_1_3,
++ 	DVBFE_MODCOD_QPSK_2_5,
++ 	DVBFE_MODCOD_QPSK_1_2,
++ 	DVBFE_MODCOD_QPSK_3_5,
++ 	DVBFE_MODCOD_QPSK_2_3,
++ 	DVBFE_MODCOD_QPSK_3_4,
++ 	DVBFE_MODCOD_QPSK_4_5,
++ 	DVBFE_MODCOD_QPSK_5_6,
++ 	DVBFE_MODCOD_QPSK_8_9,
++ 	DVBFE_MODCOD_QPSK_9_10,
++ 	DVBFE_MODCOD_8PSK_3_5,
++ 	DVBFE_MODCOD_8PSK_2_3,
++ 	DVBFE_MODCOD_8PSK_3_4,
++ 	DVBFE_MODCOD_8PSK_5_6,
++ 	DVBFE_MODCOD_8PSK_8_9,
++ 	DVBFE_MODCOD_8PSK_9_10,
++ 	DVBFE_MODCOD_16APSK_2_3,
++ 	DVBFE_MODCOD_16APSK_3_4,
++ 	DVBFE_MODCOD_16APSK_4_5,
++ 	DVBFE_MODCOD_16APSK_5_6,
++ 	DVBFE_MODCOD_16APSK_8_9,
++ 	DVBFE_MODCOD_16APSK_9_10,
++ 	DVBFE_MODCOD_32APSK_3_4,
++ 	DVBFE_MODCOD_32APSK_4_5,
++ 	DVBFE_MODCOD_32APSK_5_6,
++ 	DVBFE_MODCOD_32APSK_8_9,
++ 	DVBFE_MODCOD_32APSK_9_10,
++ 	DVBFE_MODCOD_RESERVED_1,
++ 	DVBFE_MODCOD_BPSK_1_3,
++ 	DVBFE_MODCOD_BPSK_1_4,
++ 	DVBFE_MODCOD_RESERVED_2
++ };
++ 
++ enum tuner_param {
++ 	DVBFE_TUNER_FREQUENCY		= (1 <<  0),
++ 	DVBFE_TUNER_TUNERSTEP		= (1 <<  1),
++ 	DVBFE_TUNER_IFFREQ		= (1 <<  2),
++ 	DVBFE_TUNER_BANDWIDTH		= (1 <<  3),
++ 	DVBFE_TUNER_REFCLOCK		= (1 <<  4),
++ 	DVBFE_TUNER_IQSENSE		= (1 <<  5),
++ 	DVBFE_TUNER_DUMMY		= (1 << 31)
++ };
++ 
++ /*
++  * ALGO_HW: (Hardware Algorithm)
++  * ----------------------------------------------------------------
++  * Devices that support this algorithm do everything in hardware
++  * and no software support is needed to handle them.
++  * Requesting these devices to LOCK is the only thing required,
++  * device is supposed to do everything in the hardware.
++  *
++  * ALGO_SW: (Software Algorithm)
++  * ----------------------------------------------------------------
++  * These are dumb devices, that require software to do everything
++  *
++  * ALGO_CUSTOM: (Customizable Agorithm)
++  * ----------------------------------------------------------------
++  * Devices having this algorithm can be customized to have specific
++  * algorithms in the frontend driver, rather than simply doing a
++  * software zig-zag. In this case the zigzag maybe hardware assisted
++  * or it maybe completely done in hardware. In all cases, usage of
++  * this algorithm, in conjunction with the search and track
++  * callbacks, utilizes the driver specific algorithm.
++  *
++  * ALGO_RECOVERY: (Recovery Algorithm)
++  * ----------------------------------------------------------------
++  * These devices has AUTO recovery capabilities from LOCK failure
++  */
++ enum dvbfe_algo {
++ 	DVBFE_ALGO_HW			= (1 <<  0),
++ 	DVBFE_ALGO_SW			= (1 <<  1),
++ 	DVBFE_ALGO_CUSTOM		= (1 <<  2),
++ 	DVBFE_ALGO_RECOVERY		= (1 <<  31)
++ };
++ 
++ struct tuner_state {
++ 	u32 frequency;
++ 	u32 tunerstep;
++ 	u32 ifreq;
++ 	u32 bandwidth;
++ 	u32 iqsense;
++ 	u32 refclock;
++ };
++ 
++ /*
++  * search callback possible return status
++  *
++  * DVBFE_ALGO_SEARCH_SUCCESS
++  * The frontend search algorithm completed and returned succesfully
++  *
++  * DVBFE_ALGO_SEARCH_ASLEEP
++  * The frontend search algorithm is sleeping
++  *
++  * DVBFE_ALGO_SEARCH_FAILED
++  * The frontend search for a signal failed
++  *
++  * DVBFE_ALGO_SEARCH_INVALID
++  * The frontend search algorith was probably supplied with invalid
++  * parameters and the search is an invalid one
++  *
++  * DVBFE_ALGO_SEARCH_ERROR
++  * The frontend search algorithm failed due to some error
++  *
++  * DVBFE_ALGO_SEARCH_AGAIN
++  * The frontend search algorithm was requested to search again
++  */
++ enum dvbfe_search {
++ 	DVBFE_ALGO_SEARCH_SUCCESS	= (1 <<  0),
++ 	DVBFE_ALGO_SEARCH_ASLEEP	= (1 <<  1),
++ 	DVBFE_ALGO_SEARCH_FAILED	= (1 <<  2),
++ 	DVBFE_ALGO_SEARCH_INVALID	= (1 <<  3),
++ 	DVBFE_ALGO_SEARCH_AGAIN		= (1 <<  4),
++ 	DVBFE_ALGO_SEARCH_ERROR		= (1 << 31),
++ };
++ 
+  struct dvb_tuner_ops {
+  
+  	struct dvb_tuner_info info;
+***************
+*** 81,90 ****
+  #define TUNER_STATUS_LOCKED 1
+  	int (*get_status)(struct dvb_frontend *fe, u32 *status);
+  
+! 	/** These are provided seperately from set_params in order to facilitate silicon
+! 	 * tuners which require sophisticated tuning loops, controlling each parameter seperately. */
+! 	int (*set_frequency)(struct dvb_frontend *fe, u32 frequency);
+! 	int (*set_bandwidth)(struct dvb_frontend *fe, u32 bandwidth);
+  };
+  
+  struct dvb_frontend_ops {
+--- 203,214 ----
+  #define TUNER_STATUS_LOCKED 1
+  	int (*get_status)(struct dvb_frontend *fe, u32 *status);
+  
+! 	/**
+! 	 * These are provided seperately from set_params in order to facilitate silicon
+! 	 * tuners which require sophisticated tuning loops, controlling each parameter seperately.
+! 	 */
+! 	int (*set_state)(struct dvb_frontend *fe, enum tuner_param param, struct tuner_state *state);
+! 	int (*get_state)(struct dvb_frontend *fe, enum tuner_param param, struct tuner_state *state);
+  };
+  
+  struct dvb_frontend_ops {
+***************
+*** 103,112 ****
+  	int (*tune)(struct dvb_frontend* fe,
+  		    struct dvb_frontend_parameters* params,
+  		    unsigned int mode_flags,
+! 		    unsigned int *delay,
+  		    fe_status_t *status);
+  	/* get frontend tuning algorithm from the module */
+! 	int (*get_frontend_algo)(struct dvb_frontend *fe);
+  
+  	/* these two are only used for the swzigzag code */
+  	int (*set_frontend)(struct dvb_frontend* fe, struct dvb_frontend_parameters* params);
+--- 227,236 ----
+  	int (*tune)(struct dvb_frontend* fe,
+  		    struct dvb_frontend_parameters* params,
+  		    unsigned int mode_flags,
+! 		    int *delay,
+  		    fe_status_t *status);
+  	/* get frontend tuning algorithm from the module */
+! 	enum dvbfe_algo (*get_frontend_algo)(struct dvb_frontend *fe);
+  
+  	/* these two are only used for the swzigzag code */
+  	int (*set_frontend)(struct dvb_frontend* fe, struct dvb_frontend_parameters* params);
+***************
+*** 131,136 ****
+--- 255,272 ----
+  	int (*i2c_gate_ctrl)(struct dvb_frontend* fe, int enable);
+  	int (*ts_bus_ctrl)(struct dvb_frontend* fe, int acquire);
+  
++ 	/* These callbacks are based on the superseding IOCTL's	*/
++ 	int (*set_params)(struct dvb_frontend *fe, struct dvbfe_params *fe_params);
++ 	int (*get_params)(struct dvb_frontend *fe, struct dvbfe_params *fe_params);
++ 	int (*get_info)(struct dvb_frontend *fe, struct dvbfe_info *fe_info);
++ 	int (*get_delsys)(struct dvb_frontend *fe, enum dvbfe_delsys *fe_delsys);
++ 
++ 	/* These callbacks are for devices that implement their own
++ 	 * tuning algorithms, rather than a simple swzigzag
++ 	 */
++ 	enum dvbfe_search (*search)(struct dvb_frontend *fe, struct dvbfe_params *fe_params);
++ 	int (*track)(struct dvb_frontend *fe, struct dvbfe_params *fe_params);
++ 
+  	struct dvb_tuner_ops tuner_ops;
+  };
+  
+***************
+*** 152,157 ****
+--- 288,294 ----
+  	void* tuner_priv;
+  	void* frontend_priv;
+  	void* sec_priv;
++ 	u32   legacy;
+  };
+  
+  extern int dvb_register_frontend(struct dvb_adapter* dvb,
+***************
+*** 166,169 ****
+--- 303,320 ----
+  extern void dvb_frontend_sleep_until(struct timeval *waketime, u32 add_usec);
+  extern s32 timeval_usec_diff(struct timeval lasttime, struct timeval curtime);
+  
++ extern void decode_dvbs2_modcod(u32 modcod,
++ 				enum dvbfe_modulation *modulation,
++ 				enum dvbfe_fec *fec);
++ 
++ 
++ extern int newapi_to_olddrv(struct dvbfe_params *params,
++ 			    struct dvb_frontend_parameters *p,
++ 			    enum dvbfe_delsys delsys);
++ 
++ extern int olddrv_to_newapi(struct dvb_frontend *fe,
++ 			    struct dvbfe_params *params,
++ 			    struct dvb_frontend_parameters *p,
++ 			    enum fe_type fe_type);
++ 
+  #endif
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_net.c UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_net.c
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_net.c	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_net.c	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 62,68 ****
+--- 62,71 ----
+  #include <linux/uio.h>
+  #include <asm/uaccess.h>
+  #include <linux/crc32.h>
++ #include "compat.h"
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  #include <linux/mutex.h>
++ #endif
+  
+  #include "dvb_demux.h"
+  #include "dvb_net.h"
+***************
+*** 127,133 ****
+--- 130,138 ----
+  	int in_use;
+  	struct net_device_stats stats;
+  	u16 pid;
++ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
+  	struct net_device *net;
++ #endif
+  	struct dvb_net *host;
+  	struct dmx_demux *demux;
+  	struct dmx_section_feed *secfeed;
+***************
+*** 156,162 ****
+--- 161,171 ----
+  	unsigned char ule_bridged;		/* Whether the ULE_BRIDGED extension header was found. */
+  	int ule_sndu_remain;			/* Nr. of bytes still required for current ULE SNDU. */
+  	unsigned long ts_count;			/* Current ts cell counter. */
++ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,15)
+  	struct mutex mutex;
++ #else
++ 	struct semaphore mutex;
++ #endif
+  };
+  
+  
+***************
+*** 174,180 ****
+  	struct ethhdr *eth;
+  	unsigned char *rawp;
+  
+! 	skb_reset_mac_header(skb);
+  	skb_pull(skb,dev->hard_header_len);
+  	eth = eth_hdr(skb);
+  
+--- 183,189 ----
+  	struct ethhdr *eth;
+  	unsigned char *rawp;
+  
+! 	skb->mac.raw=skb->data;
+  	skb_pull(skb,dev->hard_header_len);
+  	eth = eth_hdr(skb);
+  
+***************
+*** 347,354 ****
+  {
+  	struct dvb_net_priv *priv = dev->priv;
+  	unsigned long skipped = 0L;
+! 	const u8 *ts, *ts_end, *from_where = NULL;
+! 	u8 ts_remain = 0, how_much = 0, new_ts = 1;
+  	struct ethhdr *ethh = NULL;
+  
+  #ifdef ULE_DEBUG
+--- 356,362 ----
+  {
+  	struct dvb_net_priv *priv = dev->priv;
+  	unsigned long skipped = 0L;
+! 	u8 *ts, *ts_end, *from_where = NULL, ts_remain = 0, how_much = 0, new_ts = 1;
+  	struct ethhdr *ethh = NULL;
+  
+  #ifdef ULE_DEBUG
+***************
+*** 365,371 ****
+  	/* For all TS cells in current buffer.
+  	 * Appearently, we are called for every single TS cell.
+  	 */
+! 	for (ts = buf, ts_end = buf + buf_len; ts < ts_end; /* no default incr. */ ) {
+  
+  		if (new_ts) {
+  			/* We are about to process a new TS cell. */
+--- 373,379 ----
+  	/* For all TS cells in current buffer.
+  	 * Appearently, we are called for every single TS cell.
+  	 */
+! 	for (ts = (char *)buf, ts_end = (char *)buf + buf_len; ts < ts_end; /* no default incr. */ ) {
+  
+  		if (new_ts) {
+  			/* We are about to process a new TS cell. */
+***************
+*** 601,607 ****
+  			/* Check CRC32, we've got it in our skb already. */
+  			unsigned short ulen = htons(priv->ule_sndu_len);
+  			unsigned short utype = htons(priv->ule_sndu_type);
+- 			const u8 *tail;
+  			struct kvec iov[3] = {
+  				{ &ulen, sizeof ulen },
+  				{ &utype, sizeof utype },
+--- 609,614 ----
+***************
+*** 615,625 ****
+  			}
+  
+  			ule_crc = iov_crc32(ule_crc, iov, 3);
+! 			tail = skb_tail_pointer(priv->ule_skb);
+! 			expected_crc = *(tail - 4) << 24 |
+! 				       *(tail - 3) << 16 |
+! 				       *(tail - 2) << 8 |
+! 				       *(tail - 1);
+  			if (ule_crc != expected_crc) {
+  				printk(KERN_WARNING "%lu: CRC32 check FAILED: %08x / %08x, SNDU len %d type %#x, ts_remain %d, next 2: %x.\n",
+  				       priv->ts_count, ule_crc, expected_crc, priv->ule_sndu_len, priv->ule_sndu_type, ts_remain, ts_remain > 2 ? *(unsigned short *)from_where : 0);
+--- 622,631 ----
+  			}
+  
+  			ule_crc = iov_crc32(ule_crc, iov, 3);
+! 			expected_crc = *((u8 *)priv->ule_skb->tail - 4) << 24 |
+! 				       *((u8 *)priv->ule_skb->tail - 3) << 16 |
+! 				       *((u8 *)priv->ule_skb->tail - 2) << 8 |
+! 				       *((u8 *)priv->ule_skb->tail - 1);
+  			if (ule_crc != expected_crc) {
+  				printk(KERN_WARNING "%lu: CRC32 check FAILED: %08x / %08x, SNDU len %d type %#x, ts_remain %d, next 2: %x.\n",
+  				       priv->ts_count, ule_crc, expected_crc, priv->ule_sndu_len, priv->ule_sndu_type, ts_remain, ts_remain > 2 ? *(unsigned short *)from_where : 0);
+***************
+*** 698,706 ****
+  					}
+  					else
+  					{
+! 						skb_copy_from_linear_data(priv->ule_skb,
+! 							      dest_addr,
+! 							      ETH_ALEN);
+  						skb_pull(priv->ule_skb, ETH_ALEN);
+  					}
+  				}
+--- 704,710 ----
+  					}
+  					else
+  					{
+! 						memcpy(dest_addr,  priv->ule_skb->data, ETH_ALEN);
+  						skb_pull(priv->ule_skb, ETH_ALEN);
+  					}
+  				}
+***************
+*** 800,807 ****
+  }
+  
+  
+! static void dvb_net_sec(struct net_device *dev, const u8 *pkt, int
+! pkt_len)
+  {
+  	u8 *eth;
+  	struct sk_buff *skb;
+--- 804,810 ----
+  }
+  
+  
+! static void dvb_net_sec(struct net_device *dev, u8 *pkt, int pkt_len)
+  {
+  	u8 *eth;
+  	struct sk_buff *skb;
+***************
+*** 818,824 ****
+  	}
+  /* it seems some ISPs manage to screw up here, so we have to
+   * relax the error checks... */
+! #if 0
+  	if ((pkt[5] & 0xfd) != 0xc1) {
+  		/* drop scrambled or broken packets */
+  #else
+--- 821,827 ----
+  	}
+  /* it seems some ISPs manage to screw up here, so we have to
+   * relax the error checks... */
+! #if 0 /* keep */
+  	if ((pkt[5] & 0xfd) != 0xc1) {
+  		/* drop scrambled or broken packets */
+  #else
+***************
+*** 903,909 ****
+  	 * we rely on the DVB API definition where exactly one complete
+  	 * section is delivered in buffer1
+  	 */
+! 	dvb_net_sec (dev, buffer1, buffer1_len);
+  	return 0;
+  }
+  
+--- 906,912 ----
+  	 * we rely on the DVB API definition where exactly one complete
+  	 * section is delivered in buffer1
+  	 */
+! 	dvb_net_sec (dev, (u8*) buffer1, buffer1_len);
+  	return 0;
+  }
+  
+***************
+*** 1130,1144 ****
+--- 1133,1160 ----
+  }
+  
+  
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
++ static void wq_set_multicast_list (void *data)
++ #else
+  static void wq_set_multicast_list (struct work_struct *work)
++ #endif
+  {
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
++ 	struct net_device *dev = data;
++ 	struct dvb_net_priv *priv = dev->priv;
++ #else
+  	struct dvb_net_priv *priv =
+  		container_of(work, struct dvb_net_priv, set_multicast_list_wq);
+  	struct net_device *dev = priv->net;
++ #endif
+  
+  	dvb_net_feed_stop(dev);
+  	priv->rx_mode = RX_MODE_UNI;
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)
++ 	spin_lock_bh(&dev->xmit_lock);
++ #else
+  	netif_tx_lock_bh(dev);
++ #endif
+  
+  	if (dev->flags & IFF_PROMISC) {
+  		dprintk("%s: promiscuous mode\n", dev->name);
+***************
+*** 1163,1169 ****
+--- 1179,1189 ----
+  		}
+  	}
+  
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)
++ 	spin_unlock_bh(&dev->xmit_lock);
++ #else
+  	netif_tx_unlock_bh(dev);
++ #endif
+  	dvb_net_feed_start(dev);
+  }
+  
+***************
+*** 1175,1185 ****
+--- 1195,1213 ----
+  }
+  
+  
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
++ static void wq_restart_net_feed (void *data)
++ #else
+  static void wq_restart_net_feed (struct work_struct *work)
++ #endif
+  {
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
++ 	struct net_device *dev = data;
++ #else
+  	struct dvb_net_priv *priv =
+  		container_of(work, struct dvb_net_priv, restart_net_feed_wq);
+  	struct net_device *dev = priv->net;
++ #endif
+  
+  	if (netif_running(dev)) {
+  		dvb_net_feed_stop(dev);
+***************
+*** 1286,1292 ****
+--- 1314,1322 ----
+  	dvbnet->device[if_num] = net;
+  
+  	priv = net->priv;
++ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
+  	priv->net = net;
++ #endif
+  	priv->demux = dvbnet->demux;
+  	priv->pid = pid;
+  	priv->rx_mode = RX_MODE_UNI;
+***************
+*** 1295,1302 ****
+--- 1325,1337 ----
+  	priv->feedtype = feedtype;
+  	reset_ule(priv);
+  
++ #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
++ 	INIT_WORK(&priv->set_multicast_list_wq, wq_set_multicast_list, net);
++ 	INIT_WORK(&priv->restart_net_feed_wq, wq_restart_net_feed, net);
++ #else
+  	INIT_WORK(&priv->set_multicast_list_wq, wq_set_multicast_list);
+  	INIT_WORK(&priv->restart_net_feed_wq, wq_restart_net_feed);
++ #endif
+  	mutex_init(&priv->mutex);
+  
+  	net->base_addr = pid;
+***************
+*** 1441,1476 ****
+  	return dvb_usercopy(inode, file, cmd, arg, dvb_net_do_ioctl);
+  }
+  
+- static int dvb_net_close(struct inode *inode, struct file *file)
+- {
+- 	struct dvb_device *dvbdev = file->private_data;
+- 	struct dvb_net *dvbnet = dvbdev->priv;
+- 
+- 	if (!dvbdev)
+- 		return -ENODEV;
+- 
+- 	if ((file->f_flags & O_ACCMODE) == O_RDONLY) {
+- 		dvbdev->readers++;
+- 	} else {
+- 		dvbdev->writers++;
+- 	}
+- 
+- 	dvbdev->users++;
+- 
+- 	if(dvbdev->users == 1 && dvbnet->exit==1) {
+- 		fops_put(file->f_op);
+- 		file->f_op = NULL;
+- 		wake_up(&dvbdev->wait_queue);
+- 	}
+- 	return 0;
+- }
+- 
+- 
+  static struct file_operations dvb_net_fops = {
+  	.owner = THIS_MODULE,
+  	.ioctl = dvb_net_ioctl,
+  	.open =	dvb_generic_open,
+! 	.release = dvb_net_close,
+  };
+  
+  static struct dvb_device dvbdev_net = {
+--- 1476,1486 ----
+  	return dvb_usercopy(inode, file, cmd, arg, dvb_net_do_ioctl);
+  }
+  
+  static struct file_operations dvb_net_fops = {
+  	.owner = THIS_MODULE,
+  	.ioctl = dvb_net_ioctl,
+  	.open =	dvb_generic_open,
+! 	.release = dvb_generic_release,
+  };
+  
+  static struct dvb_device dvbdev_net = {
+***************
+*** 1485,1495 ****
+  {
+  	int i;
+  
+- 	dvbnet->exit = 1;
+- 	if (dvbnet->dvbdev->users < 1)
+- 		wait_event(dvbnet->dvbdev->wait_queue,
+- 				dvbnet->dvbdev->users==1);
+- 
+  	dvb_unregister_device(dvbnet->dvbdev);
+  
+  	for (i=0; i<DVB_NET_DEVICES_MAX; i++) {
+--- 1495,1500 ----
+diff -rcN linux-sh4/drivers/media/dvb/dvb-core/dvb_net.h UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_net.h
+*** linux-sh4/drivers/media/dvb/dvb-core/dvb_net.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/drivers/media/dvb/dvb-core/dvb_net.h	2009-06-02 22:37:42.000000000 +0200
+***************
+*** 36,42 ****
+  	struct dvb_device *dvbdev;
+  	struct net_device *device[DVB_NET_DEVICES_MAX];
+  	int state[DVB_NET_DEVICES_MAX];
+- 	unsigned int exit:1;
+  	struct dmx_demux *demux;
+  };
+  
+--- 36,41 ----
+diff -rcN linux-sh4/include/linux/dvb//ca.h UFS922_stm23_Patchdir/dvb/include//ca.h
+*** linux-sh4/include/linux/dvb//ca.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/dvb/include//ca.h	2009-06-02 22:37:50.000000000 +0200
+***************
+*** 39,44 ****
+--- 39,46 ----
+  	unsigned int flags;
+  #define CA_CI_MODULE_PRESENT 1 /* module (or card) inserted */
+  #define CA_CI_MODULE_READY   2
++ /* Dagobert: I'd like to have this information also in user land */
++ #define CA_CI_MODULE_INVALID 3
+  } ca_slot_info_t;
+  
+  
+diff -rcN linux-sh4/include/linux/dvb//frontend.h UFS922_stm23_Patchdir/dvb/include//frontend.h
+*** linux-sh4/include/linux/dvb//frontend.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/dvb/include//frontend.h	2009-06-02 22:37:50.000000000 +0200
+***************
+*** 7,12 ****
+--- 7,14 ----
+   *		    Andre Draszik <ad@convergence.de>
+   *		    for convergence integrated media GmbH
+   *
++  * Copyright (C) 2006, 2007 Manu Abraham <abraham.manu@gmail.com>
++  *
+   * This program is free software; you can redistribute it and/or
+   * modify it under the terms of the GNU Lesser General Public License
+   * as published by the Free Software Foundation; either version 2.1
+***************
+*** 33,41 ****
+  	FE_QPSK,
+  	FE_QAM,
+  	FE_OFDM,
+! 	FE_ATSC
+  } fe_type_t;
+! 
+  
+  typedef enum fe_caps {
+  	FE_IS_STUPID			= 0,
+--- 35,49 ----
+  	FE_QPSK,
+  	FE_QAM,
+  	FE_OFDM,
+! 	FE_ATSC,
+! 	FE_DVBS2	// S2, QPSK+8PSK
+  } fe_type_t;
+! typedef enum fe_rolloff {
+! 	FE_ROLLOFF_35    = 0,
+!         FE_ROLLOFF_25    = 1,
+!         FE_ROLLOFF_20    = 2,
+!         FE_ROLLOFF_UNKNOWN =3
+! } fe_rollof_t;
+  
+  typedef enum fe_caps {
+  	FE_IS_STUPID			= 0,
+***************
+*** 147,153 ****
+  	FEC_6_7,
+  	FEC_7_8,
+  	FEC_8_9,
+! 	FEC_AUTO
+  } fe_code_rate_t;
+  
+  
+--- 155,166 ----
+  	FEC_6_7,
+  	FEC_7_8,
+  	FEC_8_9,
+!         FEC_AUTO,
+!         FEC_1_4,   // S2
+!         FEC_1_3,   // S2
+!         FEC_2_5,   // S2
+!         FEC_3_5,   // S2
+!         FEC_9_10   // S2
+  } fe_code_rate_t;
+  
+  
+***************
+*** 160,166 ****
+  	QAM_256,
+  	QAM_AUTO,
+  	VSB_8,
+! 	VSB_16
+  } fe_modulation_t;
+  
+  typedef enum fe_transmit_mode {
+--- 173,181 ----
+  	QAM_256,
+  	QAM_AUTO,
+  	VSB_8,
+! 	VSB_16,
+! 	QPSK_S2,  // S2
+! 	PSK8    // S2
+  } fe_modulation_t;
+  
+  typedef enum fe_transmit_mode {
+***************
+*** 234,245 ****
+  };
+  
+  
+- struct dvb_frontend_event {
+- 	fe_status_t status;
+- 	struct dvb_frontend_parameters parameters;
+- };
+- 
+- 
+  /**
+   * When set, this flag will disable any zigzagging or other "normal" tuning
+   * behaviour. Additionally, there will be no automatic monitoring of the lock
+--- 249,254 ----
+***************
+*** 270,277 ****
+  #define FE_SET_FRONTEND		   _IOW('o', 76, struct dvb_frontend_parameters)
+  #define FE_GET_FRONTEND		   _IOR('o', 77, struct dvb_frontend_parameters)
+  #define FE_SET_FRONTEND_TUNE_MODE  _IO('o', 81) /* unsigned int */
+- #define FE_GET_EVENT		   _IOR('o', 78, struct dvb_frontend_event)
+  
+  #define FE_DISHNETWORK_SEND_LEGACY_CMD _IO('o', 80) /* unsigned int */
+  
+  #endif /*_DVBFRONTEND_H_*/
+--- 279,712 ----
+  #define FE_SET_FRONTEND		   _IOW('o', 76, struct dvb_frontend_parameters)
+  #define FE_GET_FRONTEND		   _IOR('o', 77, struct dvb_frontend_parameters)
+  #define FE_SET_FRONTEND_TUNE_MODE  _IO('o', 81) /* unsigned int */
+  
+  #define FE_DISHNETWORK_SEND_LEGACY_CMD _IO('o', 80) /* unsigned int */
+  
++ /*
++  * References:
++  * DVB-S : EN 300 421
++  * DVB-S2: EN 302 307, TR 102 376, EN 301 210
++  * DVB-C : EN 300 429
++  * DVB-T : EN 300 744
++  * DVB-H : EN 300 304
++  * ATSC  : A/53A
++  */
++ 
++ /*
++  * Delivery Systems
++  * needs to set/queried for multistandard frontends
++  */
++ enum dvbfe_delsys {
++ 	DVBFE_DELSYS_DVBS		= (1 <<  0),
++ 	DVBFE_DELSYS_DSS		= (1 <<  1),
++ 	DVBFE_DELSYS_DVBS2		= (1 <<  2),
++ 	DVBFE_DELSYS_DVBC		= (1 <<  3),
++ 	DVBFE_DELSYS_DVBT		= (1 <<  4),
++ 	DVBFE_DELSYS_DVBH		= (1 <<  5),
++ 	DVBFE_DELSYS_ATSC		= (1 <<  6),
++ 	DVBFE_DELSYS_DUMMY		= (1 << 31)
++ };
++ #define DVBFE_GET_DELSYS		_IOR('o', 82, enum dvbfe_delsys)
++ 
++ /*
++  * Modulation types
++  */
++ enum dvbfe_modulation {
++ 	DVBFE_MOD_NONE			= (0 <<  0),
++ 	DVBFE_MOD_BPSK			= (1 <<  0),
++ 	DVBFE_MOD_QPSK			= (1 <<  1),
++ 	DVBFE_MOD_OQPSK			= (1 <<  2),
++ 	DVBFE_MOD_8PSK			= (1 <<  3),
++ 	DVBFE_MOD_16APSK		= (1 <<  4),
++ 	DVBFE_MOD_32APSK		= (1 <<  5),
++ 	DVBFE_MOD_QAM4			= (1 <<  6),
++ 	DVBFE_MOD_QAM16			= (1 <<  7),
++ 	DVBFE_MOD_QAM32			= (1 <<  8),
++ 	DVBFE_MOD_QAM64			= (1 <<  9),
++ 	DVBFE_MOD_QAM128		= (1 << 10),
++ 	DVBFE_MOD_QAM256		= (1 << 11),
++ 	DVBFE_MOD_QAM512		= (1 << 12),
++ 	DVBFE_MOD_QAM1024		= (1 << 13),
++ 	DVBFE_MOD_QAMAUTO		= (1 << 14),
++ 	DVBFE_MOD_OFDM			= (1 << 15),
++ 	DVBFE_MOD_COFDM			= (1 << 16),
++ 	DVBFE_MOD_VSB8			= (1 << 17),
++ 	DVBFE_MOD_VSB16			= (1 << 18),
++ 	DVBFE_MOD_AUTO			= (1 << 31)
++ };
++ 
++ /*
++  * Convolution Code Rate (Viterbi Inner Code Rate)
++  * DVB-S2 uses LDPC. Information on LDPC can be found at
++  * http://www.ldpc-codes.com
++  */
++ enum dvbfe_fec {
++ 	DVBFE_FEC_NONE			= (0 <<  0),
++ 	DVBFE_FEC_1_4			= (1 <<  0),
++ 	DVBFE_FEC_1_3			= (1 <<  1),
++ 	DVBFE_FEC_2_5			= (1 <<  2),
++ 	DVBFE_FEC_1_2			= (1 <<  3),
++ 	DVBFE_FEC_3_5			= (1 <<  4),
++ 	DVBFE_FEC_2_3			= (1 <<  5),
++ 	DVBFE_FEC_3_4			= (1 <<  6),
++ 	DVBFE_FEC_4_5			= (1 <<  7),
++ 	DVBFE_FEC_5_6			= (1 <<  8),
++ 	DVBFE_FEC_6_7			= (1 <<  9),
++ 	DVBFE_FEC_7_8			= (1 << 10),
++ 	DVBFE_FEC_8_9			= (1 << 11),
++ 	DVBFE_FEC_9_10			= (1 << 12),
++ 	DVBFE_FEC_AUTO			= (1 << 31)
++ };
++ 
++ /*
++  * Frontend Inversion (I/Q Swap)
++  */
++ enum dvbfe_inversion {
++ 	DVBFE_INVERSION_OFF		= 0,
++ 	DVBFE_INVERSION_ON,
++ 	DVBFE_INVERSION_AUTO
++ };
++ enum dvbfe_rolloff {
++ 	DVBFE_ROLLOFF_35		= (0 <<  0),
++ 	DVBFE_ROLLOFF_25		= (1 <<  0),
++ 	DVBFE_ROLLOFF_20		= (2 <<  0),
++ 	DVBFE_ROLLOFF_UNKNOWN		= (3 <<  0)
++ };
++ /*
++  * DVB-S parameters
++  */
++ struct dvbs_params {
++ 	__u32				symbol_rate;
++ 
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++         enum dvbfe_rolloff              rolloff;
++ };
++ 
++ /*
++  * DSS parameters
++  */
++ struct dss_params {
++ 	__u32				symbol_rate;
++ 
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++         __u8                            pad[32];
++ };
++ 
++ /*
++  * DVB-S2 parameters
++  */
++ struct dvbs2_params {
++ 	__u32				symbol_rate;
++ 
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++ 
++ 	/* Informational fields only	*/
++ 	enum dvbfe_rolloff		rolloff;
++ 
++ 	__u8				matype_1;
++ 	__u8				matype_2;
++ 	__u8				upl_1;
++ 	__u8				upl_2;
++ 	__u8				dfl_1;
++ 	__u8				dfl_2;
++ 	__u8				sync;
++ 	__u8				syncd_1;
++ 	__u8				syncd_2;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * DVB-C parameters
++  */
++ struct dvbc_params {
++ 	__u32				symbol_rate;
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++ };
++ 
++ /*
++  * DVB-T Channel bandwidth
++  */
++ enum dvbfe_bandwidth {
++ 	DVBFE_BANDWIDTH_8_MHZ		= (1 <<  0),
++ 	DVBFE_BANDWIDTH_7_MHZ		= (1 <<  1),
++ 	DVBFE_BANDWIDTH_6_MHZ		= (1 <<  2),
++ 	DVBFE_BANDWIDTH_5_MHZ		= (1 <<  3),
++ 	DVBFE_BANDWIDTH_AUTO		= (1 << 31)
++ };
++ 
++ /*
++  * DVB-T/DVB-H transmission mode
++  */
++ enum dvbfe_transmission_mode {
++ 	DVBFE_TRANSMISSION_MODE_2K	= (1 <<  0),
++ 	DVBFE_TRANSMISSION_MODE_4K	= (1 <<  1),
++ 	DVBFE_TRANSMISSION_MODE_8K	= (1 <<  2),
++ 	DVBFE_TRANSMISSION_MODE_AUTO	= (1 << 31)
++ };
++ 
++ /*
++  * DVB-T/DVB-H Guard interval
++  */
++ enum dvbfe_guard_interval {
++ 	DVBFE_GUARD_INTERVAL_1_32	= (1 <<  1),
++ 	DVBFE_GUARD_INTERVAL_1_16	= (1 <<  2),
++ 	DVBFE_GUARD_INTERVAL_1_8	= (1 <<  3),
++ 	DVBFE_GUARD_INTERVAL_1_4	= (1 <<  4),
++ 	DVBFE_GUARD_INTERVAL_AUTO	= (1 << 31)
++ };
++ 
++ /*
++  * DVB-T/DVB-H Hierarchial modulation
++  */
++ enum dvbfe_hierarchy {
++ 	DVBFE_HIERARCHY_OFF		= (1 <<  0),
++ 	DVBFE_HIERARCHY_ON		= (1 <<  1),
++ 	DVBFE_HIERARCHY_AUTO		= (1 <<  2)
++ };
++ 
++ /*
++  * DVB-T/DVB-H Rolloff's
++  */
++ enum dvbfe_alpha {
++ 	DVBFE_ALPHA_1			= (1 <<  0),
++ 	DVBFE_ALPHA_2			= (1 <<  1),
++ 	DVBFE_ALPHA_4			= (1 <<  2)
++ };
++ 
++ /*
++  * Stream priority for Hierachial coding
++  */
++ enum dvbfe_stream_priority {
++ 	DVBFE_STREAM_PRIORITY_HP	= (0 << 0),
++ 	DVBFE_STREAM_PRIORITY_LP	= (1 << 0)
++ };
++ 
++ /*
++  * DVB-T parameters
++  */
++ struct dvbt_params {
++ 	enum dvbfe_modulation		constellation;
++ 	enum dvbfe_bandwidth		bandwidth;
++ 	enum dvbfe_fec			code_rate_HP;
++ 	enum dvbfe_fec			code_rate_LP;
++ 	enum dvbfe_transmission_mode	transmission_mode;
++ 	enum dvbfe_guard_interval	guard_interval;
++ 	enum dvbfe_hierarchy		hierarchy;
++ 	enum dvbfe_alpha		alpha;
++ 	enum dvbfe_stream_priority	priority;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * DVB-H Interleaver type
++  */
++ enum dvbfe_interleaver {
++ 	DVBFE_INTERLEAVER_NATIVE	= (1 <<  0),
++ 	DVBFE_INTERLEAVER_INDEPTH	= (1 <<  1),
++ 	DVBFE_INTERLEAVER_AUTO		= (1 << 31)
++ };
++ 
++ /*
++  * DVB-H MPE-FEC Indicator
++  */
++ enum dvbfe_mpefec {
++ 	DVBFE_MPEFEC_OFF		= (1 <<  0),
++ 	DVBFE_MPEFEC_ON			= (1 <<  1)
++ };
++ 
++ /*
++  * DVB-H Timeslicing Indicator
++  */
++ enum dvbfe_timeslicing {
++ 	DVBFE_TIMESLICING_OFF		= (1 <<  0),
++ 	DVBFE_TIMESLICING_ON		= (1 <<  1)
++ };
++ 
++ /*
++  * DVB-H parameters
++  */
++ struct dvbh_params {
++ 	enum dvbfe_modulation		constellation;
++ 	enum dvbfe_fec			code_rate_HP;
++ 	enum dvbfe_fec			code_rate_LP;
++ 	enum dvbfe_transmission_mode	transmission_mode;
++ 	enum dvbfe_guard_interval	guard_interval;
++ 	enum dvbfe_hierarchy		hierarchy;
++ 	enum dvbfe_alpha		alpha;
++ 	enum dvbfe_interleaver		interleaver;
++ 	enum dvbfe_mpefec		mpefec;
++ 	enum dvbfe_timeslicing		timeslicing;
++ 	enum dvbfe_stream_priority	priority;
++ 
++ 	__u32				bandwidth;
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * ATSC parameters
++  */
++ struct atsc_params {
++ 	enum dvbfe_modulation		modulation;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * DVB Frontend Tuning Parameters
++  */
++ struct dvbfe_params {
++ 	__u32				frequency;
++ 	enum fe_spectral_inversion	inversion;
++ 	enum dvbfe_delsys		delivery;
++ 
++ 	__u8				pad[32];
++ 
++ 	union {
++ 		struct dvbs_params	dvbs;
++ 		struct dss_params	dss;
++ 		struct dvbs2_params	dvbs2;
++ 		struct dvbc_params	dvbc;
++ 		struct dvbt_params	dvbt;
++ 		struct dvbh_params	dvbh;
++ 		struct atsc_params	atsc;
++ 
++ 		__u8			pad[128];
++ 	} delsys;
++ };
++ #define DVBFE_SET_PARAMS		_IOW('o', 83, struct dvbfe_params)
++ #define DVBFE_GET_PARAMS		_IOWR('o', 84, struct dvbfe_params)
++ 
++ /*
++  * DVB-S capability bitfields
++  */
++ struct dvbfe_dvbs_info {
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++ };
++ 
++ /*
++  * DSS capability bitfields
++  */
++ struct dvbfe_dss_info {
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++ };
++ 
++ /*
++  * DVB-S2 capability bitfields
++  */
++ struct dvbfe_dvbs2_info {
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_fec			fec;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * DVB-C capability bitfields
++  */
++ struct dvbfe_dvbc_info {
++ 	enum dvbfe_modulation		modulation;
++ };
++ 
++ /*
++  * DVB-T capability bitfields
++  */
++ struct dvbfe_dvbt_info {
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_stream_priority	stream_priority;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * DVB-H capability bitfields
++  */
++ struct dvbfe_dvbh_info {
++ 	enum dvbfe_modulation		modulation;
++ 	enum dvbfe_stream_priority	stream_priority;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * ATSC capability bitfields
++  */
++ struct dvbfe_atsc_info {
++ 	enum dvbfe_modulation		modulation;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ /*
++  * DVB Frontend related Information
++  */
++ struct dvbfe_info {
++ 	char				name[128];
++ 
++ 	/* For Multi Standard tuners, set "delivery"
++ 	 * to the relevant delivery system to retrieve the
++ 	 * relevant delivery system related information.
++ 	 */
++ 	enum dvbfe_delsys		delivery;
++ 
++ 	union {
++ 		struct dvbfe_dvbs_info	dvbs;
++ 		struct dvbfe_dss_info	dss;
++ 		struct dvbfe_dvbs2_info	dvbs2;
++ 		struct dvbfe_dvbc_info	dvbc;
++ 		struct dvbfe_dvbt_info	dvbt;
++ 		struct dvbfe_dvbh_info	dvbh;
++ 		struct dvbfe_atsc_info	atsc;
++ 
++ 		__u8			pad[128];
++ 	} delsys;
++ 
++ 	__u32				frequency_min;
++ 	__u32				frequency_max;
++ 	__u32				frequency_step;
++ 	__u32				frequency_tolerance;
++ 	__u32				symbol_rate_min;
++ 	__u32				symbol_rate_max;
++ 	__u32				symbol_rate_tolerance;
++ 
++ 	enum fe_spectral_inversion	inversion;
++ 
++ 	__u8				pad[128];
++ };
++ #define DVBFE_GET_INFO			_IOWR('o', 85, struct dvbfe_info)
++ 
++ enum dvbfe_status {
++ 	DVBFE_HAS_SIGNAL		= (1 <<  0),	/*  something above noise floor	*/
++ 	DVBFE_HAS_CARRIER		= (1 <<  1),	/*  Signal found		*/
++ 	DVBFE_HAS_VITERBI		= (1 <<  2),	/*  FEC is stable		*/
++ 	DVBFE_HAS_SYNC			= (1 <<  3),	/*  SYNC found			*/
++ 	DVBFE_HAS_LOCK			= (1 <<  4),	/*  OK ..			*/
++ 	DVBFE_TIMEDOUT			= (1 <<  5),	/*  no lock in last ~2 s	*/
++ 	DVBFE_STATUS_DUMMY		= (1 << 31)
++ };
++ 
++ /*
++  * DVB Frontend events
++  */
++ struct dvbfe_events {
++ 	enum dvbfe_status		status;
++ 
++ 	__u8				pad[32];
++ };
++ 
++ struct dvb_frontend_event {
++ 	fe_status_t status;
++ 	struct dvb_frontend_parameters parameters;
++ 	struct dvbfe_events fe_events;
++ 	struct dvbfe_params fe_params;
++ };
++ #define FE_GET_EVENT		   _IOR('o', 78, struct dvb_frontend_event)
++ 
+  #endif /*_DVBFRONTEND_H_*/
+diff -rcN linux-sh4/include/linux/dvb//video.h UFS922_stm23_Patchdir/dvb/include//video.h
+*** linux-sh4/include/linux/dvb//video.h	2007-10-09 22:31:38.000000000 +0200
+--- UFS922_stm23_Patchdir/dvb/include//video.h	2009-06-02 22:37:50.000000000 +0200
+***************
+*** 29,35 ****
+  #ifdef __KERNEL__
+  #include <linux/types.h>
+  #else
+- #include <asm/types.h>
+  #include <stdint.h>
+  #include <time.h>
+  #endif
+--- 29,34 ----
+***************
+*** 102,108 ****
+  
+  /* The structure must be zeroed before use by the application
+     This ensures it can be extended safely in the future. */
+! struct video_command {
+  	__u32 cmd;
+  	__u32 flags;
+  	union {
+--- 101,107 ----
+  
+  /* The structure must be zeroed before use by the application
+     This ensures it can be extended safely in the future. */
+! /*struct video_command {
+  	__u32 cmd;
+  	__u32 flags;
+  	union {
+***************
+*** 111,131 ****
+  		} stop;
+  
+  		struct {
+  			/* 0 or 1000 specifies normal speed,
+  			   1 specifies forward single stepping,
+  			   -1 specifies backward single stepping,
+  			   >1: playback at speed/1000 of the normal speed,
+  			   <-1: reverse playback at (-speed/1000) of the normal speed. */
+! 			__s32 speed;
+! 			__u32 format;
+  		} play;
+  
+  		struct {
+! 			__u32 data[16];
+  		} raw;
+  	};
+  };
+- 
+  /* FIELD_UNKNOWN can be used if the hardware does not know whether
+     the Vsync is for an odd, even or progressive (i.e. non-interlaced)
+     field. */
+--- 110,153 ----
+  		} stop;
+  
+  		struct {
++ 			__u32 speed;
++ 			__u32 format;
++ 		} play;
++ 
++ 		struct {
++ 			__u32 data[16];
++ 		} raw;
++ 	};
++ };*/
++ struct video_command {
++ 	unsigned int cmd;
++ 	unsigned int flags;
++ 	union {
++ 		struct {
++ 			unsigned long long pts;
++ 		} stop;
++ 
++ 		struct {
+  			/* 0 or 1000 specifies normal speed,
+  			   1 specifies forward single stepping,
+  			   -1 specifies backward single stepping,
+  			   >1: playback at speed/1000 of the normal speed,
+  			   <-1: reverse playback at (-speed/1000) of the normal speed. */
+! 			int          speed;
+! 			unsigned int format;
+  		} play;
+  
+  		struct {
+! 			unsigned int data[16];
+  		} raw;
++ 
++ 		struct {
++ 			unsigned int    option; /* really dvb_option_t but like this so don't modify kernel sources too much */
++ 			unsigned int    value;
++ 		} option;
++ 
+  	};
+  };
+  /* FIELD_UNKNOWN can be used if the hardware does not know whether
+     the Vsync is for an odd, even or progressive (i.e. non-interlaced)
+     field. */
+*** linux-sh4-2.6.23.17_stm23_0119-orig/drivers/media/dvb/dvb-core/Makefile	2007-10-09 22:31:38.000000000 +0200
+--- linux-sh4-2.6.23.17_stm23_0119/drivers/media/dvb/dvb-core/Makefile	2009-06-10 22:46:00.000000000 +0200
+***************
+*** 4,9 ****
+  
+  dvb-core-objs := dvbdev.o dmxdev.o dvb_demux.o dvb_filter.o 	\
+  		 dvb_ca_en50221.o dvb_frontend.o 		\
+! 		 dvb_net.o dvb_ringbuffer.o dvb_math.o
+  
+  obj-$(CONFIG_DVB_CORE) += dvb-core.o
+--- 4,9 ----
+  
+  dvb-core-objs := dvbdev.o dmxdev.o dvb_demux.o dvb_filter.o 	\
+  		 dvb_ca_en50221.o dvb_frontend.o 		\
+! 		 dvb_ringbuffer.o dvb_math.o
+  
+  obj-$(CONFIG_DVB_CORE) += dvb-core.o
+diff -Naur linux-orig/drivers/media/dvb/dvb-core/dmxdev.c linux/drivers/media/dvb/dvb-core/dmxdev.c
+--- linux-orig/drivers/media/dvb/dvb-core/dmxdev.c	2009-06-07 14:13:04.000000000 +0200
++++ linux/drivers/media/dvb/dvb-core/dmxdev.c	2009-06-20 17:20:04.000000000 +0200
+@@ -379,11 +379,18 @@
+ 	switch (dmxdevfilter->type) {
+ 	case DMXDEV_TYPE_SEC:
+ 		del_timer(&dmxdevfilter->timer);
+-		dmxdevfilter->feed.sec->stop_filtering(dmxdevfilter->feed.sec);
++		dmxdevfilter->feed_sec->stop_filtering(dmxdevfilter->feed_sec);
+ 		break;
+ 	case DMXDEV_TYPE_PES:
+-		dmxdevfilter->feed.ts->stop_filtering(dmxdevfilter->feed.ts);
+-		break;
++        {
++                struct dmxdev_feed *feed=dmxdevfilter->feeds;
++		/* stop all feeds */
++                while (feed) {
++                        feed->ts->stop_filtering(feed->ts);
++                        feed=feed->next;
++                }
++                break;
++        }
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -397,9 +404,17 @@
+ 
+ 	switch (filter->type) {
+ 	case DMXDEV_TYPE_SEC:
+-		return filter->feed.sec->start_filtering(filter->feed.sec);
++		return filter->feed_sec->start_filtering(filter->feed_sec);
+ 	case DMXDEV_TYPE_PES:
+-		return filter->feed.ts->start_filtering(filter->feed.ts);
++        {
++                struct dmxdev_feed *feed=filter->feeds;
++		/* start all feeds */
++                while (feed) {
++                        feed->ts->start_filtering(feed->ts);
++                        feed=feed->next;
++                }
++                break;
++        }
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -424,7 +439,7 @@
+ 		}
+ 
+ 	filter->dev->demux->release_section_feed(dmxdev->demux,
+-						 filter->feed.sec);
++						 filter->feed_sec);
+ 
+ 	return 0;
+ }
+@@ -436,25 +451,32 @@
+ 
+ 	switch (dmxdevfilter->type) {
+ 	case DMXDEV_TYPE_SEC:
+-		if (!dmxdevfilter->feed.sec)
++		if (!dmxdevfilter->feed_sec)
+ 			break;
+ 		dvb_dmxdev_feed_stop(dmxdevfilter);
+ 		if (dmxdevfilter->filter.sec)
+-			dmxdevfilter->feed.sec->
+-			    release_filter(dmxdevfilter->feed.sec,
++			dmxdevfilter->feed_sec->
++			    release_filter(dmxdevfilter->feed_sec,
+ 					   dmxdevfilter->filter.sec);
+ 		dvb_dmxdev_feed_restart(dmxdevfilter);
+-		dmxdevfilter->feed.sec = NULL;
++		dmxdevfilter->feed_sec = NULL;
+ 		break;
+ 	case DMXDEV_TYPE_PES:
+-		if (!dmxdevfilter->feed.ts)
+-			break;
++	{
++		struct dmxdev_feed *feed=dmxdevfilter->feeds;
++
+ 		dvb_dmxdev_feed_stop(dmxdevfilter);
+-		dmxdevfilter->dev->demux->
+-		    release_ts_feed(dmxdevfilter->dev->demux,
+-				    dmxdevfilter->feed.ts);
+-		dmxdevfilter->feed.ts = NULL;
++
++		/* remove all feeds */
++		while (feed) {
++			dmxdevfilter->dev->demux->
++				release_ts_feed(dmxdevfilter->dev->demux,
++					feed->ts);
++			feed->ts=NULL;
++			feed=feed->next;
++		}
+ 		break;
++	}
+ 	default:
+ 		if (dmxdevfilter->state == DMXDEV_STATE_ALLOCATED)
+ 			return 0;
+@@ -467,14 +489,87 @@
+ 
+ static inline int dvb_dmxdev_filter_reset(struct dmxdev_filter *dmxdevfilter)
+ {
+-	if (dmxdevfilter->state < DMXDEV_STATE_SET)
++	struct dmxdev_feed *feed=dmxdevfilter->feeds;
++
++	if (dmxdevfilter->state<DMXDEV_STATE_SET)
+ 		return 0;
+ 
++	/* free all */
++	while (feed) {
++		struct dmxdev_feed *n=feed;
++		if (feed->ts)
++			printk("!!! ts still allocated\n");
++		feed=feed->next;
++		vfree(n);
++	}
++
++	dmxdevfilter->feeds=NULL;
+ 	dmxdevfilter->type = DMXDEV_TYPE_NONE;
+ 	dvb_dmxdev_filter_state_set(dmxdevfilter, DMXDEV_STATE_ALLOCATED);
+ 	return 0;
+ }
+ 
++static int dvb_dmxdev_start_feed(struct dmxdev *dmxdev, struct dmxdev_filter *filter,
++                                struct dmxdev_feed *feed)
++{
++	struct dmx_pes_filter_params *para = &filter->params.pes;
++	struct timespec timeout = { 0 };
++	struct dmx_ts_feed **tsfeed = &feed->ts;
++	int ret;
++	int ts_type;
++	enum dmx_ts_pes ts_pes;
++	dmx_output_t otype;
++
++	*tsfeed = 0;
++
++		/* determine which format to output */
++	otype = para->output;
++
++	ts_pes = (enum dmx_ts_pes)para->pes_type;
++
++	if (otype == DMX_OUT_DECODER)
++		ts_type = TS_DECODER;
++	else
++		ts_type = 0;                                                    
++
++	/* DMX_OUT_TS_TAP expects TS headers */
++	if (otype == DMX_OUT_TS_TAP)
++		ts_type |= TS_PACKET;
++
++	/* DMX_OUT_TAP used to expect PES packets. */
++	if (otype == DMX_OUT_TAP) {
++		ts_type |= TS_PACKET;
++
++		/*now, if somebody specified something else than DMX_PES_OTHER, we assume TS filtering. */
++		if (ts_pes == DMX_PES_OTHER) /* i.e. DMX_PES_OTHER for backward compat. */
++			ts_type |= TS_PAYLOAD_ONLY;
++	}
++
++	ret = dmxdev->demux->allocate_ts_feed(dmxdev->demux, tsfeed,
++						dvb_dmxdev_ts_callback);
++
++	if (ret < 0)
++		return ret;
++
++	(*tsfeed)->priv=filter;
++
++	ret = (*tsfeed)->set(*tsfeed, feed->pid, ts_type, ts_pes, 32768,
++				timeout);
++
++	if (ret < 0) {                                                          
++		dmxdev->demux->release_ts_feed(dmxdev->demux, *tsfeed);
++		return ret;
++	}
++
++	ret = feed->ts->start_filtering(feed->ts);
++	if (ret < 0) {
++		dmxdev->demux->release_ts_feed(dmxdev->demux, *tsfeed);
++		return ret;
++	}
++
++	return 0;
++}
++
+ static int dvb_dmxdev_filter_start(struct dmxdev_filter *filter)
+ {
+ 	struct dmxdev *dmxdev = filter->dev;
+@@ -503,7 +598,7 @@
+ 	{
+ 		struct dmx_sct_filter_params *para = &filter->params.sec;
+ 		struct dmx_section_filter **secfilter = &filter->filter.sec;
+-		struct dmx_section_feed **secfeed = &filter->feed.sec;
++		struct dmx_section_feed **secfeed = &filter->feed_sec;
+ 
+ 		*secfilter = NULL;
+ 		*secfeed = NULL;
+@@ -514,7 +609,7 @@
+ 			if (dmxdev->filter[i].state >= DMXDEV_STATE_GO &&
+ 			    dmxdev->filter[i].type == DMXDEV_TYPE_SEC &&
+ 			    dmxdev->filter[i].params.sec.pid == para->pid) {
+-				*secfeed = dmxdev->filter[i].feed.sec;
++				*secfeed = dmxdev->filter[i].feed_sec;
+ 				break;
+ 			}
+ 		}
+@@ -545,7 +640,7 @@
+ 		ret = (*secfeed)->allocate_filter(*secfeed, secfilter);
+ 		if (ret < 0) {
+ 			dvb_dmxdev_feed_restart(filter);
+-			filter->feed.sec->start_filtering(*secfeed);
++			filter->feed_sec->start_filtering(*secfeed);
+ 			dprintk("could not get filter\n");
+ 			return ret;
+ 		}
+@@ -567,7 +662,7 @@
+ 
+ 		filter->todo = 0;
+ 
+-		ret = filter->feed.sec->start_filtering(filter->feed.sec);
++		ret = filter->feed_sec->start_filtering(filter->feed_sec);
+ 		if (ret < 0)
+ 			return ret;
+ 
+@@ -576,51 +671,14 @@
+ 	}
+ 	case DMXDEV_TYPE_PES:
+ 	{
+-		struct timespec timeout = { 0 };
+-		struct dmx_pes_filter_params *para = &filter->params.pes;
+-		dmx_output_t otype;
+-		int ret;
+-		int ts_type;
+-		enum dmx_ts_pes ts_pes;
+-		struct dmx_ts_feed **tsfeed = &filter->feed.ts;
+-
+-		filter->feed.ts = NULL;
+-		otype = para->output;
+-
+-		ts_pes = (enum dmx_ts_pes)para->pes_type;
+-
+-		if (ts_pes < DMX_PES_OTHER)
+-			ts_type = TS_DECODER;
+-		else
+-			ts_type = 0;
+-
+-		if (otype == DMX_OUT_TS_TAP)
+-			ts_type |= TS_PACKET;
+-
+-		if (otype == DMX_OUT_TAP)
+-			ts_type |= TS_PAYLOAD_ONLY | TS_PACKET;
+-
+-		ret = dmxdev->demux->allocate_ts_feed(dmxdev->demux,
+-						      tsfeed,
+-						      dvb_dmxdev_ts_callback);
+-		if (ret < 0)
+-			return ret;
+-
+-		(*tsfeed)->priv = filter;
++		struct dmxdev_feed *feed=filter->feeds;
+ 
+-		ret = (*tsfeed)->set(*tsfeed, para->pid, ts_type, ts_pes,
+-				     32768, timeout);
+-		if (ret < 0) {
+-			dmxdev->demux->release_ts_feed(dmxdev->demux,
+-						       *tsfeed);
+-			return ret;
+-		}
+-
+-		ret = filter->feed.ts->start_filtering(filter->feed.ts);
+-		if (ret < 0) {
+-			dmxdev->demux->release_ts_feed(dmxdev->demux,
+-						       *tsfeed);
+-			return ret;
++		/* start all feeds */
++		while (feed) {
++			if (dvb_dmxdev_start_feed(dmxdev, filter, feed)) {
++				printk(".. feed start failed. we should unroll now.\n");
++			}
++			feed=feed->next;
+ 		}
+ 
+ 		break;
+@@ -662,7 +720,7 @@
+ 	dvb_ringbuffer_init(&dmxdevfilter->buffer, NULL, 8192);
+ 	dmxdevfilter->type = DMXDEV_TYPE_NONE;
+ 	dvb_dmxdev_filter_state_set(dmxdevfilter, DMXDEV_STATE_ALLOCATED);
+-	dmxdevfilter->feed.ts = NULL;
++	dmxdevfilter->feeds = NULL;
+ 	init_timer(&dmxdevfilter->timer);
+ 
+ 	mutex_unlock(&dmxdev->mutex);
+@@ -702,6 +760,59 @@
+ 		filter->mode[i] ^= 0xff;
+ }
+ 
++static int dvb_dmxdev_add_pid(struct dmxdev *dmxdev,
++				struct dmxdev_filter *dmxdevfilter,
++				__u16 pid)
++{
++	struct dmxdev_feed *feed=vmalloc(sizeof(struct dmxdev_feed));
++ 
++	if (feed == NULL)
++		return -ENOMEM;
++ 
++	memset(feed, 0, sizeof(struct dmxdev_feed));
++ 
++	feed->pid=pid;
++ 
++	feed->next=dmxdevfilter->feeds;
++	dmxdevfilter->feeds=feed;
++ 
++	if (dmxdevfilter->state >= DMXDEV_STATE_GO) {
++		int ret = dvb_dmxdev_start_feed(dmxdev, dmxdevfilter, feed);
++		if (ret) {
++			printk("add_pid: start feed failed..\n");
++			return ret;
++		}
++	}
++ 
++	return 0;
++}
++ 
++static int dvb_dmxdev_remove_pid(struct dmxdev *dmxdev,
++		struct dmxdev_filter *dmxdevfilter,
++		__u16 pid)
++{
++	struct dmxdev_feed **feed=&dmxdevfilter->feeds;
++
++	while (*feed) {
++		if ((*feed)->pid == pid) {
++			struct dmxdev_feed *f=*feed;
++			if (f->ts) {  // feed active
++				f->ts->stop_filtering(f->ts);
++				dmxdevfilter->dev->demux->release_ts_feed(
++					dmxdevfilter->dev->demux,
++					f->ts);
++				f->ts=NULL;
++			}
++			*feed=(*feed)->next;
++			vfree(f);
++			continue;
++		}
++		feed=&(*feed)->next;
++	}
++
++	return 0;
++}
++
+ static int dvb_dmxdev_filter_set(struct dmxdev *dmxdev,
+ 				 struct dmxdev_filter *dmxdevfilter,
+ 				 struct dmx_sct_filter_params *params)
+@@ -727,6 +838,7 @@
+ 				     struct dmx_pes_filter_params *params)
+ {
+ 	dvb_dmxdev_filter_stop(dmxdevfilter);
++	dvb_dmxdev_filter_reset(dmxdevfilter);
+ 
+ 	if (params->pes_type > DMX_PES_OTHER || params->pes_type < 0)
+ 		return -EINVAL;
+@@ -737,6 +849,12 @@
+ 
+ 	dvb_dmxdev_filter_state_set(dmxdevfilter, DMXDEV_STATE_SET);
+ 
++	if (dmxdevfilter->params.pes.pid <= 0x2000) {
++		int result = dvb_dmxdev_add_pid(dmxdev, dmxdevfilter, dmxdevfilter->params.pes.pid);
++		if (result)
++			return result;
++	}
++ 
+ 	if (params->flags & DMX_IMMEDIATE_START)
+ 		return dvb_dmxdev_filter_start(dmxdevfilter);
+ 
+@@ -791,17 +909,19 @@
+ 	struct dmxdev_filter *dmxdevfilter = file->private_data;
+ 	int ret;
+ 
+-	if (mutex_lock_interruptible(&dmxdevfilter->mutex))
+-		return -ERESTARTSYS;
++	if (dmxdevfilter->type == DMXDEV_TYPE_SEC) {
++		if (mutex_lock_interruptible(&dmxdevfilter->mutex))
++			return -ERESTARTSYS;
+ 
+-	if (dmxdevfilter->type == DMXDEV_TYPE_SEC)
+ 		ret = dvb_dmxdev_read_sec(dmxdevfilter, file, buf, count, ppos);
++
++		mutex_unlock(&dmxdevfilter->mutex);
++	}
+ 	else
+ 		ret = dvb_dmxdev_buffer_read(&dmxdevfilter->buffer,
+ 					     file->f_flags & O_NONBLOCK,
+ 					     buf, count, ppos);
+ 
+-	mutex_unlock(&dmxdevfilter->mutex);
+ 	return ret;
+ }
+ 
+@@ -881,6 +1001,24 @@
+ 		ret = dmxdev->demux->get_caps(dmxdev->demux, parg);
+ 		break;
+ 
++	case DMX_ADD_PID:
++		if (mutex_lock_interruptible(&dmxdevfilter->mutex)) {
++			mutex_unlock(&dmxdev->mutex);
++			return -ERESTARTSYS;
++		}
++		ret = dvb_dmxdev_add_pid(dmxdev, dmxdevfilter, arg);
++		mutex_unlock(&dmxdevfilter->mutex);
++		break;
++ 
++	case DMX_REMOVE_PID:
++		if (mutex_lock_interruptible(&dmxdevfilter->mutex)) {
++			mutex_unlock(&dmxdev->mutex);
++			return -ERESTARTSYS;
++		}
++		ret = dvb_dmxdev_remove_pid(dmxdev, dmxdevfilter, arg);
++		mutex_unlock(&dmxdevfilter->mutex);
++		break;
++
+ 	case DMX_SET_SOURCE:
+ 		if (!dmxdev->demux->set_source) {
+ 			ret = -EINVAL;
+diff -Naur linux-orig/drivers/media/dvb/dvb-core/dmxdev.h linux/drivers/media/dvb/dvb-core/dmxdev.h
+--- linux-orig/drivers/media/dvb/dvb-core/dmxdev.h	2009-06-07 14:13:04.000000000 +0200
++++ linux/drivers/media/dvb/dvb-core/dmxdev.h	2009-06-20 16:51:53.000000000 +0200
+@@ -62,15 +62,20 @@
+ 	} filter;
+ 
+ 	union {
+-		struct dmx_ts_feed *ts;
+-		struct dmx_section_feed *sec;
+-	} feed;
+-
+-	union {
+ 		struct dmx_sct_filter_params sec;
+ 		struct dmx_pes_filter_params pes;
+ 	} params;
+ 
++	struct dmx_section_feed *feed_sec;
++ 
++	struct dmxdev_feed {
++		int pid;
++ 
++		struct dmx_ts_feed *ts;
++ 
++		struct dmxdev_feed *next;
++	} *feeds;
++
+ 	enum dmxdev_type type;
+ 	enum dmxdev_state state;
+ 	struct dmxdev *dev;
+diff -Naur linux-orig/include/linux/dvb/dmx.h linux/include/linux/dvb/dmx.h
+--- linux-orig/include/linux/dvb/dmx.h 2009-06-01 02:34:40.000000000 +0200
++++ linux/include/linux/dvb/dmx.h      2006-06-07 15:40:47.000000000 +0200
+@@ -150,5 +150,7 @@
+ #define DMX_GET_CAPS             _IOR('o', 48, dmx_caps_t)
+ #define DMX_SET_SOURCE           _IOW('o', 49, dmx_source_t)
+ #define DMX_GET_STC              _IOWR('o', 50, struct dmx_stc)
++#define DMX_ADD_PID             _IO('o', 51)
++#define DMX_REMOVE_PID          _IO('o', 52)
+
+ #endif /*_DVBDMX_H_*/
+diff -Naur linux-orig/drivers/media/dvb/dvb-core/dvb_demux.c linux/drivers/media/dvb/dvb-core/dvb_demux.c
+--- linux-orig/drivers/media/dvb/dvb-core/dvb_demux.c	2009-06-07 14:13:05.000000000 +0200
++++ linux/drivers/media/dvb/dvb-core/dvb_demux.c	2009-06-20 16:55:25.000000000 +0200
+@@ -380,36 +380,18 @@
+ 	}
+ }
+ 
+-#define DVR_FEED(f)							\
+-	(((f)->type == DMX_TYPE_TS) &&					\
+-	((f)->feed.ts.is_filtering) &&					\
+-	(((f)->ts_type & (TS_PACKET|TS_PAYLOAD_ONLY)) == TS_PACKET))
+-
+ static void dvb_dmx_swfilter_packet(struct dvb_demux *demux, const u8 *buf, int count)
+ {
+ 	struct dvb_demux_feed *feed;
+ 	struct list_head *pos, *head = &demux->feed_list;
+ 	u16 pid = ts_pid(buf);
+-	int dvr_done = 0;
+ 
+ 	list_for_each(pos, head) {
+ 		feed = list_entry(pos, struct dvb_demux_feed, list_head);
+ 
+-		if ((feed->pid != pid) && (feed->pid != 0x2000))
+-			continue;
+-
+-		/* copy each packet only once to the dvr device, even
+-		 * if a PID is in multiple filters (e.g. video + PCR) */
+-		if ((DVR_FEED(feed)) && (dvr_done++))
+-			continue;
+-
+-		if (feed->pid == pid) {
++		if (feed->pid == pid)
+ 			dvb_dmx_swfilter_packet_type(feed, buf, count);
+-			if (DVR_FEED(feed))
+-				continue;
+-		}
+-
+-		if (feed->pid == 0x2000)
++		else if (feed->pid == 0x2000)
+ 			feed->cb.ts(buf, count, NULL, 0, &feed->feed.ts, DMX_OK);
+ 	}
+ }

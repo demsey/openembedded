@@ -1,0 +1,12 @@
+*** linux-sh4-2.6.23.17_stm23_0119-orig/kernel/time/timekeeping.c	2007-10-09 22:31:38.000000000 +0200
+--- linux-sh4/kernel/time/timekeeping.c	2009-06-14 16:37:52.000000000 +0200
+***************
+*** 48,53 ****
+--- 48,54 ----
+  struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+  static unsigned long total_sleep_time;		/* seconds */
+  EXPORT_SYMBOL(xtime);
++ EXPORT_SYMBOL_GPL(wall_to_monotonic);
+  
+  
+  #ifdef CONFIG_NO_HZ
