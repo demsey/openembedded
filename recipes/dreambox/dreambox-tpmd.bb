@@ -7,9 +7,9 @@ DEPENDS = "dreambox-wdog"
 RDEPENDS = "dreambox-wdog"
 
 PV = "1"
-PV_dm500hd = "3"
-PV_dm800 = "3"
-PV_dm8000 = "3"
+PV_dm500hd = "4"
+PV_dm800 = "4"
+PV_dm8000 = "4"
 PR = "r2"
 
 SRC_URI = "http://sources.dreamboxupdate.com/download/7020/tpmd-${MACHINE}-${PV} \
