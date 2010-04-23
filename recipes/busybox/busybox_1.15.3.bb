@@ -1,5 +1,5 @@
 require busybox.inc
-PR = "${INC_PR}.3"
+PR = "${INC_PR}.4"
 
 SRC_URI = "\
   http://www.busybox.net/downloads/busybox-${PV}.tar.gz \
@@ -28,7 +28,7 @@ SRC_URI = "\
 SRC_URI_append_opendreambox = "\
   file://dhcp-hostname.patch;patch=1 \
   file://keymap_endianess.patch;patch=1 \
-  file://show_threads_as_processes.patch;patch=1 \
+  file://nptl_task.patch;patch=1 \
 "
 
 EXTRA_OEMAKE += "V=1 ARCH=${TARGET_ARCH} CROSS_COMPILE=${TARGET_PREFIX}"
