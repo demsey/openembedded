@@ -1,0 +1,446 @@
+diff -u --recursive --new-file oldlinux-sh4-2.6.23.17_stm23_0119/drivers/media/dvb/dvb-core/dvb_frontend.c linux-sh4-2.6.23.17_stm23_0119/drivers/media/dvb/dvb-core/dvb_frontend.c
+--- oldlinux-sh4-2.6.23.17_stm23_0119/drivers/media/dvb/dvb-core/dvb_frontend.c	2010-02-06 00:27:52.000000000 +0100
++++ linux-sh4-2.6.23.17_stm23_0119/drivers/media/dvb/dvb-core/dvb_frontend.c	2010-02-01 18:33:11.000000000 +0100
+@@ -731,7 +731,7 @@
+ 
+ static void dvb_frontend_init(struct dvb_frontend *fe)
+ {
+-	dprintk ("DVB: initialising frontend %i (%s)...\n",
++printk ("DVB: initialising frontend %i (%s)...\n",
+ 		 fe->dvb->num,
+ 		 fe->ops.info.name);
+ 
+@@ -1135,6 +1135,7 @@
+ 	fepriv->wakeup = 0;
+ 	fepriv->reinitialise = 0;
+ 
++printk("hier passierts\n");
+ 	dvb_frontend_init(fe);
+ 
+ 	while (1) {
+@@ -1156,6 +1157,8 @@
+ 			break;
+ 
+ 		if (fepriv->reinitialise) {
++         printk("dvb_frontend_init\n");
++			
+ 			dvb_frontend_init(fe);
+ 			if (fepriv->tone != -1) {
+ 				fe->ops.set_tone(fe, fepriv->tone);
+@@ -1196,7 +1199,9 @@
+ 				break;
+ 			case DVBFE_ALGO_CUSTOM:
+ 				params = NULL; /* have we been asked to RETUNE ?	*/
++	         
+ 				dprintk("%s: Frontend ALGO = DVBFE_ALGO_CUSTOM, state=%d\n", __func__, fepriv->state);
++				
+ 				if (fepriv->state & FESTATE_RETUNE) {
+ 					dprintk("%s: Retune requested, FESTAT_RETUNE\n", __func__);
+ 					fe_params = &fepriv->fe_params;
+@@ -1209,8 +1214,7 @@
+ 				 * 2. User asked us to retune again for some reason, possibly
+ 				 *    requesting a search with a new set of parameters
+ 				 */
+-				if ((!(fepriv->algo_status & DVBFE_ALGO_SEARCH_SUCCESS)) ||
+-				      (fepriv->algo_status & DVBFE_ALGO_SEARCH_AGAIN)) {
++				if (fepriv->algo_status & DVBFE_ALGO_SEARCH_AGAIN) {
+ 
+ 					if (fe->ops.search) {
+ 						fepriv->algo_status = fe->ops.search(fe, fe_params);
+@@ -1218,6 +1222,8 @@
+ 						/* We did do a search as was requested, the flags are
+ 						 * now unset as well and has the flags wrt to search.
+ 						 */
++					} else {
++						fepriv->algo_status &= ~DVBFE_ALGO_SEARCH_AGAIN;
+ 					}
+ 				}
+ 				/* Track the carrier if the search was successful	*/
+@@ -1226,8 +1232,22 @@
+ 					if (fe->ops.track) {
+ 						dprintk("%s: TRACK callback exists at 0x%p\n", __func__, fe->ops.track);
+ 						fe->ops.track(fe, fe_params);
+-						dvb_frontend_add_event(fe, s); /* update event list	*/
+-						fepriv->status = s;
++						//dvb_frontend_add_event(fe, s); /* update event list	*/
++						//fepriv->status = s;
++					}
++				} else {
++					fepriv->algo_status |= DVBFE_ALGO_SEARCH_AGAIN;
++					fepriv->delay = HZ / 2;
++				}
++				fe->ops.read_status(fe, &s);
++				if (s != fepriv->status) {
++					dvb_frontend_add_event(fe, s); /* update event list */
++					fepriv->status = s;
++					if (!(s & FE_HAS_LOCK)) {
++						fepriv->delay = HZ / 10;
++						fepriv->algo_status |= DVBFE_ALGO_SEARCH_AGAIN;
++					} else {
++						fepriv->delay = 60 * HZ;
+ 					}
+ 				}
+ 				break;
+@@ -1365,6 +1385,173 @@
+ 	return 0;
+ }
+ 
++/* tdt */
++#define FEC_S2_QPSK_1_2 (fe_code_rate_t)(FEC_AUTO+1)
++#define FEC_S2_QPSK_2_3 (fe_code_rate_t)(FEC_S2_QPSK_1_2+1)
++#define FEC_S2_QPSK_3_4 (fe_code_rate_t)(FEC_S2_QPSK_2_3+1)
++#define FEC_S2_QPSK_5_6 (fe_code_rate_t)(FEC_S2_QPSK_3_4+1)
++#define FEC_S2_QPSK_7_8 (fe_code_rate_t)(FEC_S2_QPSK_5_6+1)
++#define FEC_S2_QPSK_8_9 (fe_code_rate_t)(FEC_S2_QPSK_7_8+1)
++#define FEC_S2_QPSK_3_5 (fe_code_rate_t)(FEC_S2_QPSK_8_9+1)
++#define FEC_S2_QPSK_4_5 (fe_code_rate_t)(FEC_S2_QPSK_3_5+1)
++#define FEC_S2_QPSK_9_10 (fe_code_rate_t)(FEC_S2_QPSK_4_5+1)
++#define FEC_S2_8PSK_1_2 (fe_code_rate_t)(FEC_S2_QPSK_9_10+1)
++#define FEC_S2_8PSK_2_3 (fe_code_rate_t)(FEC_S2_8PSK_1_2+1)
++#define FEC_S2_8PSK_3_4 (fe_code_rate_t)(FEC_S2_8PSK_2_3+1)
++#define FEC_S2_8PSK_5_6 (fe_code_rate_t)(FEC_S2_8PSK_3_4+1)
++#define FEC_S2_8PSK_7_8 (fe_code_rate_t)(FEC_S2_8PSK_5_6+1)
++#define FEC_S2_8PSK_8_9 (fe_code_rate_t)(FEC_S2_8PSK_7_8+1)
++#define FEC_S2_8PSK_3_5 (fe_code_rate_t)(FEC_S2_8PSK_8_9+1)
++#define FEC_S2_8PSK_4_5 (fe_code_rate_t)(FEC_S2_8PSK_3_5+1)
++#define FEC_S2_8PSK_9_10 (fe_code_rate_t)(FEC_S2_8PSK_4_5+1)
++
++//Hack
++static enum dvbfe_modulation get_modulation_from_fec (enum fe_code_rate c)
++{
++  switch (c)
++  {
++  case FEC_NONE:
++  case FEC_1_2:
++  case FEC_2_3:
++  case FEC_3_4:
++  case FEC_4_5:
++  case FEC_5_6:
++  case FEC_6_7:
++  case FEC_7_8:
++  case FEC_8_9:
++  case FEC_AUTO:
++    return DVBFE_MOD_QPSK;
++    break;
++  case FEC_S2_QPSK_1_2:
++  case FEC_S2_QPSK_2_3:
++  case FEC_S2_QPSK_3_4:
++  case FEC_S2_QPSK_5_6:
++  case FEC_S2_QPSK_7_8:
++  case FEC_S2_QPSK_8_9:
++  case FEC_S2_QPSK_3_5:
++  case FEC_S2_QPSK_4_5:
++  case FEC_S2_QPSK_9_10:
++    return DVBFE_MOD_QPSK;
++    break;
++  case FEC_S2_8PSK_1_2:
++  case FEC_S2_8PSK_2_3:
++  case FEC_S2_8PSK_3_4:
++  case FEC_S2_8PSK_5_6:
++  case FEC_S2_8PSK_7_8:
++  case FEC_S2_8PSK_8_9:
++  case FEC_S2_8PSK_3_5:
++  case FEC_S2_8PSK_4_5:
++  case FEC_S2_8PSK_9_10:
++    return DVBFE_MOD_8PSK;
++    break;
++  default:
++    return DVBFE_MOD_QPSK;
++    break;
++  }
++}
++
++static enum dvbfe_fec convert_oldfec_to_new (enum fe_code_rate c)
++{
++  enum dvbfe_fec fec = DVBFE_FEC_NONE;
++
++  switch (c)
++  {
++  case FEC_NONE:
++    fec = DVBFE_FEC_NONE;
++    break;
++  case FEC_1_2:
++    fec = DVBFE_FEC_1_2;
++    break;
++  case FEC_2_3:
++    fec = DVBFE_FEC_2_3;
++    break;
++  case FEC_3_4:
++    fec = DVBFE_FEC_3_4;
++    break;
++  case FEC_4_5:
++    fec = DVBFE_FEC_4_5;
++    break;
++  case FEC_5_6:
++    fec = DVBFE_FEC_5_6;
++    break;
++  case FEC_6_7:
++    fec = DVBFE_FEC_6_7;
++    break;
++  case FEC_7_8:
++    fec = DVBFE_FEC_7_8;
++    break;
++  case FEC_8_9:
++    fec = DVBFE_FEC_8_9;
++    break;
++  case FEC_AUTO:
++    fec = DVBFE_FEC_AUTO;
++    break;
++
++//enigma2
++  case FEC_S2_QPSK_1_2:
++    fec = DVBFE_FEC_1_2;
++    break;
++  case FEC_S2_QPSK_2_3:
++    fec = DVBFE_FEC_2_3;
++    break;
++  case FEC_S2_QPSK_3_4:
++    fec = DVBFE_FEC_3_4;
++    break;
++  case FEC_S2_QPSK_5_6:
++    fec = DVBFE_FEC_5_6;
++    break;
++  case FEC_S2_QPSK_7_8:
++    fec = DVBFE_FEC_7_8;
++    break;
++  case FEC_S2_QPSK_8_9:
++    fec = DVBFE_FEC_8_9;
++    break;
++  case FEC_S2_QPSK_3_5:
++    fec = DVBFE_FEC_3_5;
++    break;
++  case FEC_S2_QPSK_4_5:
++    fec = DVBFE_FEC_4_5;
++    break;
++  case FEC_S2_QPSK_9_10:
++    fec = DVBFE_FEC_9_10;
++    break;
++  case FEC_S2_8PSK_1_2:
++    fec = DVBFE_FEC_1_2;
++    break;
++  case FEC_S2_8PSK_2_3:
++    fec = DVBFE_FEC_2_3;
++    break;
++  case FEC_S2_8PSK_3_4:
++    fec = DVBFE_FEC_3_4;
++    break;
++  case FEC_S2_8PSK_5_6:
++    fec = DVBFE_FEC_5_6;
++    break;
++  case FEC_S2_8PSK_7_8:
++    fec = DVBFE_FEC_7_8;
++    break;
++  case FEC_S2_8PSK_8_9:
++    fec = DVBFE_FEC_8_9;
++    break;
++  case FEC_S2_8PSK_3_5:
++    fec = DVBFE_FEC_3_5;
++    break;
++  case FEC_S2_8PSK_4_5:
++    fec = DVBFE_FEC_4_5;
++    break;
++  case FEC_S2_8PSK_9_10:
++    fec = DVBFE_FEC_9_10;
++    break;
++  default:
++    fec = FEC_NONE;
++    break;
++  }
++
++  return fec;
++}
++
++/* tdt end */
++
+ static int dvb_frontend_ioctl(struct inode *inode, struct file *file,
+ 			unsigned int cmd, void *parg)
+ {
+@@ -1392,6 +1579,8 @@
+ 		struct dvb_frontend_info* info = parg;
+ 		memcpy(info, &fe->ops.info, sizeof(struct dvb_frontend_info));
+ 
++	//printk ("FE_GET_INFO\n");
++
+ 		/* Force the CAN_INVERSION_AUTO bit on. If the frontend doesn't
+ 		 * do it, it is done for it. */
+ 		info->caps |= FE_CAN_INVERSION_AUTO;
+@@ -1402,6 +1591,7 @@
+ 	case FE_READ_STATUS: {
+ 		fe_status_t* status = parg;
+ 
++	//printk ("FE_READ_STATUS\n");
+ 		/* if retune was requested but hasn't occured yet, prevent
+ 		 * that user get signal state from previous tuning */
+ 		if(fepriv->state == FESTATE_RETUNE) {
+@@ -1415,27 +1605,32 @@
+ 		break;
+ 	}
+ 	case FE_READ_BER:
++	//printk ("FE_READ_BER\n");
+ 		if (fe->ops.read_ber)
+ 			err = fe->ops.read_ber(fe, (__u32*) parg);
+ 		break;
+ 
+ 	case FE_READ_SIGNAL_STRENGTH:
++	//printk ("FE_READ_SIGNAL_STRENGTH\n");
+ 		if (fe->ops.read_signal_strength)
+ 			err = fe->ops.read_signal_strength(fe, (__u16*) parg);
+ 		break;
+ 
+ 	case FE_READ_SNR:
++	//printk ("FE_READ_SNR\n");
+ 		if (fe->ops.read_snr)
+ 			err = fe->ops.read_snr(fe, (__u16*) parg);
+ 		break;
+ 
+ 	case FE_READ_UNCORRECTED_BLOCKS:
++	//printk ("FE_READ_UNCORRECTED_BLOCKS\n");
+ 		if (fe->ops.read_ucblocks)
+ 			err = fe->ops.read_ucblocks(fe, (__u32*) parg);
+ 		break;
+ 
+ 
+ 	case FE_DISEQC_RESET_OVERLOAD:
++	//printk ("FE_DISEQC_RESET_OVERLOAD\n");
+ 		if (fe->ops.diseqc_reset_overload) {
+ 			err = fe->ops.diseqc_reset_overload(fe);
+ 			fepriv->state = FESTATE_DISEQC;
+@@ -1444,6 +1639,7 @@
+ 		break;
+ 
+ 	case FE_DISEQC_SEND_MASTER_CMD:
++	//printk ("FE_DISEQC_SEND_MASTER_CMD\n");
+ 		if (fe->ops.diseqc_send_master_cmd) {
+ 			err = fe->ops.diseqc_send_master_cmd(fe, (struct dvb_diseqc_master_cmd*) parg);
+ 			fepriv->state = FESTATE_DISEQC;
+@@ -1452,6 +1648,7 @@
+ 		break;
+ 
+ 	case FE_DISEQC_SEND_BURST:
++	//printk ("FE_DISEQC_SEND_BURST\n");
+ 		if (fe->ops.diseqc_send_burst) {
+ 			err = fe->ops.diseqc_send_burst(fe, (fe_sec_mini_cmd_t) parg);
+ 			fepriv->state = FESTATE_DISEQC;
+@@ -1460,6 +1657,7 @@
+ 		break;
+ 
+ 	case FE_SET_TONE:
++	//printk ("FE_SET_TONE\n");
+ 		if (fe->ops.set_tone) {
+ 			err = fe->ops.set_tone(fe, (fe_sec_tone_mode_t) parg);
+ 			fepriv->tone = (fe_sec_tone_mode_t) parg;
+@@ -1469,6 +1667,7 @@
+ 		break;
+ 
+ 	case FE_SET_VOLTAGE:
++	//printk ("FE_SET_VOLTAGE\n");
+ 		if (fe->ops.set_voltage) {
+ 			err = fe->ops.set_voltage(fe, (fe_sec_voltage_t) parg);
+ 			fepriv->voltage = (fe_sec_voltage_t) parg;
+@@ -1478,6 +1677,7 @@
+ 		break;
+ 
+ 	case FE_DISHNETWORK_SEND_LEGACY_CMD:
++	//printk ("FE_DISHNETWORK_SEND_LEGACY_CMD\n");
+ 		if (fe->ops.dishnetwork_send_legacy_command) {
+ 			err = fe->ops.dishnetwork_send_legacy_command(fe, (unsigned long) parg);
+ 			fepriv->state = FESTATE_DISEQC;
+@@ -1540,22 +1740,62 @@
+ 		break;
+ 
+ 	case FE_DISEQC_RECV_SLAVE_REPLY:
++	   //printk ("FE_DISEQC_RECV_SLAVE_REPLY\n");
++		
+ 		if (fe->ops.diseqc_recv_slave_reply)
+ 			err = fe->ops.diseqc_recv_slave_reply(fe, (struct dvb_diseqc_slave_reply*) parg);
+ 		break;
+ 
+ 	case FE_ENABLE_HIGH_LNB_VOLTAGE:
++	   //printk ("FE_ENABLE_HIGH_LNB_VOLTAGE\n");
++		
+ 		if (fe->ops.enable_high_lnb_voltage)
+ 			err = fe->ops.enable_high_lnb_voltage(fe, (long) parg);
+ 		break;
+ 
+ 	case FE_SET_FRONTEND: {
+ 		struct dvb_frontend_tune_settings fetunesettings;
++
++   	//printk ("FE_SET_FRONTEND\n");
++		
+ 		fe->legacy = 1;
+ 
+ 		memcpy(&fepriv->parameters, parg, sizeof (struct dvb_frontend_parameters));
+ 		memset(&fetunesettings, 0, sizeof(struct dvb_frontend_tune_settings));
+ 		memcpy(&fetunesettings.parameters, parg, sizeof (struct dvb_frontend_parameters));
++	
++		/* TDT: need this for .search function */
++
++	   fepriv->fe_params.frequency = fepriv->parameters.frequency;
++	   fepriv->fe_params.inversion = fepriv->parameters.inversion;
++	   fepriv->fe_params.delsys.dvbs.symbol_rate = fepriv->parameters.u.qpsk.symbol_rate;
++
++      fepriv->fe_params.delsys.dvbs.modulation = get_modulation_from_fec(fepriv->parameters.u.qpsk.fec_inner);
++      fepriv->fe_params.delsys.dvbs.fec = convert_oldfec_to_new(fepriv->parameters.u.qpsk.fec_inner);
++
++      fepriv->fe_params.delsys.dvbs.rolloff = DVBFE_ROLLOFF_35;
++      if (fepriv->parameters.u.qpsk.fec_inner > FEC_AUTO)
++      {
++         switch (fepriv->fe_params.inversion & 0xc)
++         {
++            default:                   // unknown rolloff
++            case 0:                    // 0.35
++               fepriv->fe_params.delsys.dvbs.rolloff = DVBFE_ROLLOFF_35;
++            break;
++            case 4:                    // 0.25
++               fepriv->fe_params.delsys.dvbs.rolloff = DVBFE_ROLLOFF_25;
++            break;
++            case 8:                     // 0.20
++               fepriv->fe_params.delsys.dvbs.rolloff = DVBFE_ROLLOFF_20;
++            break;
++         }
++		
++		   fepriv->fe_params.delivery = DVBFE_DELSYS_DVBS2;
++		} else
++		{
++		   fepriv->fe_params.delivery = DVBFE_DELSYS_DVBS;
++		}
++/* end tdt */
+ 
+ 		/* force auto frequency inversion if requested */
+ 		if (dvb_force_auto_inversion) {
+@@ -1606,6 +1846,11 @@
+ 			fepriv->min_delay = (dvb_override_tune_delay * HZ) / 1000;
+ 
+ 		fepriv->state = FESTATE_RETUNE;
++
++/* tdt from new api5 */
++		/* Request the search algorithm to search */
++		fepriv->algo_status |= DVBFE_ALGO_SEARCH_AGAIN;
++		
+ 		dvb_frontend_wakeup(fe);
+ 		dvb_frontend_add_event(fe, 0);
+ 		fepriv->status = 0;
+@@ -1618,6 +1863,7 @@
+ 		break;
+ 
+ 	case FE_GET_FRONTEND:
++	//printk ("FE_GET_FRONTEND\n");
+ 		fe->legacy = 1;
+ 		if (fe->ops.get_frontend) {
+ 			memcpy (parg, &fepriv->parameters, sizeof (struct dvb_frontend_parameters));
+@@ -1633,6 +1879,7 @@
+ 	case DVBFE_SET_PARAMS: {
+ 		struct dvb_frontend_tune_settings fetunesettings;
+ 
++	//printk ("DVBFE_SET_PARAMS\n");
+ 		fe->legacy = 0;
+ 		memcpy(&fepriv->fe_params, parg, sizeof (struct dvbfe_params));
+ 		memset(&fetunesettings, 0, sizeof (struct dvb_frontend_tune_settings));
+@@ -1714,6 +1961,7 @@
+ 	}
+ 
+ 	case DVBFE_GET_PARAMS:
++	//printk ("DVBFE_GET_PARAMS\n");
+ 		fe->legacy = 0;
+ 		if (fe->ops.get_params) {
+ 			memcpy(parg, &fepriv->fe_params, sizeof (struct dvbfe_params));

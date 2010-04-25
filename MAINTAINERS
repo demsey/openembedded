@@ -295,8 +295,8 @@ Person:     Robert Demski 'demsey'
 Mail:       demsey@users.sourceforge.net
 Interests:  sh4, Embedded Linux, free software, java
 Distros:    openstmstb
-Machines:   cuberevo, cuberevo-mini, cuberevo-mini2, cuberevo-mini-fta, cuberevo-250hd, cuberevo-2000hd, cuberevo-9500hd
-Recipes:    linux-cuberevo*
+Machines:   cuberevo, cuberevo-mini, cuberevo-mini2, cuberevo-mini-fta, cuberevo-250hd, cuberevo-2000hd, cuberevo-9500hd, ufs910, fortis-hdbox
+Recipes:    linux-cuberevo*, linux-ufs910, linux-fortis-hdbox
 
 Person:     Robert Schuster 'thebohemian'
 Mail:       robert.schuster@tarent.de, thebohemian@gmx.net
