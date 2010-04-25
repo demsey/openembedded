@@ -1,0 +1,36 @@
+From 94932539dec1e2ed981fe7cfce98172dc0416ba4 Mon Sep 17 00:00:00 2001
+From: ghost <andreas.monzner@multimedia-labs.de>
+Date: Mon, 12 Apr 2010 19:20:09 +0200
+Subject: [PATCH] drivers/media/dvb/dvb-core/dmxdev.c: fix previous locking fixes (commit id fbb4a4e451e4d5e90b4799f6808308897ae0ecc2)
+
+---
+ drivers/media/dvb/dvb-core/dmxdev.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/dvb/dvb-core/dmxdev.c b/drivers/media/dvb/dvb-core/dmxdev.c
+index 6817ad9..4c66585 100644
+--- a/drivers/media/dvb/dvb-core/dmxdev.c
++++ b/drivers/media/dvb/dvb-core/dmxdev.c
+@@ -181,7 +181,7 @@ static int dvb_dvr_release(struct inode *inode, struct file *file)
+ 	struct dvb_device *dvbdev = file->private_data;
+ 	struct dmxdev *dmxdev = dvbdev->priv;
+ 
+-	mutex_lock_interruptible(&dmxdev->mutex);
++	mutex_lock(&dmxdev->mutex);
+ 
+ 	if ((file->f_flags & O_ACCMODE) == O_WRONLY) {
+ 		dmxdev->demux->disconnect_frontend(dmxdev->demux);
+@@ -730,8 +730,8 @@ static int dvb_demux_open(struct inode *inode, struct file *file)
+ static int dvb_dmxdev_filter_free(struct dmxdev *dmxdev,
+ 				  struct dmxdev_filter *dmxdevfilter)
+ {
+-	mutex_lock_interruptible(&dmxdev->mutex);
+-	mutex_lock_interruptible(&dmxdevfilter->mutex);
++	mutex_lock(&dmxdev->mutex);
++	mutex_lock(&dmxdevfilter->mutex);
+ 
+ 	dvb_dmxdev_filter_stop(dmxdevfilter);
+ 	dvb_dmxdev_filter_reset(dmxdevfilter);
+-- 
+1.7.0.4
+

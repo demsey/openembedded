@@ -1,7 +1,7 @@
 DESCRIPTION = "OpenDreambox: Base Task for the OpenDreambox Distribution"
 SECTION = "opendreambox/base"
 LICENSE = "MIT"
-PR = "r4"
+PR = "r5"
 
 inherit task
 
@@ -16,7 +16,7 @@ OPENDREAMBOX_BASE_ESSENTIAL = "\
   dreambox-bootlogo \
   dreambox-compat \
   dreambox-wdog \
-  dreambox-tpmd \
+  ${@base_contains('MACHINE', 'dm7025', '', 'dreambox-tpmd', d)} \
   dreambox-feed-configs \
   dreambox-keymaps \
   e2fsprogs-e2fsck \
@@ -28,6 +28,7 @@ OPENDREAMBOX_BASE_ESSENTIAL = "\
   tuxbox-common \
   util-linux-sfdisk \
   vsftpd \
+  hdparm \
 "
 
 OPENDREAMBOX_BASE_RECOMMENDS = "\
