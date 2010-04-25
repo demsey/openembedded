@@ -69,15 +69,22 @@ STAGE_TEMP="${WORKDIR}/temp-staging"
 
 do_stage () {
 	set_arch
-	oe_runmake headers_install INSTALL_HDR_PATH=${STAGING_DIR_HOST}${layout_prefix} ARCH=$ARCH
-	if [ "${DISTRO}" = "openstmstb" ]; then
-		cp ${S}/include/asm-${ARCH}/cachectl.h ${STAGING_DIR_HOST}${layout_prefix}/include/asm/
+	rm -rf ${STAGE_TEMP}
+	mkdir -p ${STAGE_TEMP}
+	oe_runmake headers_install INSTALL_HDR_PATH=${STAGE_TEMP}${exec_prefix} ARCH=$ARCH
+	if [ "$ARCH" = "arm" ]; then
+		cp ${WORKDIR}/procinfo.h ${STAGE_TEMP}${includedir}/asm/
 	fi
+	if [ "${DISTRO}" = "openstmstb" ]; then
+		cp ${S}/include/asm-${ARCH}/cachectl.h ${STAGE_TEMP}${includedir}/asm/
+	fi
+	install -d ${STAGING_INCDIR}
 	install -d ${CROSS_DIR}/${TARGET_SYS}/include
-	for x in linux asm; do
+	for x in linux asm asm-generic scsi; do
+		rm -rf ${STAGING_INCDIR}/$x;
+		cp -pfLR ${STAGE_TEMP}${includedir}/$x ${STAGING_INCDIR}/
 		rm -rf ${CROSS_DIR}/${TARGET_SYS}/include/$x;
-		cp -pfLR ${STAGING_DIR_HOST}${layout_prefix}/include/$x ${CROSS_DIR}/${TARGET_SYS}/include/;
+		cp -pfLR ${STAGE_TEMP}${includedir}/$x ${CROSS_DIR}/${TARGET_SYS}/include/
 	done
-	ln -sf linux/limits.h ${CROSS_DIR}/${TARGET_SYS}/include/limits.h
 }
 
