@@ -1,0 +1,33 @@
+--- linux-sh4/arch/sh/kernel/cpu/sh4/entry.S	2010-03-30 14:22:44.000000000 +0200
++++ linux-new/arch/sh/kernel/cpu/sh4/entry.S	2010-03-30 14:16:52.000000000 +0200
+@@ -743,7 +743,7 @@
+ 	!
+ 	! Calculate new SR value
+ 	mov	k3, k2			! original SR value
+-	mov	#0xfffffff0, k1
++	mov	#0xf0, k1
+ 	extu.b	k1, k1
+ 	not	k1, k1
+ 	and	k1, k2			! Mask orignal SR value
+--- linux-sh4/arch/sh/mm/clear_page.S	2010-03-30 14:22:41.000000000 +0200
++++ linux-new/arch/sh/mm/clear_page.S	2010-03-30 14:16:50.000000000 +0200
+@@ -104,7 +104,7 @@
+ ENTRY(__clear_user)
+ 	!
+ 	mov	#0, r0
+-	mov	#0xffffffe0, r1
++	mov	#0xe0, r1
+ 	!
+ 	! r4..(r4+31)&~32 	   -------- not aligned	[ Area 0 ]
+ 	! (r4+31)&~32..(r4+r5)&~32 -------- aligned	[ Area 1 ]
+--- linux-sh4/include/asm-sh/entry-macros.S	2010-03-30 14:22:41.000000000 +0200
++++ linux-new/include/asm-sh/entry-macros.S	2010-03-30 14:17:51.000000000 +0200
+@@ -7,7 +7,7 @@
+ 	.endm
+ 
+ 	.macro	sti
+-	mov	#0xfffffff0, r11
++	mov	#0xf0, r11
+ 	extu.b	r11, r11
+ 	not	r11, r11
+ 	stc	sr, r10

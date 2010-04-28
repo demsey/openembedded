@@ -5,7 +5,7 @@
 
 PR = "${INC_PR}.0"
 
-FILESPATH_append = ":${FILE_DIRNAME}/linux-stm23-openstmstb/${STM_PR}"
+FILESPATH_append = ":${FILE_DIRNAME}/linux-stm23-openstmstb:${FILE_DIRNAME}/linux-stm23-openstmstb/${STM_PR}"
 
 SRC_URI_append = "\
     file://linuxdvb_stm23_${STM_PR}.patch;patch=1;pnum=1 \
@@ -14,5 +14,6 @@ SRC_URI_append = "\
     file://mtd_stm23_${STM_PR}.patch;patch=1;pnum=1 \
 #   file://cmdline_printk_stm23_${STM_PR}.patch;patch=1;pnum=1 \
     file://sound_stm23_${STM_PR}.diff;patch=1;pnum=1 \
+    file://linux-sh4-asm_mov_0xffffff_stm23_0123.patch;patch=1;pnum=1 \
     "
 
