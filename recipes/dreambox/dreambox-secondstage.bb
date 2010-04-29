@@ -7,7 +7,7 @@ PV_dm7025 = "76"
 PV_dm600pvr = "66"
 PV_dm500plus = "66"
 PV_dm8000 = "76"
-PV_dm800 = "75"
+PV_dm800 = "76"
 PV_dm500hd = "77"
 PR = "r0"
 
