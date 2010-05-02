@@ -1,7 +1,7 @@
 require linux-opendreambox.inc
 
 SRCREV = "97b869e710d741d3eda4f7c915d6190b4054d290"
-PR="r3"
+PR="r4"
 
 RREPLACES_kernel = "kernel-2.6.18-7.1-dm500hd"
 RCONFLICTS_kernel = "kernel-2.6.18-7.1-dm500hd"
@@ -12,7 +12,8 @@ SRC_URI += " http://trappist.elis.ugent.be/~mronsse/cdfs/download/cdfs-2.6.18.ta
 	file://stblinux-2.6.18-cdfs.patch \
 	file://linux-2.6.18-fix-mips-crosscompile.patch;patch=1 \
 	file://linux-2.6.18-fix-proc-cputype.patch;patch=1 \
-	file://linux-2.6.18-fix-serial.patch;patch=1"
+	file://linux-2.6.18-fix-serial.patch;patch=1 \
+	file://linux-2.6.18-several-nand-flash-fixes.patch;patch=1"
 
 do_configure_prepend() {
 	if [ -d ${WORKDIR}/cdfs-${PV} ]; then
