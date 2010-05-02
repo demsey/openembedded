@@ -1,0 +1,106 @@
+diff -Naur gcc-4.1.1/gcc/toplev.c gcc-4.1.1-stm/gcc/toplev.c
+--- gcc-4.1.1/gcc/toplev.c	2006-02-04 22:13:20.000000000 +0000
++++ gcc-4.1.1-stm/gcc/toplev.c	2006-07-04 11:20:16.578161784 +0100
+@@ -517,6 +517,8 @@
+   return atoi (p);
+ }
+ 
++#if GCC_VERSION < 3004
++
+ /* Given X, an unsigned number, return the largest int Y such that 2**Y <= X.
+    If X is 0, return -1.  */
+ 
+@@ -567,6 +569,33 @@
+ #endif
+ }
+ 
++#else
++
++# if HOST_BITS_PER_WIDE_INT == HOST_BITS_PER_LONG
++#  define CLZ_HWI __builtin_clzl
++#  define CTZ_HWI __builtin_ctzl
++# elif HOST_BITS_PER_WIDE_INT == HOST_BITS_PER_LONGLONG
++#  define CLZ_HWI __builtin_clzll
++#  define CTZ_HWI __builtin_ctzll
++# else
++#  define CLZ_HWI __builtin_clz
++#  define CTZ_HWI __builtin_ctz
++# endif
++
++int
++floor_log2 (unsigned HOST_WIDE_INT x)
++{
++  return x ? HOST_BITS_PER_WIDE_INT - 1 - (int) CLZ_HWI (x) : -1;
++}
++
++int
++exact_log2 (unsigned HOST_WIDE_INT x)
++{
++  return x == (x & -x) && x ? (int) CTZ_HWI (x) : -1;
++}
++
++#endif
++
+ /* Handler for fatal signals, such as SIGSEGV.  These are transformed
+    into ICE messages, which is much more user friendly.  In case the
+    error printer crashes, reset the signal to prevent infinite recursion.  */
+diff -Naur gcc-4.1.1/gcc/toplev.h gcc-4.1.1-stm/gcc/toplev.h
+--- gcc-4.1.1/gcc/toplev.h	2005-09-09 01:47:05.000000000 +0100
++++ gcc-4.1.1-stm/gcc/toplev.h	2006-07-04 11:19:49.122335704 +0100
+@@ -158,32 +158,6 @@
+ /* Return floor of log2, with -1 for zero.  */
+ extern int floor_log2                  (unsigned HOST_WIDE_INT);
+ 
+-/* Inline versions of the above for speed.  */
+-#if GCC_VERSION >= 3004
+-# if HOST_BITS_PER_WIDE_INT == HOST_BITS_PER_LONG
+-#  define CLZ_HWI __builtin_clzl
+-#  define CTZ_HWI __builtin_ctzl
+-# elif HOST_BITS_PER_WIDE_INT == HOST_BITS_PER_LONGLONG
+-#  define CLZ_HWI __builtin_clzll
+-#  define CTZ_HWI __builtin_ctzll
+-# else
+-#  define CLZ_HWI __builtin_clz
+-#  define CTZ_HWI __builtin_ctz
+-# endif
+-
+-extern inline int
+-floor_log2 (unsigned HOST_WIDE_INT x)
+-{
+-  return x ? HOST_BITS_PER_WIDE_INT - 1 - (int) CLZ_HWI (x) : -1;
+-}
+-
+-extern inline int
+-exact_log2 (unsigned HOST_WIDE_INT x)
+-{
+-  return x == (x & -x) && x ? (int) CTZ_HWI (x) : -1;
+-}
+-#endif /* GCC_VERSION >= 3004 */
+-
+ /* Functions used to get and set GCC's notion of in what directory
+    compilation was started.  */
+ 
+diff -Naur gcc-4.1.1/gcc/tree-ssa-pre.c gcc-4.1.1-stm/gcc/tree-ssa-pre.c
+--- gcc-4.1.1/gcc/tree-ssa-pre.c	2005-10-19 04:34:50.000000000 +0100
++++ gcc-4.1.1-stm/gcc/tree-ssa-pre.c	2006-06-28 12:52:03.000000000 +0100
+@@ -1989,7 +1989,7 @@
+    any). They are used when computing the hash value for EXPR.
+    Insert EXPR's operands into the EXP_GEN set for BLOCK. */
+ 
+-static inline tree
++static tree
+ create_value_expr_from (tree expr, basic_block block, tree stmt)
+ {
+   int i;
+diff -Naur gcc-4.1.1/gcc/varasm.c gcc-4.1.1-stm/gcc/varasm.c
+--- gcc-4.1.1/gcc/varasm.c	2006-03-14 19:25:25.000000000 +0000
++++ gcc-4.1.1-stm/gcc/varasm.c	2006-07-04 10:44:08.000000000 +0100
+@@ -2004,7 +2004,7 @@
+    followed again, and return the ultimate target of the alias
+    chain.  */
+ 
+-static inline tree
++static tree
+ ultimate_transparent_alias_target (tree *alias)
+ {
+   tree target = *alias;
