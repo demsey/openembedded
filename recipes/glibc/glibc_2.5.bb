@@ -59,7 +59,21 @@ SRC_URI = "\
 
 # Build fails on sh3 and sh4 without additional patches
 SRC_URI_append_sh3 = " file://no-z-defs.patch;patch=1"
-SRC_URI_append_sh4 = " file://no-z-defs.patch;patch=1"
+SRC_URI_append_sh4 = " file://no-z-defs.patch;patch=1 \
+		file://glibc-${PV}-nscd_init.patch;patch=1 \
+		file://glibc-${PV}-tzconfig.patch;patch=1 \
+		file://glibc-2.3.6-nptl-config.patch;patch=1 \
+		file://glibc-2.5-ustat.patch;patch=1 \
+		file://glibc-2.5-memcpy.patch;patch=1 \
+		file://glibc-2.5-shsyscall2.patch;patch=1 \
+		file://glibc-2.5-sh-atomic-fixes.patch;patch=1 \
+		file://glibc-2.5-mutex.patch;patch=1 \
+		file://glibc-2.5-clone.patch;patch=1 \
+		file://glibc-2.5-fegetexceptflag.patch;patch=1 \
+		file://glibc-2.5-sh-staticfix.patch;patch=1 \
+		file://glibc-2.5-sh-shm_h.patch;patch=1 \
+		file://glibc-2.5-sh-fxstatat64.patch;patch=1 \
+		"
 
 # Powerpc patches to add support for soft-float
 SRC_URI_append_powerpc = " file://ppc-sfp-machine.patch;patch=1 \

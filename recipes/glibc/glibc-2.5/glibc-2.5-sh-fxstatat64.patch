@@ -1,0 +1,24 @@
+This patch handles correctly the stat64 structure mismatch, between 
+kernel and glibc, in the __fxstatat64 glibc function. 
+This fixes the nftw6401 LTP test case.
+
+Signed-off-by: Filippo Arcidiacono <filippo.arcidiacono@st.com>
+Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
+
+--- glibc-2.5-orig/sysdeps/unix/sysv/linux/fxstatat64.c	2006-02-12 22:36:22.000000000 +0100
++++ glibc-2.5/sysdeps/unix/sysv/linux/fxstatat64.c	2007-06-08 15:46:04.055815000 +0200
+@@ -68,8 +68,13 @@ __fxstatat64 (int vers, int fd, const ch
+ 	__have_atfcts = -1;
+       else
+ # endif
+-	if (!__builtin_expect (INTERNAL_SYSCALL_ERROR_P (result, err), 1))
++	if (!__builtin_expect (INTERNAL_SYSCALL_ERROR_P (result, err), 1)) {
++#if defined _HAVE_STAT64___ST_INO && __ASSUME_ST_INO_64_BIT == 0
++          if (st->__st_ino != (__ino_t) st->st_ino) 
++              st->st_ino = st->__st_ino;
++#endif
+ 	  return 0;
++          }
+ 	else
+ 	  {
+ 	    __set_errno (INTERNAL_SYSCALL_ERRNO (result, err));

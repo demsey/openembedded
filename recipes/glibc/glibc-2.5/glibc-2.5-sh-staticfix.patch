@@ -1,0 +1,139 @@
+diff -Naur glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_post.S glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_post.S
+--- glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_post.S	2006-10-20 12:40:12.150103216 +0100
++++ glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_post.S	2006-10-20 12:46:09.792733272 +0100
+@@ -57,7 +57,12 @@
+ 	mov.l	.Lerrno3, r0
+ 	stc	gbr, r1
+ 	mov.l	@(r0, r12), r0
++	bra .Lexit
+ 	add	r1, r0
++	.align 2
++.Lerrno3:
++	.long	errno@GOTTPOFF
++.Lexit:
+ #else
+ 	mov.l	.Lerrloc3, r1
+ 	bsrf	r1
+@@ -73,10 +78,7 @@
+ 	.align	2
+ .Lgot3:
+ 	.long	_GLOBAL_OFFSET_TABLE_
+-#if USE___THREAD
+-.Lerrno3:
+-	.long	errno@GOTTPOFF
+-#else
++#if !USE___THREAD
+ .Lerrloc3:
+ 	.long	__errno_location@PLT-(.Lerrloc3b-.)
+ #endif
+diff -Naur glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_timedwait.S glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_timedwait.S
+--- glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_timedwait.S	2004-10-29 22:10:51.000000000 +0100
++++ glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_timedwait.S	2006-10-20 12:46:09.803731600 +0100
+@@ -179,15 +179,19 @@
+ 	mov.l	.Lerrno2, r0
+ 	stc	gbr, r1
+ 	mov.l	@(r0, r12), r0
++	bra .Lexit
+ 	add	r1, r0
+-	mov.l	r8, @r0
++	.align 2
++.Lerrno2:
++	.long	errno@GOTTPOFF
++.Lexit:
+ #else
+ 	mov.l	.Lerrloc2, r1
+ 	bsrf	r1
+ 	 nop
+ .Lerrloc2b:
+-	mov.l	r8, @r0
+ #endif
++	mov.l	r8, @r0
+ 	add	#8, r15
+ 	lds.l	@r15+, pr
+ 	mov.l	@r15+, r12
+@@ -225,10 +229,7 @@
+ 	.long	1000000000
+ .Lgot2:
+ 	.long	_GLOBAL_OFFSET_TABLE_
+-#if USE___THREAD
+-.Lerrno2:
+-	.long	errno@GOTTPOFF
+-#else
++#if !USE___THREAD
+ .Lerrloc2:
+ 	.long	__errno_location@PLT-(.Lerrloc2b-.)
+ #endif
+diff -Naur glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_trywait.S glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_trywait.S
+--- glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_trywait.S	2004-06-29 16:51:02.000000000 +0100
++++ glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_trywait.S	2006-10-20 12:46:09.808730840 +0100
+@@ -60,15 +60,19 @@
+ 	mov.l	.Lerrno1, r0
+ 	stc	gbr, r1
+ 	mov.l	@(r0, r12), r0
++	bra .Lexit
+ 	add	r1, r0
+-	mov.l	r8, @r0
++	.align 2
++.Lerrno1:
++	.long	errno@GOTTPOFF
++.Lexit:
+ #else
+ 	mov.l	.Lerrloc1, r1
+ 	bsrf	r1
+ 	 nop
+ .Lerrloc1b:
+-	mov.l	r8, @r0
+ #endif
++	mov.l	r8, @r0
+ 	lds.l	@r15+, pr
+ 	mov.l	@r15+, r8
+ 	mov.l	@r15+, r12
+@@ -78,10 +82,7 @@
+ 	.align	2
+ .Lgot1:
+ 	.long	_GLOBAL_OFFSET_TABLE_
+-#if USE___THREAD
+-.Lerrno1:
+-	.long	errno@GOTTPOFF
+-#else
++#if !USE___THREAD
+ .Lerrloc1:
+ 	.long	__errno_location@PLT-(.Lerrloc1b-.)
+ #endif
+diff -Naur glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_wait.S glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_wait.S
+--- glibc-2.5-stm/nptl/sysdeps/unix/sysv/linux/sh/sem_wait.S	2004-06-29 16:51:02.000000000 +0100
++++ glibc-2.5-staticfix/nptl/sysdeps/unix/sysv/linux/sh/sem_wait.S	2006-10-20 12:46:09.813730080 +0100
+@@ -109,15 +109,19 @@
+ 	mov.l	.Lerrno0, r0
+ 	stc	gbr, r1
+ 	mov.l	@(r0, r12), r0
++	bra .Lexit
+ 	add	r1, r0
+-	mov.l	r8, @r0
++	.align 2
++.Lerrno0:
++	.long	errno@GOTTPOFF
++.Lexit:
+ #else
+ 	mov.l	.Lerrloc0, r1
+ 	bsrf	r1
+ 	 nop
+ .Lerrloc0b:
+-	mov.l	r8, @r0
+ #endif
++	mov.l	r8, @r0
+ 	mov	#-1, r0
+ 9:
+ 	lds.l	@r15+, pr
+@@ -150,10 +154,7 @@
+ 	.align	2
+ .Lgot0:
+ 	.long	_GLOBAL_OFFSET_TABLE_
+-#if USE___THREAD
+-.Lerrno0:
+-	.long	errno@GOTTPOFF
+-#else
++#if !USE___THREAD
+ .Lerrloc0:
+ 	.long	__errno_location@PLT-(.Lerrloc0b-.)
+ #endif
