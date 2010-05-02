@@ -1,0 +1,35 @@
+diff -Naur gcc-4.1.1/gcc/ipa-pure-const.c gcc-4.1.1-stm/gcc/ipa-pure-const.c
+--- gcc-4.1.1/gcc/ipa-pure-const.c	2005-09-16 08:54:03.000000000 +0100
++++ gcc-4.1.1-stm/gcc/ipa-pure-const.c	2006-08-22 10:13:18.352996896 +0100
+@@ -51,6 +51,7 @@
+ #include "timevar.h"
+ #include "diagnostic.h"
+ #include "langhooks.h"
++#include "target.h"
+ 
+ static struct pointer_set_t *visited_nodes;
+ 
+@@ -499,9 +500,9 @@
+   l->pure_const_state = IPA_CONST;
+   l->state_set_in_source = false;
+ 
+-  /* If this is a volatile function, do not touch this unless it has
++  /* If this function does not bind locally, do not touch this unless it has
+      been marked as const or pure by the front end.  */
+-  if (TREE_THIS_VOLATILE (decl))
++  if (!targetm.binds_local_p (decl))
+     {
+       l->pure_const_state = IPA_NEITHER;
+       return;
+diff -Naur gcc-4.1.1/gcc/Makefile.in gcc-4.1.1-stm/gcc/Makefile.in
+--- gcc-4.1.1/gcc/Makefile.in	2006-08-22 10:01:24.000000000 +0100
++++ gcc-4.1.1-stm/gcc/Makefile.in	2006-08-22 10:10:19.226228304 +0100
+@@ -2196,7 +2196,7 @@
+    $(TREE_GIMPLE_H) $(CGRAPH_H) output.h $(FLAGS_H) tree-pass.h $(DIAGNOSTIC_H)  
+ ipa-pure-const.o : ipa-pure-const.c $(CONFIG_H) $(SYSTEM_H) \
+    coretypes.h $(TM_H) $(TREE_H) $(TREE_FLOW_H) tree-inline.h langhooks.h \
+-   pointer-set.h $(GGC_H) $(IPA_UTILS_H) $(C_COMMON_H) \
++   pointer-set.h $(GGC_H) $(IPA_UTILS_H) $(C_COMMON_H) $(TARGET_H)\
+    $(TREE_GIMPLE_H) $(CGRAPH_H) output.h $(FLAGS_H) tree-pass.h $(DIAGNOSTIC_H)  
+ ipa-type-escape.o : ipa-type-escape.c $(CONFIG_H) $(SYSTEM_H) \
+    coretypes.h $(TM_H) $(TREE_H) $(TREE_FLOW_H) tree-inline.h langhooks.h \

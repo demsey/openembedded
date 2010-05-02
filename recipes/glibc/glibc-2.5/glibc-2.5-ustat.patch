@@ -1,0 +1,12 @@
+diff -Naur libc.orig/sysdeps/unix/sysv/linux/ustat.c libc/sysdeps/unix/sysv/linux/ustat.c
+--- libc.orig/sysdeps/unix/sysv/linux/ustat.c	2003-09-27 18:00:22.000000000 +0100
++++ libc/sysdeps/unix/sysv/linux/ustat.c	2004-09-28 09:19:58.320000000 +0100
+@@ -18,7 +18,7 @@
+    02111-1307 USA.  */
+ 
+ #include <errno.h>
+-#include <sys/ustat.h>
++//#include <sys/ustat.h>
+ #include <sys/sysmacros.h>
+ 
+ #include <sysdep.h>

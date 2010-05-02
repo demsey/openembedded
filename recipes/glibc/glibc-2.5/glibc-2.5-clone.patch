@@ -1,0 +1,38 @@
+
+working on the new 'clone' implementation for uClibc (we took the code from the glibc-2.3.3) we discovered
+a bug into the 'clone'.
+We ran the 'unistd/errno' test from the uClibc test suite both using the glibc and the uClibc libraries and it failed
+on both environments.
+The attached patch fixed the unistd/errno test of the uClibc test suite (and we are confident it should fix the glibc also: the code is the same).
+
+Signed-off-by:Carmelo Amoroso <carmelo.amoroso@st.com>
+
+diff -Naur glibc-2.3.3/sysdeps/unix/sysv/linux/sh/clone.S glibc-2.3.3-ok/sysdeps/unix/sysv/linux/sh/clone.S
+--- glibc-2.3.3/sysdeps/unix/sysv/linux/sh/clone.S	2006-07-07 17:36:27.413706000 +0200
++++ glibc-2.3.3-ok/sysdeps/unix/sysv/linux/sh/clone.S	2006-07-07 17:39:46.834401000 +0200
+@@ -30,12 +30,13 @@
+ ENTRY(__clone)
+ 	/* sanity check arguments.  */
+ 	tst	r4, r4
+-	bf/s	1f
++	bt	0f
+ 	 tst	r5, r5
+ 	bf/s	1f
+-	 mov	#-EINVAL,r0
++	mov	#+SYS_ify(clone), r3
++0:
+ 	bra	.Lsyscall_error
+-	 nop
++	 mov	#-EINVAL,r0
+ 1:
+ 	/* insert the args onto the new stack */
+ 	mov.l	r7, @-r5
+@@ -47,7 +48,6 @@
+ 	mov.l	@r15, r6
+ 	mov.l	@(8,r15), r7
+ 	mov.l	@(4,r15), r0
+-	mov	#+SYS_ify(clone), r3
+ 	trapa	#0x15
+ 	mov     r0, r1
+ 	mov	#-12, r2
+

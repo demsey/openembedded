@@ -1,0 +1,234 @@
+--- glibc-2.3.2.ds1.orig/debian/local/manpages/tzconfig.8
++++ glibc-2.3.2.ds1/debian/local/manpages/tzconfig.8
+@@ -0,0 +1,104 @@
++.\" Copyright 1998 Marcus Brinkmann (brinkmd@debian.org)
++.\"
++.\" Permission is granted to make and distribute verbatim copies of this
++.\" manual provided the copyright notice and this permission notice are
++.\" preserved on all copies.
++.\"
++.\" Permission is granted to copy and distribute modified versions of this
++.\" manual under the conditions for verbatim copying, provided that the
++.\" entire resulting derived work is distributed under the terms of a
++.\" permission notice identical to this one
++.\" 
++.\" Since the Linux kernel and libraries are constantly changing, this
++.\" manual page may be incorrect or out-of-date.  The author(s) assume no
++.\" responsibility for errors or omissions, or for damages resulting from
++.\" the use of the information contained herein.  The author(s) may not
++.\" have taken the same level of care in the production of this manual,
++.\" which is licensed free of charge, as they might when working
++.\" professionally.
++.\" 
++.\" Formatted or processed versions of this manual, if unaccompanied by
++.\" the source, must acknowledge the copyright and authors of this work.
++.\"
++.\" Modified Mon Jul 12 18:40:00 1998 by Marcus Brinkmann <brinkmd@debian.org>
++.TH TZCONFIG 8 "12 June 1998" "Debian" "Debian Timezone Configuration"
++.SH NAME
++tzconfig \- set the local timezone
++.SH SYNOPSIS
++.B tzconfig
++.SH DESCRIPTION
++This manual page explains how you can use the
++.B "tzconfig"
++utility to set the local timezone. This is necessary to let your system know about the
++difference between system time and local time (the time in the real world). It is also
++necessary to make your system behave nicely when your location uses Daylight Savings Time.
++
++A valid system time together with the correct local time zone will give you best performance
++and highest reliablility. It is especially important in a network environment, where even small
++time differences can make a mirror refetch a whole ftp site, or where time stamps on
++external file systems are used.
++
++.B tzconfig
++is called without any parameters from the shell. First it presents the current setting and asks
++for verification to change it.
++
++You may press
++.B Ctrl-C
++to interrupt the script at any time.
++
++After you made your choice,
++.B tzconfig
++will try to change the timezone for you. See the
++.B Internals
++section below for technical details. You must have root privilegies to actually change
++anything. Please use
++.BR tzselect (1)
++as a user space command to just look at the timezones. It will print the local time in any
++timezone recognized by the system.
++.SH "A WORD OF WARNING"
++What timezone is correct for your system? It depends on the geographical location of the machine.
++Getting the correct location is important, but
++the system must also know how your hardware clock is set. Most DOS based PCs set their hardware 
++clock on Local Time, while most UNIX systems set their hardware clock to UTC.
++
++The Debian GNU/Linux system gains its knowledge of this setting
++from the file 
++.IR /etc/default/rcS .
++This file contains either the line 
++.BR UTC=yes , 
++which indicates that the hardware clock is set to UTC, or it contains the line
++.BR UTC=no ,
++which declares the hardware clock is set to Local Time. If these setting are correct, and the hardware
++clock is truely set as indicated, then configuring the proper timezone for the machine
++will cause the proper date and time to be displayed. If these are not set correctly, the the
++reported time will be quite incorrect. See
++.BR hwclock (8)
++for more details on this topic.
++
++.SH Internals
++The work done by
++.B tzconfig
++is actually pretty simple. It just updates the link
++.I /etc/localtime
++to point to the correct timezone installed in
++.IR /usr/share/zoneinfo/ .
++
++There is nothing wrong with doing this manually. However, using
++.B tzconfig
++you don't have to remember the path to the timezones.
++.SH FILES
++.I /etc/timezone
++.BR
++.I /etc/localtime
++.BR
++.I /usr/share/zoneinfo
++.SH "SEE ALSO"
++.BR hwclock (8)
++.BR tzselect (1)
++.BR rcS (5)
++.SH AUTHOR
++Copyright 1998 Marcus Brinkmann <brinkmd@debian.org>
++.BR
++Edits Copyright 1998 Dale Scheetz <dwarf@polaris.net>
++
++Please see nroff source for legal notice.
+--- glibc-2.3.2.ds1.orig/debian/local/usr_sbin/tzconfig
++++ glibc-2.3.2.ds1/debian/local/usr_sbin/tzconfig
+@@ -0,0 +1,124 @@
++#! /bin/sh
++
++# Copyright (C) 2001 Software in the Public Interest
++#
++# Licensed under the GPL v2
++#
++
++show_continents() {
++
++cat <<EOF
++
++Please enter the number of the geographic area in which you live:
++
++
++	1) Africa			7) Australia
++
++	2) America			8) Europe
++
++	3) US time zones		9) Indian Ocean
++
++	4) Canada time zones		10) Pacific Ocean
++
++	5) Asia				11) Use System V style time zones
++
++	6) Atlantic Ocean		12) None of the above
++
++
++Then you will be shown a list of cities which represent the time zone
++in which they are located. You should choose a city in your time zone.
++
++EOF
++
++}
++
++zone_info()
++{
++	TZBase=$(LC_ALL=C TZ=UTC0 date)
++	UTdate=$(TZ=UTC0 date -d "$TZBase")
++	TZdate=$(TZ="$timezone" date -d "$TZBase")
++	extra_info="
++Local time is now:      $TZdate.
++Universal Time is now:  $UTdate."
++}
++
++TIMEZONES=$(tempfile -p time) || TIMEZONES=/etc/timezone.$$
++
++if [ -f /etc/timezone ]; then
++	echo "Your current time zone is set to `cat /etc/timezone`"
++	echo -n "Do you want to change that? [n]: "
++	read ans
++	if [ "x$ans" = "x" -o "$ans" = "n" -o "$ans" = "no" ]; then
++		echo "Your time zone will not be changed"
++		exit 0
++	fi
++elif [ -L /etc/localtime ]; then
++	oldtimezone=$(readlink /etc/localtime | sed 's%^/usr/share/zoneinfo/%%')
++	echo "Your current time zone is set to $oldtimezone"
++	echo -n "Do you want to change that? [n]: "
++	read ans
++	if [ "x$ans" = "x" -o "$ans" = "n" -o "$ans" = "no" ]; then
++		echo "Your time zone will not be changed"
++		exit 0
++	fi
++fi
++
++
++( cd /usr/share/zoneinfo ; find . -type f | sed -e 's/^.\///' | sort > $TIMEZONES )
++valid=no
++while [ $valid = no ]; do
++	show_continents
++	echo -n "Number: " ; read area
++	case $area in
++		1) continent=Africa ; valid=yes ;;
++		2) continent=America ; valid=yes ;;
++		3) continent=US ; valid=yes ;;
++		4) continent=Canada ; valid=yes ;;
++		5) continent=Asia ; valid=yes ;;
++		6) continent=Atlantic ; valid=yes ;;
++		7) continent=Australia ; valid=yes ;;
++		8) continent=Europe ; valid=yes ;;
++		9) continent=Indian ; valid=yes ;;
++		10) continent=Pacific ; valid=yes ;;
++		11) continent=SystemV ; valid=yes ;;
++		12) continent=Etc ; valid=yes ;;
++	esac
++done
++
++if [ -x /usr/bin/fmt ]; then fmt_bin=/usr/bin/fmt
++else fmt_bin=/bin/more ; fi
++
++valid=no
++zone=""
++
++while [ $valid = no ]; do
++	if [ -n "$zone" ]; then
++		# We accept the zone if either it is an unambiguous prefix, or
++		# it is a complete zone name.
++		number=`grep -i -c "^$continent/$zone" $TIMEZONES`
++		if [ $number -eq 1 ]; then
++			timezone=`grep -i "^$continent/$zone" $TIMEZONES`
++		else
++			timezone=`grep -i -s "^$continent/$zone"'$' $TIMEZONES`
++		fi
++
++		if [ -n "$timezone" ]; then
++			zone_info
++			echo "Your default time zone is set to '$timezone'.$extra_info"
++			valid=yes
++			break
++		fi
++	fi
++	echo
++	grep -i "^$continent/$zone" $TIMEZONES | cut -d/ -f2- | $fmt_bin
++	echo
++	echo "Please enter the name of one of these cities or zones"
++	echo "You just need to type enough letters to resolve ambiguities"
++	echo "Press Enter to view all of them again"
++	echo -n "Name: [$zone] " ; read zone
++done
++
++echo $timezone > /etc/timezone 
++#zic -l $timezone 
++rm -f /etc/localtime && ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
++trap 'rm -f $TIMEZONES' 0 1 2 3 13 15

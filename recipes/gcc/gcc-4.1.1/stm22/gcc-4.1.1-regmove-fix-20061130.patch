@@ -1,0 +1,63 @@
+This patch fixes problems with the gcc -foptimize-related-values
+which is switched on at -O2 and above.
+It is related to Bugzilla 977 (ST private)
+
+2006-11-30  J"orn Rennecke  <joern.rennecke@st.com>
+
+	* regmove.c (struct rel_use_chain): New member invalidate_luid.
+	(link_chains): Check invalidate_luid of predecessor.
+	(optimize_related_values_1): Initialize invalidate_luid for chains.
+
+Signed-off-by: J"orn Rennecke
+
+--- gcc-4.1.1.orig/gcc/regmove.c	2006-07-14 12:39:05.000000000 +0100
++++ gcc-4.1.1/gcc/regmove.c		2006-11-30 20:01:16.000000000 +0000
+@@ -501,6 +501,7 @@ struct rel_use_chain
+   rtx death_note;
+   /* Offset after execution of last insn.  */
+   HOST_WIDE_INT match_offset;
++  int invalidate_luid;
+ };
+ 
+ /* ADDRP points to the place where the actual use of the related value is.
+@@ -1548,6 +1549,8 @@ link_chains (struct rel_use_chain *pred_
+ {
+   if (succ_chain->start_luid > pred_chain->end_luid
+       && ! pred_chain->end->no_link_pred
++      && (! pred_chain->invalidate_luid
++	  || pred_chain->invalidate_luid > succ_chain->end_luid)
+       && regclass_compatible_p (succ_chain->uses->class,
+ 				pred_chain->uses->class)
+       /* add_limits is not valid for MODE_PARTIAL_INT .  */
+@@ -1630,6 +1633,22 @@ optimize_related_values_1 (struct relate
+       
+       chain->reg = ! use->no_link_pred ? NULL_RTX : *use->addrp;
+ 
++      if (chain->reg)
++	{
++	  /* Copy if an invalidate_luid is attached to this register.
++	     ??? This loop makes the algorithm quadratic on the number
++	     of registers.  If this is a problem, the cost can be brought
++	     down to O(N*log(N)) by using sorting.  */
++	  for (rel = rel_base; rel; rel = rel->prev)
++	    if (rel->reg == chain->reg)
++	      {
++		chain->invalidate_luid = rel->invalidate_luid;
++		break;
++	      }
++	}
++      else
++	chain->invalidate_luid = 0;
++
+       if (use->luid > max_end_luid)
+ 	max_end_luid = use->luid;
+ 
+@@ -1743,6 +1762,7 @@ optimize_related_values_1 (struct relate
+ 		  || rel_base->invalidate_luid > chain->end_luid))
+ 	    {
+ 	      chain->reg = rel_base->reg;
++	      chain->invalidate_luid = rel_base->invalidate_luid;
+ 	      rel_base_reg_user = chain;
+ 	      if (num_linked < num_chains - 1)
+ 		{
+
