@@ -3,8 +3,8 @@ SECTION = "base"
 PRIORITY = "required"
 LICENSE = "proprietary"
 MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
-RDEPENDS_dm8000 = "dreambox-secondstage"
-RDEPENDS_dm800 = "dreambox-secondstage"
+#RDEPENDS_dm8000 = "dreambox-secondstage"
+#RDEPENDS_dm800 = "dreambox-secondstage"
 #RDEPENDS_dm500hd = "dreambox-secondstage"
 
 KV_dm7020 = "2.6.9"
@@ -29,11 +29,11 @@ KV_dm8000 = "${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '2.6.1
 PV_dm8000 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '20100413', '20090820', d)}"
 
 RDEPENDS = "kernel (${KV})"
-PR = "r0"
+PR = "r1"
 
 SRC_URI = "http://sources.dreamboxupdate.com/snapshots/dreambox-dvb-modules-${MACHINE}-${PV}.tar.bz2 "
 SRC_URI_append_dm7025 = "http://sources.dreamboxupdate.com/download/7020/fpupgrade-${MACHINE}-v7"
-SRC_URI_append_dm8000 = "http://sources.dreamboxupdate.com/download/7020/fpupgrade-${MACHINE}-v5"
+SRC_URI_append_dm8000 = "http://sources.dreamboxupdate.com/download/7020/fpupgrade-${MACHINE}-v7"
 
 S = "${WORKDIR}"
 
@@ -51,14 +51,14 @@ do_install_mipsel() {
 	done
 }
 
-do_install_append_dm7025() {
+do_install_mipsel_append_dm7025() {
 	install -d ${D}${sbindir}
 	install -m 0755 ${WORKDIR}/fpupgrade-${MACHINE}-v7 ${D}${sbindir}/fpupgrade
 }
 
-do_install_append_dm8000() {
+do_install_mipsel_append_dm8000() {
 	install -d ${D}${sbindir}
-	install -m 0755 ${WORKDIR}/fpupgrade-${MACHINE}-v5 ${D}${sbindir}/fpupgrade
+	install -m 0755 ${WORKDIR}/fpupgrade-${MACHINE}-v7 ${D}${sbindir}/fpupgrade
 }
 
 PACKAGE_ARCH := "${MACHINE_ARCH}"
