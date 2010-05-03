@@ -35,18 +35,22 @@ SRC_URI = "${GNU_MIRROR}/gcc/gcc-${PV}/gcc-${PV}.tar.bz2 \
 
 SRC_URI_append_sh3  = " file://sh3-installfix-fixheaders.patch;patch=1 "
 
-FILESPATH_append_sh4 = ":${FILE_DIRNAME}/gcc-4.1.1/stm22"
 
 SRC_URI_append_sh4  = " file://sh_unwind.patch;patch=1 \
 			file://cppdefault_cross.patch;patch=1 \
-			file://gcc-4.1.1-st40r2-4.0.1.patch;patch=1 \
-			file://gcc-4.1.1-st40r2-4.0.1-no-cbranchdi.patch;patch=1 \
-			file://gcc-4.1.1-cross_search_paths-sh4.patch;patch=1 \
-			file://gcc-4.1.1-recursive_inline_fix.patch;patch=1 \
-			file://gcc-4.1.1-linux-multilib-fix.patch;patch=1 \
-			file://gcc-4.1.1-PR27781-fix.patch;patch=1 \
-			file://gcc-4.1.1-regmove-fix-20061130.patch;patch=1 \
 		      "
+
+FILESPATH_append_openstmstb = ":${FILE_DIRNAME}/gcc-4.1.1/stm22"
+
+SRC_URI_append_openstmstb = " \
+	file://gcc-4.1.1-st40r2-4.0.1.patch;patch=1 \
+	file://gcc-4.1.1-st40r2-4.0.1-no-cbranchdi.patch;patch=1 \
+	file://gcc-4.1.1-cross_search_paths-sh4.patch;patch=1 \
+	file://gcc-4.1.1-recursive_inline_fix.patch;patch=1 \
+	file://gcc-4.1.1-linux-multilib-fix.patch;patch=1 \
+	file://gcc-4.1.1-PR27781-fix.patch;patch=1 \
+	file://gcc-4.1.1-regmove-fix-20061130.patch;patch=1 \
+	"
 
 #This is a dirty hack to get gcc 4.1.1 to compile for glibc AND uclibc on ppc
 #the patch that is need it to get gcc support soft-floats with glibc, makes gcc fail with uclibc
