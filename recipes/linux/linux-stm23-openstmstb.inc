@@ -5,15 +5,16 @@
 
 PR = "${INC_PR}.0"
 
-FILESPATH_append = ":${FILE_DIRNAME}/linux-stm23-openstmstb:${FILE_DIRNAME}/linux-stm23-openstmstb/${STM_PR}"
+FILESPATH_append = ":${FILE_DIRNAME}/linux-${STM_RELEASE}-openstmstb:${FILE_DIRNAME}/linux-${STM_RELEASE}-openstmstb/${SRCREV}"
+SRCREVSTR = "${@base_conditional('SRCREV', '0119', '', '_${SRCREV}', d)}"
 
 SRC_URI_append = "\
-    file://linuxdvb_stm23_${STM_PR}.patch;patch=1;pnum=1 \
-    file://time_stlinux23_${STM_PR}.diff;patch=1;pnum=1 \
-    file://cpp_stm23_${STM_PR}.patch;patch=1;pnum=1 \
-    file://mtd_stm23_${STM_PR}.patch;patch=1;pnum=1 \
-#   file://cmdline_printk_stm23_${STM_PR}.patch;patch=1;pnum=1 \
-    file://sound_stm23_${STM_PR}.diff;patch=1;pnum=1 \
-    file://linux-sh4-asm_mov_0xffffff_stm23_0123.patch;patch=1;pnum=1 \
+    file://linuxdvb_stm23${SRCREVSTR}.patch;patch=1;pnum=1 \
+    file://time_stlinux23${SRCREVSTR}.diff;patch=1;pnum=1 \
+    file://cpp_stm23${SRCREVSTR}.patch;patch=1;pnum=1 \
+    file://mtd_stm23${SRCREVSTR}.patch;patch=1;pnum=1 \
+#   file://cmdline_printk_stm23${SRCREVSTR}.patch;patch=1;pnum=1 \
+    file://sound_stm23${SRCREVSTR}.diff;patch=1;pnum=1 \
+    file://linux-sh4-asm_mov_0xffffff_stm23${SRCREVSTR}.patch;patch=1;pnum=1;minrev=0123 \
     "
 
