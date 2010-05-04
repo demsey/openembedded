@@ -110,12 +110,12 @@ OBJC = ""
 EXTRA_OECONF_BASE = "--enable-libssp --disable-bootstrap --enable-libgomp --disable-libmudflap"
 EXTRA_OECONF_BASE_openstmstb = "--disable-bootstrap --with-system-zlib --disable-libmudflap --enable-checking=assert"
 
-STM_RELEASE_openstmstb = "62"
+SRCREV_openstmstb = "62"
 
 ARM_INSTRUCTION_SET = "arm"
 
 do_configure_prepend_openstmstb () {
-    sed -i  -e '/VERSUFFIX/s,".*"," (STMicroelectronics/Linux Base ${PV}-${STM_RELEASE} packaged by ${DISTRO_NAME} ${PR})",' \
+    sed -i  -e '/VERSUFFIX/s,".*"," (STMicroelectronics/Linux Base ${PV}-${SRCREV} prepared by ${DISTRO_NAME} ${PR})",' \
         -e '/bug_report_url/s,".*","<URL:https://bugzilla.stlinux.com>",' \
         ${S}/gcc/version.c
 }

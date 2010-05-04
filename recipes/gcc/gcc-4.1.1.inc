@@ -63,10 +63,10 @@ JAVA = ""
 
 EXTRA_OECONF_BASE = "--disable-libssp --disable-libmudflap"
 
-STM_RELEASE_openstmstb = "23"
+SRCREV_openstmstb = "23"
 
 do_configure_prepend_openstmstb () {
-    sed -i  -e '/VERSUFFIX/s,".*"," (STMicroelectronics/Linux Base ${PV}-${STM_RELEASE} prepared by ${DISTRO_NAME} ${PR})",' \
+    sed -i  -e '/VERSUFFIX/s,".*"," (STMicroelectronics/Linux Base ${PV}-${SRCREV} prepared by ${DISTRO_NAME} ${PR})",' \
         -e '/bug_report_url/s,".*","<URL:https://bugzilla.stlinux.com>",' \
         ${S}/gcc/version.c
 }
