@@ -2,7 +2,7 @@ DESCRIPTION = "Library for decoding dts audio to wav"
 LICENSE = "GPL"
 SECTION = "libs"
 PRIORITY = "optional"
-PR = "r0"
+PR = "r1"
 
 inherit autotools pkgconfig
 
@@ -30,3 +30,11 @@ FILES_dcadec-doc = " ${mandir}/man1/* "
 do_stage() {
 	autotools_stage_all
 }
+
+# use single precision is enough and speedups the libdca about 10-15%
+do_patchfloat() {
+	sed -i -e 's/double/sample_t/g' ${S}/libdca/*.h
+	sed -i -e 's/double/sample_t/g' ${S}/libdca/*.c
+}
+
+addtask patchfloat after do_patch before do_configure

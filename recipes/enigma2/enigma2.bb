@@ -99,7 +99,7 @@ inherit autotools pkgconfig
 bindir = "/usr/bin"
 sbindir = "/usr/sbin"
 
-EXTRA_OECONF = "--enable-maintainer-mode --with-target=native --with-libsdl=no"
+EXTRA_OECONF = "--with-target=native --with-libsdl=no"
 
 do_install_append() {
 	install -m 0755 ${WORKDIR}/enigma2.sh ${D}/usr/bin/
