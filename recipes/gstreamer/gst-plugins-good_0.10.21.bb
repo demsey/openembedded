@@ -1,6 +1,7 @@
 require gst-plugins.inc
 
-SRC_URI += "file://flvdemux-ecma.diff;patch=1"
+SRC_URI += "file://flvdemux-ecma.diff;patch=1 \
+file://qtdemux-fix-partial-parsing-of-ctts-table.patch;patch=1"
 
 PR = "${INC_PR}.0"
 
