@@ -5,6 +5,4 @@
 
 DESCRIPTION = "Linux kernel for ABCom IPBOX 9000HD, Sezam 9100HD PVR, MADTEK HD 4000L, VIZYON-8000HD PVR"
 
-require linux-${STM_RELEASE}.inc
-require linux-${STM_RELEASE}-openstmstb.inc
-require linux-${STM_RELEASE}-cuberevo.inc
+require linux-cuberevo-${STM_RELEASE}.inc

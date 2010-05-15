@@ -3,6 +3,8 @@
 #	with patches for cuberevo devices
 #
 
+require linux-openstmstb-${STM_RELEASE}.inc
+
 HOMEPAGE = "http://enigma2.sifteam.eu/index.php?dir=Enigma2%20developer%20zone/"
 
 PR = "${INC_PR}.0"

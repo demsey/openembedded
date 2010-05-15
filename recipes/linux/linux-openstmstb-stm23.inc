@@ -3,9 +3,11 @@
 #	with common patches for stm based Set-Top-Boxes
 #
 
+require linux-${STM_RELEASE}.inc
+
 PR = "${INC_PR}.0"
 
-FILESPATH_append = ":${FILE_DIRNAME}/linux-${STM_RELEASE}-openstmstb:${FILE_DIRNAME}/linux-${STM_RELEASE}-openstmstb/${SRCREV}"
+FILESPATH_append = ":${FILE_DIRNAME}/linux-openstmstb/${STM_RELEASE}:${FILE_DIRNAME}/linux-openstmstb/${STM_RELEASE}/${SRCREV}"
 SRCREVSTR = "${@base_conditional('SRCREV', '0119', '', '_${SRCREV}', d)}"
 
 SRC_URI_append = "\
