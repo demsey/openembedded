@@ -1,0 +1,17 @@
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0041/sound/stm/stb7100_i2s_spdif.c linux-2.6.17.14_stm22_0041/sound/stm/stb7100_i2s_spdif.c
+--- oldlinux-2.6.17.14_stm22_0041/sound/stm/stb7100_i2s_spdif.c	2009-09-28 13:17:17.000000000 +0200
++++ linux-2.6.17.14_stm22_0041/sound/stm/stb7100_i2s_spdif.c	2009-09-28 19:01:23.000000000 +0200
+@@ -155,10 +155,13 @@
+ 		wake_up(&software_reset_wq);
+ 		handled = IRQ_HANDLED;
+ 	}
++//Trick: for HDBOX
++#if 0
+ 	if(val & PR_UNDERFLOW_INT){
+ 		printk("%s I2S Converter PLayer FIFO Underflow detected\n",__FUNCTION__);
+ 		handled = IRQ_HANDLED;
+ 	}
++#endif
+ 	if(val & PR_I2S_FIFO_OVERRUN_INT){
+ 		printk("%s I2S Converter PLayer FIFO Overflow detected\n",__FUNCTION__);
+ 		handled = IRQ_HANDLED;

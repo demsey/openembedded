@@ -1,0 +1,64 @@
+*** linux/kernel/printk.c	2010-01-21 18:29:54.552204439 +0100
+--- Patchit/printk.c	2010-01-21 18:27:04.920036761 +0100
+***************
+*** 122,127 ****
+--- 122,128 ----
+  
+  #ifdef CONFIG_PRINTK_FUNC
+  
++ 
+  static char __log_buf[__LOG_BUF_LEN];
+  static char *log_buf = __log_buf;
+  static int log_buf_len = __LOG_BUF_LEN;
+***************
+*** 452,457 ****
+--- 453,475 ----
+  
+  __setup("time", printk_time_setup);
+  
++ /* Dagobert: parse a printk option to the kernel
++  * to enable printk while booting
++  * needs CONFIG_RPINTK too
++  */
++ static int use_printk = 0;
++ 
++ static int __init printk_cmdline_opt(char *str)
++ {
++         if (get_option(&str, &use_printk)){
++                 printk(KERN_NOTICE "use_printk per bootargs: %d\n", use_printk);
++                 return 1;
++         }
++         else
++                 return 0;
++ }
++ __setup("printk=", printk_cmdline_opt);
++ 
+  __attribute__((weak)) unsigned long long printk_clock(void)
+  {
+  	return sched_clock();
+***************
+*** 482,487 ****
+--- 500,509 ----
+  	va_list args;
+  	int r;
+  
++         /* Dagobert */
++         if (use_printk == 0)
++ 	   return 0;
++ 
+  	va_start(args, fmt);
+  	MARK(kernel_printk, "%p", __builtin_return_address(0));
+  	r = vprintk(fmt, args);
+***************
+*** 501,506 ****
+--- 523,532 ----
+  	static char printk_buf[1024];
+  	static int log_level_unknown = 1;
+  
++         /* Dagobert */
++         if (use_printk == 0)
++ 	   return 0;
++ 
+  	preempt_disable();
+  	if (unlikely(oops_in_progress) && printk_cpu == smp_processor_id())
+  		/* If a crash is occurring during printk() on this CPU,

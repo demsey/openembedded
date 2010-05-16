@@ -1,0 +1,4564 @@
+*** linux/include/linux/stm/stm-dma.h	2009-05-10 14:26:45.000000000 +0200
+--- UFS922_Orig/dma/stm-dma.h	2009-05-11 20:36:34.000000000 +0200
+***************
+*** 1,22 ****
+  /*
+!  *  STb7100 FDMA Driver
+!  *  Copyright (c) 2005 STMicroelectronics Limited.
+!  *  Author: Mark Glaisher <Mark.Glaisher@st.com>
+!  *
+!  *   This program is free software; you can redistribute it and/or modify
+!  *   it under the terms of the GNU General Public License as published by
+!  *   the Free Software Foundation; either version 2 of the License, or
+!  *   (at your option) any later version.
+!  *
+!  *   This program is distributed in the hope that it will be useful,
+!  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  *   GNU General Public License for more details.
+!  *
+!  *   You should have received a copy of the GNU General Public License
+!  *   along with this program; if not, write to the Free Software
+!  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+   *
+   */
+  
+  #ifndef STM_DMA_H
+--- 1,10 ----
+  /*
+!  * Copyright (C) 2005,7 STMicroelectronics Limited
+!  * Authors: Mark Glaisher <Mark.Glaisher@st.com>
+!  *          Stuart Menefy <stuart.menefy@st.com>
+   *
++  * May be copied or modified under the terms of the GNU General Public
++  * License.  See linux/COPYING for more information.
+   */
+  
+  #ifndef STM_DMA_H
+***************
+*** 28,46 ****
+  #include <linux/module.h>
+  
+  
+- #if defined(CONFIG_STM_DMA_DEBUG)
+- 	#define fdma_log(format, args...)  printk(format, ## args)
+- #else
+- 	#define fdma_log(format, args...) ;
+- #endif
+- 
+- /*when we are running in SH-compatibility mode these mode and dim flags will#
+-  * be muxed into the dma_channel-flags member*/
+- 
+  /*DMA Modes */
+  #define MODE_FREERUNNING   		0x01	/* FDMA, GPDMA */
+  #define MODE_PACED  		 	0x02	/* FDMA */
+- #define MODE_SH_COMPATIBILITY		0x03
+  #define MODE_SRC_SCATTER		0x04
+  #define MODE_DST_SCATTER		0x05
+  
+--- 16,24 ----
+***************
+*** 59,74 ****
+  	DIM_2_x_0 = (2 << DIM_SRC_SHIFT) | (0 << DIM_DST_SHIFT),
+  	DIM_2_x_1 = (2 << DIM_SRC_SHIFT) | (1 << DIM_DST_SHIFT),
+  	DIM_2_x_2 = (2 << DIM_SRC_SHIFT) | (2 << DIM_DST_SHIFT),
+- 	DIM_REQ_SEL = 0x10,
+  };
+  
+  enum stm_dma_flags {
+  	STM_DMA_INTER_NODE_PAUSE=0x800,
+! 	STM_DMA_LIST_COMP_INT=0x1000,
+  	STM_DMA_CB_CONTEXT_ISR=0x2000,
+  	STM_DMA_CB_CONTEXT_TASKLET=0x4000,
+- 	STM_DMA_SETUP_CONTEXT_TASK=0x8000,
+- 	STM_DMA_SETUP_CONTEXT_ISR=0x10000,
+  	STM_DMA_CHANNEL_PAUSE_FLUSH=0x20000,
+  	STM_DMA_CHANNEL_PAUSE_NOFLUSH=0x40000,
+  	STM_DMA_NOBLOCK_MODE=0x80000,
+--- 37,49 ----
+  	DIM_2_x_0 = (2 << DIM_SRC_SHIFT) | (0 << DIM_DST_SHIFT),
+  	DIM_2_x_1 = (2 << DIM_SRC_SHIFT) | (1 << DIM_DST_SHIFT),
+  	DIM_2_x_2 = (2 << DIM_SRC_SHIFT) | (2 << DIM_DST_SHIFT),
+  };
+  
+  enum stm_dma_flags {
+  	STM_DMA_INTER_NODE_PAUSE=0x800,
+! 	STM_DMA_NODE_COMP_INT=0x1000,
+  	STM_DMA_CB_CONTEXT_ISR=0x2000,
+  	STM_DMA_CB_CONTEXT_TASKLET=0x4000,
+  	STM_DMA_CHANNEL_PAUSE_FLUSH=0x20000,
+  	STM_DMA_CHANNEL_PAUSE_NOFLUSH=0x40000,
+  	STM_DMA_NOBLOCK_MODE=0x80000,
+***************
+*** 82,88 ****
+  #define DMA_CHANNEL_STATUS_PAUSED 		3
+  
+  /* Parameters to request_dma_bycap() */
+! #define STM_DMAC_ID 			"ST40 STB710x FDMAC"
+  #define STM_DMA_CAP_HIGH_BW		"STM_DMA_HIGH_BANDWIDTH"
+  #define STM_DMA_CAP_LOW_BW		"STM_DMA_LOW_BANDWIDTH"
+  #define STM_DMA_CAP_ETH_BUF		"STM_DMA_ETH_BUFFER"
+--- 57,63 ----
+  #define DMA_CHANNEL_STATUS_PAUSED 		3
+  
+  /* Parameters to request_dma_bycap() */
+! #define STM_DMAC_ID 			"fdma_dmac"
+  #define STM_DMA_CAP_HIGH_BW		"STM_DMA_HIGH_BANDWIDTH"
+  #define STM_DMA_CAP_LOW_BW		"STM_DMA_LOW_BANDWIDTH"
+  #define STM_DMA_CAP_ETH_BUF		"STM_DMA_ETH_BUFFER"
+***************
+*** 93,146 ****
+  #define STM_DMA_OP_STOP				3
+  #define STM_DMA_OP_COMPILE			4
+  #define STM_DMA_OP_STATUS			5
+- #define STM_DMA_OP_MEM_FREE			6
+  #define STM_DMA_OP_PACING			7
+  
+  
+  struct stm_dma_params;
+  
+! typedef struct fmdareq_RequestConfig_s
+! {
+!     char Index;         /* Request line index number */
+!     char Access;        /* Access type: Read or Write */
+!     char OpCode;        /* Size of word access */
+!     char Count;         /* Number of transfers per request */
+!     char Increment;     /* Whether to increment. On 5517, number of bytes to increment per request */
+!     char HoldOff;       /* Holdoff value between req signal samples (clock cycles)*/
+!     char Initiator;     /* Use the default value */
+! }fdmareq_RequestConfig_t;
+! 
+! typedef struct llu_node{
+! 	struct fdma_llu_entry * virt_addr;
+! 	dma_addr_t dma_addr;
+! }llu_node;
+! 
+! typedef struct dma_xfer_descriptor {
+! 	struct 	llu_node * node;
+! 	int 	alloced_nents;
+! 	int    	(*nodelist_setup) (struct stm_dma_params *xfer);
+! 	void    (*extrapolate_fn)(struct stm_dma_params *xfer);
+! 	int	extrapolate_line_len;
+! 	int 	sublist_nents;
+! }dma_xfer_descriptor;
+  
+! typedef struct stm_dma_params {
+  
+- 	struct stm_dma_params *next;
+- 	char  dmac_name[30];
+- 	unsigned long mode;  /*For STMicro DMA API modes see /include/linux/7100_fdma2.h*/
+  	/* a pointer to a callback function of type void foo(void*)
+  	 * which will be called on completion of the entire
+  	 * transaction or after each transfer suceeds if
+  	 * NODE_PAUSE_ISR is specifed */
+! 	void				(*comp_cb)(void*);
+! 	void				*comp_cb_parm;
+  
+  	/* a pointer to a callback function of type void foo(void*)
+  	 * which will be called upon failure of a transfer or
+  	 * transaction*/
+! 	void				(*err_cb)(void*);
+! 	void				*err_cb_parm;
+  
+  	/*Source location line stride for use in 0/1/2 x 2D modes*/
+  	unsigned long			sstride;
+--- 68,128 ----
+  #define STM_DMA_OP_STOP				3
+  #define STM_DMA_OP_COMPILE			4
+  #define STM_DMA_OP_STATUS			5
+  #define STM_DMA_OP_PACING			7
++ #define STM_DMA_OP_REQ_FREE   			8
++ 
++ /* Generic DMA request line configuration */
++ 
++ /* Read/Write */
++ #define REQ_CONFIG_READ            0
++ #define REQ_CONFIG_WRITE           1
++ 
++ /* Opcodes */
++ #define REQ_CONFIG_OPCODE_1        0x00
++ #define REQ_CONFIG_OPCODE_2        0x01
++ #define REQ_CONFIG_OPCODE_4        0x02
++ #define REQ_CONFIG_OPCODE_8        0x03
++ #define REQ_CONFIG_OPCODE_16       0x04
++ #define REQ_CONFIG_OPCODE_32       0x05
++ 
++ struct stm_dma_req_config
++ {
++ 	unsigned char req_line;		/* Request line index number */
++ 	unsigned char rw;		/* Access type: Read or Write */
++ 	unsigned char opcode;		/* Size of word access */
++ 	unsigned char count;		/* Number of transfers per request */
++ 	unsigned char increment;	/* Whether to increment */
++ 	unsigned char hold_off;		/* Holdoff value between req signal samples (in clock cycles)*/
++ 	unsigned char initiator;	/* Which STBus initiatator to use */
++ };
+  
++ struct stm_dma_req;
++ 
++ /* Generic STM DMA params */
+  
+  struct stm_dma_params;
+  
+! struct params_ops {
+! 	int (*free_params)(struct stm_dma_params* params);
+! };
+  
+! struct stm_dma_params {
+! 
+! 	/* Transfer mode eg MODE_DST_SCATTER */
+! 	unsigned long mode;
+  
+  	/* a pointer to a callback function of type void foo(void*)
+  	 * which will be called on completion of the entire
+  	 * transaction or after each transfer suceeds if
+  	 * NODE_PAUSE_ISR is specifed */
+! 	void				(*comp_cb)(unsigned long);
+! 	unsigned long			comp_cb_parm;
+  
+  	/* a pointer to a callback function of type void foo(void*)
+  	 * which will be called upon failure of a transfer or
+  	 * transaction*/
+! 	void				(*err_cb)(unsigned long);
+! 	unsigned long			err_cb_parm;
+  
+  	/*Source location line stride for use in 0/1/2 x 2D modes*/
+  	unsigned long			sstride;
+***************
+*** 161,255 ****
+  
+  	struct scatterlist * srcsg;
+  	struct scatterlist * dstsg;
+  
+  	int err_cb_isr	:1;
+  	int comp_cb_isr	:1;
+  
+  	int node_pause		:1;
+  	int node_interrupt	:1;
+- 	int blocking		:1;
+  	int circular_llu        :1;
+  
+  	unsigned long dim;
+  	/* Parameters for paced transfers */
+! 	unsigned long req_line;
+! 	/*setup called from task or isr context ? */
+! 	unsigned long context;
+  	/* Pointer to compiled parameters
+  	 * this includes the *template* llu node and
+  	 * its assoc'd memory */
+! 	dma_xfer_descriptor priv;
+! }stm_dma_params;
+  
+  
+! #define REPORT_STM_DMA_PARMS(dmap)(\
+! fdma_log("DMA Struct is MODE %s\n CCB %x\n\
+! CCBParm %x\n CCBISR %s\n ECB %x\n\
+! ECBParm %x\n ECBISR %s\n SADDR %x\n\
+! DADDR %x\n SSTRIDE %x\n BYTES %x\n\
+! CALL_CNTX %s\n DSTRIDE %x\n LEN %x\n\
+! PAUSE %s\n ISR %s\n DIM %x\n\
+! LIST_TYPE %s\n REQ %x\n",\
+! 	(dmap.mode== MODE_FREERUNNING ? "FREE":"PACED"),\
+! 	(int)dmap.comp_cb,\
+! 	(int)dmap.comp_cb_parm,\
+! 	dmap.comp_cb_isr ? "INTERRUPT":"TASKLET",\
+! 	(int)dmap->err_cb,\
+! 	(int)dmap->err_cb_parm,\
+! 	dmap->err_cb_isr ? "INTERRUPT":"TASKLET",\
+! 	(int)dmap->sar,\
+! 	(int) dmap->dar, \
+! 	(int)dmap->sstride,\
+! 	(int)dmap->node_bytes,\
+! 	dmap->context==STM_DMA_SETUP_CONTEXT_TASK ?"TASK":"INTERRUPT",\
+! 	(int)dmap->dstride,\
+! 	(int)dmap->line_len,\
+! 	dmap->node_pause? "PAUSE_ISR":"NO_NODE_PAUSE",\
+! 	dmap->node_interrupt ?"NODE_ISE":"NO_NODE_ISR",\
+! 	(int)dmap->dim,\
+! 	dmap->circular_llu ?"CIRCULAR":"UNLINKED",\
+! 	(int)dmap->req_line))
+! 
+! 
+! static inline void declare_dma_parms(	struct stm_dma_params * p,
+! 					unsigned long mode,
+! 					unsigned long list_type,
+! 					unsigned long context,
+! 					unsigned long blocking,
+! 					char * name)
+! {
+! 	if(p){
+! 		memset(p,0,sizeof(struct stm_dma_params));
+! 		p->mode = mode;
+! 		p->circular_llu = (STM_DMA_LIST_CIRC ==list_type ?1:0);
+! 		p->context  = ((STM_DMA_SETUP_CONTEXT_ISR == context) ?
+! 						GFP_ATOMIC:GFP_KERNEL);
+! 		p->blocking = (STM_DMA_NOBLOCK_MODE == blocking ? 0:1);
+! 		p->priv.sublist_nents=1;
+! 		if(strlen(name) >=sizeof(p->dmac_name))
+! 			printk("%s Failed - limit 'name' to (%d) chars",
+! 				__FUNCTION__,sizeof(p->dmac_name));
+! 		else
+! 			memcpy(&p->dmac_name,name,strlen(name));
+! 
+! 	}
+  };
+  
+! static inline int dma_manual_stbus_pacing(struct stm_dma_params *params,
+! 									struct fmdareq_RequestConfig_s * rq)
+! {
+! 	struct dma_info * info =  get_dma_info_by_name(params->dmac_name);
+! 	return dma_extend(info->channels[0].chan,STM_DMA_OP_PACING,rq);
+! }
+  
+  static inline int dma_get_status(unsigned int chan)
+  {
+  	return dma_extend(chan,STM_DMA_OP_STATUS,NULL);
+  }
+  
+! static inline int dma_pause_channel(int flags, unsigned int chan)
+  {
+! 	return dma_extend(chan, STM_DMA_OP_PAUSE, (void*)flags);
+  }
+  
+  static inline void dma_unpause_channel(unsigned int chan)
+--- 143,198 ----
+  
+  	struct scatterlist * srcsg;
+  	struct scatterlist * dstsg;
++ 	int sglen;
+  
+  	int err_cb_isr	:1;
+  	int comp_cb_isr	:1;
+  
+  	int node_pause		:1;
+  	int node_interrupt	:1;
+  	int circular_llu        :1;
+  
+  	unsigned long dim;
++ 
+  	/* Parameters for paced transfers */
+! 	struct stm_dma_req *req;
+! 
+  	/* Pointer to compiled parameters
+  	 * this includes the *template* llu node and
+  	 * its assoc'd memory */
+! 	void* priv;
+  
++ 	/* Next pointer for linked list of params */
++ 	struct stm_dma_params *next;
+  
+! 	/* Pointer to DMAC specific operators on the parameters.
+! 	 * Filled in by dma_compile_list(). */
+! 	struct params_ops *params_ops;
+! 	void* params_ops_priv;
+! 
+! 	/* This is only used in the call to dma_compile_list(), so
+! 	 * shouldn't really be here, but it saves us packing and unpacking
+! 	 * the parameters into another struct. */
+! 	gfp_t context;
+  };
+  
+! static inline void dma_params_init(struct stm_dma_params * p,
+! 				  unsigned long mode,
+! 				  unsigned long list_type)
+! {
+! 	memset(p,0,sizeof(struct stm_dma_params));
+! 	p->mode = mode;
+! 	p->circular_llu = (STM_DMA_LIST_CIRC ==list_type ?1:0);
+! };
+  
+  static inline int dma_get_status(unsigned int chan)
+  {
+  	return dma_extend(chan,STM_DMA_OP_STATUS,NULL);
+  }
+  
+! static inline int dma_pause_channel(unsigned int chan)
+  {
+! 	return dma_extend(chan, STM_DMA_OP_PAUSE,NULL);
+  }
+  
+  static inline void dma_unpause_channel(unsigned int chan)
+***************
+*** 262,306 ****
+  	return dma_extend(chan, STM_DMA_OP_STOP, NULL);
+  }
+  
+! static inline int dma_free_descriptor(struct stm_dma_params *params)
+  {
+! 	struct dma_info * info =  get_dma_info_by_name(params->dmac_name);
+! 	return dma_extend(info->channels[0].chan,STM_DMA_OP_MEM_FREE,params);
+  }
+  
+! static inline int dma_compile_list(struct stm_dma_params *params)
+  {
+! 	/*we dont care about channel nrs for a compile, but we need
+! 	 *  a valid set of hooks, so get the first valid channel for given
+! 	 * controller.*/
+! 	 struct dma_info * info =  get_dma_info_by_name(params->dmac_name);
+! 	 if(info == NULL){
+! 	 	printk("%s Cant find matching controller to %s\n",
+! 	 			__FUNCTION__,params->dmac_name);
+! 	 	return -EINVAL;
+! 	 }
+! 	 return dma_extend(info->first_channel_nr,STM_DMA_OP_COMPILE,params);
+  }
+  
+! static inline int dma_xfer_list(unsigned int chan,stm_dma_params * p)
+  {
+! 	struct dma_channel * this_ch = get_dma_channel(chan);
+! 	if((this_ch != NULL) && (this_ch->chan == chan) ){
+! 		/*TODO :- this is a bit 'orrible -
+! 		 * should really extend arch/sh/drivers/dma/dma-api.c
+! 		 * to include a 'set_dma_channel'*/
+! 		this_ch->priv_data = (void*)p;
+! 		dma_configure_channel(chan,0);
+! 		return dma_xfer(chan,0,0,0,0);
+! 	}
+! 	return -EINVAL;
+  
+  }
+  
+  
+! /* Configure parameters via an API */
+  
+! static inline  void dma_parms_sg(	struct stm_dma_params *p,
+  					struct scatterlist * sg,
+  					int nents)
+  {
+--- 205,247 ----
+  	return dma_extend(chan, STM_DMA_OP_STOP, NULL);
+  }
+  
+! static inline int dma_params_free(struct stm_dma_params *params)
+  {
+! 	return params->params_ops->free_params(params);
+  }
+  
+! static inline int dma_compile_list(unsigned int chan,
+! 				   struct stm_dma_params *params,
+! 				   gfp_t gfp_mask)
+  {
+! 	params->context = gfp_mask;
+! 	return dma_extend(chan, STM_DMA_OP_COMPILE, params);
+  }
+  
+! static inline int dma_xfer_list(unsigned int chan, struct stm_dma_params * p)
+  {
+! 	/*TODO :- this is a bit 'orrible -
+! 	 * should really extend arch/sh/drivers/dma/dma-api.c
+! 	 * to include a 'set_dma_channel'*/
+! 	dma_configure_channel(chan, (unsigned long)p);
+! 	return dma_xfer(chan,0,0,0,0);
+! }
+  
++ static inline struct stm_dma_req *dma_req_config(unsigned int chan,
++ 	unsigned int req_line,
++ 	struct stm_dma_req_config* req_config)
++ {
++ 	req_config->req_line = req_line;
++ 	return (struct stm_dma_req *)dma_extend(chan, STM_DMA_OP_PACING, req_config);
+  }
+  
+  
+! static inline void dma_req_free(unsigned int chan, struct stm_dma_req *req)
+! {
+! 	dma_extend(chan, STM_DMA_OP_REQ_FREE, req);
+! }
+  
+! static inline  void dma_params_sg(	struct stm_dma_params *p,
+  					struct scatterlist * sg,
+  					int nents)
+  {
+***************
+*** 310,326 ****
+  		p->dstsg = sg;
+  	else
+  		BUG();
+! 
+! 	p->priv.sublist_nents=nents;
+  }
+  
+! static inline void dma_link_nodes(	struct stm_dma_params * parent,
+  					struct stm_dma_params * child)
+  {
+  	parent->next=child;
+  }
+  
+! static inline void dma_parms_addrs(	struct stm_dma_params *p,
+  					unsigned long src,
+  					unsigned long dst,
+  					unsigned long bytes)
+--- 251,272 ----
+  		p->dstsg = sg;
+  	else
+  		BUG();
+! 	p->sglen = nents;
+  }
+  
+! static inline void dma_params_link(	struct stm_dma_params * parent,
+  					struct stm_dma_params * child)
+  {
+  	parent->next=child;
+  }
+  
+! static inline void dma_params_req(	struct stm_dma_params *p,
+! 					struct stm_dma_req *req)
+! {
+! 	p->req = req;
+! }
+! 
+! static inline void dma_params_addrs(	struct stm_dma_params *p,
+  					unsigned long src,
+  					unsigned long dst,
+  					unsigned long bytes)
+***************
+*** 330,348 ****
+  	p->node_bytes = bytes;
+  }
+  
+! static inline void dma_parms_interrupts(struct stm_dma_params *p,
+  					unsigned long isrflag)
+  {
+  	if(isrflag & STM_DMA_INTER_NODE_PAUSE)
+  		p->node_pause=1;
+! 	if(isrflag & STM_DMA_INTER_NODE_PAUSE )
+  		p->node_interrupt=1;
+  
+  }
+  
+! static inline void dma_parms_comp_cb(	struct stm_dma_params *p,
+! 					void (*fn)(void* param),
+! 					void* param,
+  					int isr_context)
+  {
+  	p->comp_cb = fn;
+--- 276,294 ----
+  	p->node_bytes = bytes;
+  }
+  
+! static inline void dma_params_interrupts(struct stm_dma_params *p,
+  					unsigned long isrflag)
+  {
+  	if(isrflag & STM_DMA_INTER_NODE_PAUSE)
+  		p->node_pause=1;
+! 	if(isrflag & STM_DMA_NODE_COMP_INT )
+  		p->node_interrupt=1;
+  
+  }
+  
+! static inline void dma_params_comp_cb(	struct stm_dma_params *p,
+! 					void (*fn)(unsigned long param),
+! 					unsigned long param,
+  					int isr_context)
+  {
+  	p->comp_cb = fn;
+***************
+*** 350,358 ****
+  	p->comp_cb_isr = (isr_context == STM_DMA_CB_CONTEXT_ISR ?1:0);
+  }
+  
+! static inline void dma_parms_err_cb(	struct stm_dma_params *p,
+! 					void (*fn)(void* param),
+! 	      				void* param,
+  	      				int isr_context)
+  {
+  	p->err_cb = fn;
+--- 296,304 ----
+  	p->comp_cb_isr = (isr_context == STM_DMA_CB_CONTEXT_ISR ?1:0);
+  }
+  
+! static inline void dma_params_err_cb(	struct stm_dma_params *p,
+! 					void (*fn)(unsigned long param),
+! 	      				unsigned long param,
+  	      				int isr_context)
+  {
+  	p->err_cb = fn;
+***************
+*** 360,458 ****
+  	p->err_cb_isr = (isr_context == STM_DMA_CB_CONTEXT_ISR ?1:0);
+  }
+  
+! static inline void dma_parms_manual_dim_parms(	struct stm_dma_params *p,
+! 						unsigned long length,
+! 						unsigned long sstride,
+! 						unsigned long dstride,
+! 						unsigned long dim)
+  {
+  	p->sstride = sstride;
+  	p->dstride = dstride;
+- 	p->line_len = length;
+  	p->dim =dim;
+  }
+  
+! static inline void dma_parms_DIM_0_x_0(	struct stm_dma_params *p,
+! 					unsigned long srcsize)
+  {
+! 	p->sstride = 0;
+! 	p->dstride = 0;
+! 	p->line_len = srcsize;
+! 	p->dim  =DIM_0_x_0;
+  }
+  
+! static inline void dma_parms_paced(	struct stm_dma_params *p,
+! 					unsigned long xfer_size,
+! 					int req_line)
+  {
+! 	p->sstride = 0;
+! 	p->dstride = 0;
+! 	p->line_len = xfer_size;
+! 	p->req_line  =req_line;
+! 	p->dim  =DIM_REQ_SEL;
+  }
+  
+! 
+! static inline void dma_parms_DIM_0_x_1(	struct stm_dma_params *p,
+! 					unsigned long srcsize)
+! {
+! 	p->sstride = 0;
+! 	p->dstride = srcsize;
+! 	p->line_len = srcsize;
+! 	p->dim  =DIM_0_x_1;
+! }
+! static inline void dma_parms_DIM_0_x_2(	struct stm_dma_params *p,
+! 					unsigned long srcsize,
+  					unsigned long dstride)
+  {
+! 	p->sstride =0;
+! 	p->dstride = dstride;
+! 	p->line_len =srcsize;
+! 	p->dim  =DIM_0_x_2;
+  }
+! static inline void dma_parms_DIM_1_x_0(	struct stm_dma_params *p,
+! 					unsigned long srcsize)
+  {
+! 	p->sstride = srcsize;
+! 	p->dstride =0;
+! 	p->line_len = srcsize;
+! 	p->dim  =DIM_1_x_0;
+  }
+! static inline void dma_parms_DIM_1_x_1(	struct stm_dma_params *p,
+! 					unsigned long srcsize)
+  {
+! 	p->sstride =0;
+! 	p->dstride =0;
+! 	p->line_len = srcsize;
+! 	p->dim  =DIM_1_x_1;
+  }
+  
+! static inline void dma_parms_DIM_1_x_2(	struct stm_dma_params *p,
+! 					unsigned long dstsize,
+  					unsigned long dstride)
+  {
+! 	p->sstride = dstsize;
+! 	p->dstride =dstride;
+! 	p->line_len = dstsize;
+! 	p->dim  =DIM_1_x_2;
+  }
+! static inline void dma_parms_DIM_2_x_0(	struct stm_dma_params *p,
+! 					unsigned long srcsize,
+  					unsigned long sstride)
+  {
+! 	p->sstride =sstride;
+! 	p->dstride =0;
+! 	p->line_len = srcsize;
+! 	p->dim  =DIM_2_x_0;
+  }
+  
+! static inline void dma_parms_DIM_2_x_1(	struct stm_dma_params *p,
+! 					unsigned long srcsize,
+  					unsigned long sstride)
+  {
+!         p->sstride = sstride;
+!       	p->dstride= srcsize;
+! 	p->line_len =srcsize;
+! 	p->dim  =DIM_2_x_1;
+  }
+  #endif
+--- 306,368 ----
+  	p->err_cb_isr = (isr_context == STM_DMA_CB_CONTEXT_ISR ?1:0);
+  }
+  
+! static inline void dma_params_dim(	struct stm_dma_params *p,
+! 					unsigned long line_len,
+! 					unsigned long sstride,
+! 					unsigned long dstride,
+! 					unsigned long dim)
+  {
++ 	p->line_len = line_len;
+  	p->sstride = sstride;
+  	p->dstride = dstride;
+  	p->dim =dim;
+  }
+  
+! static inline void dma_params_DIM_0_x_0(struct stm_dma_params *p)
+  {
+! 	dma_params_dim(p, 0,0,0, DIM_0_x_0);
+  }
+  
+! static inline void dma_params_DIM_0_x_1(struct stm_dma_params *p)
+  {
+! 	dma_params_dim(p, 0,0,0, DIM_0_x_1);
+  }
+  
+! static inline void dma_params_DIM_0_x_2(struct stm_dma_params *p,
+! 					unsigned long line_len,
+  					unsigned long dstride)
+  {
+! 	dma_params_dim(p, line_len, 0, dstride, DIM_0_x_2);
+  }
+! 
+! static inline void dma_params_DIM_1_x_0(struct stm_dma_params *p)
+  {
+! 	dma_params_dim(p, 0,0,0, DIM_1_x_0);
+  }
+! 
+! static inline void dma_params_DIM_1_x_1(struct stm_dma_params *p)
+  {
+! 	dma_params_dim(p, 0,0,0, DIM_1_x_1);
+  }
+  
+! static inline void dma_params_DIM_1_x_2(struct stm_dma_params *p,
+! 					unsigned long line_len,
+  					unsigned long dstride)
+  {
+! 	dma_params_dim(p, line_len, line_len, dstride, DIM_1_x_2);
+  }
+! 
+! static inline void dma_params_DIM_2_x_0(struct stm_dma_params *p,
+! 					unsigned long line_len,
+  					unsigned long sstride)
+  {
+! 	dma_params_dim(p, line_len, sstride, 0, DIM_2_x_0);
+  }
+  
+! static inline void dma_params_DIM_2_x_1(struct stm_dma_params *p,
+! 					unsigned long line_len,
+  					unsigned long sstride)
+  {
+! 	dma_params_dim(p, line_len, sstride, line_len, DIM_2_x_1);
+  }
+  #endif
+*** linux/include/linux/stm/710x_fdma.h	2009-02-10 00:22:56.000000000 +0100
+--- /dev/null	2007-09-21 23:50:58.000000000 +0200
+***************
+*** 1,435 ****
+- /*
+-  *  STb710x FDMA Driver
+-  *  Copyright (c) 2005 STMicroelectronics Limited.
+-  *  Author: Mark Glaisher <Mark.Glaisher@st.com>
+-  *
+-  *   This program is free software; you can redistribute it and/or modify
+-  *   it under the terms of the GNU General Public License as published by
+-  *   the Free Software Foundation; either version 2 of the License, or
+-  *   (at your option) any later version.
+-  *
+-  *   This program is distributed in the hope that it will be useful,
+-  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-  *   GNU General Public License for more details.
+-  *
+-  *   You should have received a copy of the GNU General Public License
+-  *   along with this program; if not, write to the Free Software
+-  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+-  *
+-  */
+- 
+- #ifndef STB7100_FDMA_H
+- #define STB7100_FDMA_H
+- 
+- #if ! defined(CONFIG_STM_DMA)
+- 	#define CONFIG_MAX_STM_DMA_CHANNEL_NR 0
+- 	#define CONFIG_MIN_STM_DMA_CHANNEL_NR 0
+- #endif
+- 
+- #include <linux/interrupt.h>
+- 
+- #include <linux/device.h>
+- #include <linux/firmware.h>
+- 
+- #include <linux/dmapool.h>
+- #include <linux/stm/stm-dma.h>
+- 
+- /* Memory section offsets from FDMA base address */
+- #define STB7100_FDMA_BASE 					0x19220000
+- #define STB7109_FDMA_BASE 					STB7100_FDMA_BASE
+- 
+- #define STB7100_DMEM_OFFSET            				0x8000     /* Contains the control word interface */
+- #define STB7100_IMEM_OFFSET            				0xC000     /* Contains config data */
+- 
+- #define STB7109_DMEM_OFFSET					STB7100_DMEM_OFFSET
+- #define STB7109_IMEM_OFFSET					STB7100_IMEM_OFFSET
+- 
+- #define IMEM_REGION_LENGTH					0xa00
+- #define DMEM_REGION_LENGTH					0x600
+- 
+- #define NODE_DATA_OFFSET					0x40
+- #define CMD_STAT_OFFSET       					0x04
+- 
+- #define FDMA2_ID						0x0000   /* Block Id */
+- #define FDAM2_VER						0x0004
+- #define FDMA2_ENABLE_REG					0x0008
+- #define FDMA2_CLOCKGATE						0x000C       /* Clock enable control */
+- #define FDMA2_REV_ID						0x8000
+- 
+- /*here our our current node params region */
+- #define STB7100_FDMA_CMD_STATn_REG 				0x8040 /*(+ n *0x04) */
+- #define STB7100_FDMA_PTR_REG 					0x9180 /*(+ n * 0x40)*/
+- #define STB7100_FDMA_COUNT_REG					0x9188/* (+ n * 0x40)*/
+- #define STB7100_FDMA_SADDR_REG					0x918c/* (+ n * 0x40)*/
+- #define STB7100_FDMA_DADDR_REG					0x9190/* (+ n * 0x40)*/
+- #define STB7100_FDMA_REQ_CTLn_REG				0x9780 /*(+ n *0x04) */
+- 
+- #define STB7109_FDMA_CMD_STATn_REG				0x9140/* (+ n *0x04) */
+- #define STB7109_FDMA_PTR_REG					0x9400 /*(+ n * 0x40)*/
+- #define STB7109_FDMA_COUNT_REG					0x9408 /*(+ n * 0x40)*/
+- #define STB7109_FDMA_SADDR_REG					0x940c /*(+ n * 0x40)*/
+- #define STB7109_FDMA_DADDR_REG					0x9410 /*(+ n * 0x40)*/
+- #define STB7109_FDMA_REQ_CTLn_REG				0x9180/* (+ n *0x04) */
+- 
+- #define FDMA2_SYNCREG                 				0xBF88
+- #define FDMA2_CMD_MBOX_STAT_REG					0xBFC0
+- #define FDMA2_CMD_MBOX_SET_REG					0xBFC4
+- #define FDMA2_CMD_MBOX_CLR_REG					0xBFC8
+- #define FDMA2_CMD_MBOX_MASK_REG 				0xBFCC
+- 
+- #define FDMA2_INT_STAT_REG					0xBFD0
+- #define FDMA2_INT_SET_REG					0xBFD4
+- #define FDMA2_INT_CLR_REG					0xBFD8
+- #define FDMA2_INT_MASK_REG					0xBFDC
+- 
+- 
+- #define CHANNEL_NOFLUSH 				0
+- #define CHANNEL_FLUSH   				1
+- #define CHAN_ALL_ENABLE 				3
+- 
+- /**cmd stat vals*/
+- #define SET_NODE_COMP_PAUSE		    		1 <<30
+- #define SET_NODE_COMP_IRQ				1 <<31
+- #define NODE_ADDR_STATIC 				0x01
+- #define NODE_ADDR_INCR	 				0x02
+- 
+- #define SOURCE_ADDR 					0x05
+- #define DEST_ADDR   					0x07
+- 
+- #define CMDSTAT_FDMA_START_CHANNEL  			1
+- #define CMDSTAT_FDMA_PAUSE_CHANNEL  			3
+- 
+- 
+- #define LINUX_FDMA_STB7100_IRQ_VECT			140
+- #define LINUX_FDMA_STB7109_IRQ_VECT			LINUX_FDMA_STB7100_IRQ_VECT
+- #define STB7100_FDMA_CHANS              		16
+- #define STB7109_FDMA_CHANS              		STB7100_FDMA_CHANS
+- 
+- #define FDMA_COMPLETE_OK				0
+- #define FDMA_COMPLETE_ERR				1
+- 
+- /*******************************/
+- /*MBOX SETUP VALUES*/
+- 
+- #define MBOX_CMD_PAUSE_FLUSH_CHANNEL 			3
+- #define MBOX_CMD_PAUSE_CHANNEL		 		2
+- #define MBOX_CMD_START_CHANNEL       			1
+- #define CLEAR_WORD					0XFFFFFFFF
+- 
+- #define IS_PACED_CHANNEL_SET(flags)(flags & 0x1f)
+- #define ASSERT_NODE_BUS_ADDR(addr)( (((PXSEG(addr) == P0SEG) && addr))?1:0)
+- #define IS_CHANNEL_PAUSED(ch)(stb710x_get_engine_status(ch)== FDMA_CHANNEL_PAUSED ?1:0)
+- #define IS_CHANNEL_RUNNING(ch)(stb710x_get_engine_status(ch)== FDMA_CHANNEL_RUNNING ?1:0)
+- #define IS_CHANNEL_IDLE(ch)(stb710x_get_engine_status(ch)== FDMA_CHANNEL_IDLE ?1:0)
+- #define IS_TRANSFER_SG(parms)((MODE_SRC_SCATTER==parms->mode)||(MODE_DST_SCATTER==parms->mode )?1:0)
+- #define MBOX_STR_CMD(ch) (MBOX_CMD_START_CHANNEL << (ch*2))
+- #define CHAN_OTB(ch_num)( ((ch_num >= chip.ch_min) && (ch_num <= chip.ch_max)) ? 1:0 )
+- #define IS_CHANNEL_RESERVED(ch)(chip.channel[ch].reserved==1)
+- #define CMD_STAT_REG(ch)(chip.io_base + chip.regs.fdma_cmd_statn + (ch * CMD_STAT_OFFSET))
+- #define CH_PTR_REG(ch)(chip.io_base + chip.regs.fdma_ptrn  + (ch * CMD_STAT_OFFSET))
+- 
+- #define IS_NODE_MALLOCED(priv)((priv.node!=0))
+- 
+- 
+- #define IS_NODELIST_EQUAL(priv)((priv.sublist_nents == priv.alloced_nents))
+- 
+- typedef void (*pf)(void * data);
+- 
+- #define CHANNEL_ERR_IRQ 		3
+- #define CHANNEL_IRQ     		1
+- 
+- #define FDMA_CHANNEL_IDLE 		0
+- #define FDMA_CHANNEL_RUNNING 		2
+- #define FDMA_CHANNEL_PAUSED 		3
+- 
+- /*FDMA Channel FLAGS*/
+- /*values below D28 are reserved for REQ_LINE parameter*/
+- #define REQ_LINE_MASK 	0x1f
+- 
+- #define CHAN_NUM(chan) ((chan) - chip.channel)
+- 
+- typedef struct fdma_fw_s {
+- 	unsigned long * data_reg;
+- 	unsigned long * imem_reg;
+- 	unsigned long imem_fw_sz;
+- 	unsigned long dmem_fw_sz;
+- 	unsigned long imem_len;
+- 	unsigned long dmem_len;
+- }fdma_fw_data_t;
+- 
+- typedef struct fdma_platform_device_data {
+- 	void * req_line_tbl_adr;
+- 	void * registers_ptr;
+- 	int    cpu_subtype;
+- 	int    cpu_rev;
+- 	int    min_ch_num;
+- 	int    max_ch_num;
+- 	int    nr_reqlines;
+- 	char  * fw_device_name;
+- 	unsigned long fdma_base;
+- 	unsigned long irq_vect;
+- 	fdma_fw_data_t fw;
+- }fdma_platform_device_data;
+- 
+- typedef struct fdma_llu_entry {
+- 	u32 next_item;
+- 	u32 control;
+- 	u32 size_bytes;
+- 	u32 saddr;
+- 	u32 daddr;
+- 	u32 line_len;
+- 	u32 sstride;
+- 	u32 dstride;
+- }fdma_llu_entry;
+- 
+- typedef struct channel_status{
+- 	char	ch_term;
+- 	char	ch_pause;
+- 	char	is_xferring;
+- 	char 	reserved;
+- 	char 	callback_only;
+- 
+- 	pf 	comp_cb;
+- 	void	*comp_cb_param;
+- 	int	comp_cb_isr;
+- 
+- 	pf	err_cb;
+- 	void	*err_cb_param;
+- 	int	err_cb_isr;
+- 
+- 	struct  dma_channel * cur_cfg;
+- 	struct stm_dma_params params;
+- 	struct tasklet_struct fdma_complete;
+- 	struct tasklet_struct fdma_error;
+- }channel_status;
+- 
+- typedef struct fdma_regs_s
+- {
+- 	unsigned long fdma_id;
+- 	unsigned long fdma_ver;
+- 	unsigned long fdma_en;
+- 	unsigned long fdma_rev_id;
+- 	unsigned long fdma_cmd_statn;
+- 	unsigned long fdma_ptrn;
+- 	unsigned long fdma_cntn;
+- 	unsigned long fdma_saddrn;
+- 	unsigned long fdma_daddrn;
+- 	unsigned long fdma_req_ctln;
+- 	unsigned long fdma_cmd_sta;
+- 	unsigned long fdma_cmd_set;
+- 	unsigned long fdma_cmd_clr;
+- 	unsigned long fdma_cmd_mask;
+- 	unsigned long fdma_int_sta;
+- 	unsigned long fdma_int_set;
+- 	unsigned long fdma_int_clr;
+- 	unsigned long fdma_int_mask;
+- 	unsigned long fdma_sync_reg;
+- 	unsigned long fdma_clk_gate;
+- 	unsigned long fdma_imem_region;
+- 	unsigned long fdma_dmem_region;
+- }fdma_regs_t;
+- 
+- typedef struct fdma_chip{
+- 	channel_status			channel[CONFIG_MAX_STM_DMA_CHANNEL_NR +1];
+- 	spinlock_t 			fdma_lock;
+- 	spinlock_t 			channel_lock;
+- 	wait_queue_head_t   		irq_check;
+- 	u32				io_base;
+- 	u32				firmware_loaded;
+- 	u8				num_req_lines;
+- 	u8				ch_min;
+- 	u8 				ch_max;
+- 	u8				irq_val;
+- 	u32                     	cpu_subtype;
+-     	u32				cpu_rev;
+- 	struct dma_pool 		*llu_pool;
+- 	wait_queue_head_t		fw_load_q;
+- 	struct device 			dev;
+- 	struct 	platform_device 	*platform_dev;
+- 	fdma_regs_t  			regs;
+- 	fdmareq_RequestConfig_t		*req_tbl;
+- 	int				irq_enable_ok ;
+- 	struct dma_info 		*info;
+- 	char *				fw_name;
+- 	fdma_fw_data_t			fw;
+- }fdma_chip;
+- 
+- /*---- Constants for use in defining the request signals -----*/
+- 
+- /* Access */
+- #define ENABLE_FLG      1
+- #define DISABLE_FLG     0
+- 
+- /* Access */
+- #define READ            0
+- #define WRITE           1
+- 
+- /* Opcodes */
+- #define OPCODE_1        0x00
+- #define OPCODE_2        0x01
+- #define OPCODE_4        0x02
+- #define OPCODE_8        0x03
+- #define OPCODE_16       0x04
+- #define OPCODE_32       0x05
+- /* Increment Size */
+- #define INCSIZE_0       0
+- #define INCSIZE_4       4
+- #define INCSIZE_8       8
+- #define INCSIZE_16      16
+- #define INCSIZE_32      32
+- 
+- /*STBUS Initiator Target*/
+- #define STBUS_INT1 1
+- #define STBUS_INT0 0
+- 
+- /*RQ sample holdoff time microseconds*/
+- #define HOLDOFF_0US 0
+- #define HOLDOFF_1US 1
+- #define HOLDOFF_2US 2
+- 
+- 
+- /* Utility values */
+- #define UNUSED       	0xff
+- 
+- typedef enum __stb7100_fdma_req_ids {
+- /*0*/	STB7100_FDMA_REQ_SPDIF_TEST =	0,
+- /*1*/	STB7100_FDMA_REQ_NOT_CONN_1,
+- /*2*/	STB7100_FDMA_REQ_NOT_CONN_2,
+- /*3*/	STB7100_FDMA_REQ_VIDEO_HDMI,
+- /*4*/	STB7100_FDMA_REQ_DISEQC_HALF_EMPTY,
+- /*5*/	STB7100_FDMA_REQ_DISEQC_HALF_FULL,
+- /*6*/	STB7100_FDMA_REQ_SH4_SCIF_RX,
+- /*7*/	STB7100_FDMA_REQ_SH4_SCIF_TX,
+- /*8*/	STB7100_FDMA_REQ_SSC_0_RX,
+- /*9*/	STB7100_FDMA_REQ_SSC_1_RX,
+- /*10*/	STB7100_FDMA_REQ_SSC_2_RX,
+- /*11*/	STB7100_FDMA_REQ_SSC_0_TX,
+- /*12*/	STB7100_FDMA_REQ_SSC_1_TX,
+- /*13*/	STB7100_FDMA_REQ_SSC_2_TX,
+- /*14*/	STB7100_FDMA_REQ_UART_0_RX,
+- /*15*/	STB7100_FDMA_REQ_UART_1_RX,
+- /*16*/	STB7100_FDMA_REQ_UART_2_RX,
+- /*17*/	STB7100_FDMA_REQ_UART_3_RX,
+- /*18*/	STB7100_FDMA_REQ_UART_0_TX,
+- /*19*/	STB7100_FDMA_REQ_UART_1_TX,
+- /*20*/	STB7100_FDMA_REQ_UART_2_TX,
+- /*21*/	STB7100_FDMA_REQ_UART_3_TX,
+- /*22*/	STB7100_FDMA_REQ_EXT_PIO_0,
+- /*23*/	STB7100_FDMA_REQ_EXT_PIO_1,
+- /*24*/	STB7100_FDMA_REQ_CPXM_DECRYPT,
+- /*25*/	STB7100_FDMA_REQ_CPXM_ENCRYPT,
+- /*26*/	STB7100_FDMA_REQ_PCM_0,
+- /*27*/	STB7100_FDMA_REQ_PCM_1,
+- /*28*/	STB7100_FDMA_REQ_PCM_READ,
+- /*29*/	STB7100_FDMA_REQ_SPDIF,
+- /*30*/	STB7100_FDMA_REQ_SWTS,
+- /*31*/	STB7100_FDMA_REQ_UNUSED
+- }stb7100_fdma_req_ids;
+- 
+- typedef enum __stb7109_fdma_reqids {
+- 	STB7109_FDMA_REQ_UNUSED =0,//0
+- 	STB7109_FDMA_DMA_REQ_HDMI_AVI,
+- 	STB7109_FDMA_REQ_DISEQC_HALF_EMPTY,
+- 	STB7109_FDMA_REQ_DISEQC_HALF_FULL,
+- 	STB7109_FDMA_REQ_SH4_SCIF_RX,
+- 	STB7109_FDMA_REQ_SH4_SCIF_TX,//5
+- 	STB7109_FDMA_REQ_SSC_0_RX,//6-8
+- 	STB7109_FDMA_REQ_SSC_1_RX,
+- 	STB7109_FDMA_REQ_SSC_2_RX,
+- 	STB7109_FDMA_REQ_SSC_0_TX,//9-11
+- 	STB7109_FDMA_REQ_SSC_1_TX,
+- 	STB7109_FDMA_REQ_SSC_2_TX,
+- 	STB7109_FDMA_REQ_UART_0_RX,//12-15
+- 	STB7109_FDMA_REQ_UART_1_RX,
+- 	STB7109_FDMA_REQ_UART_2_RX,
+- 	STB7109_FDMA_REQ_UART_3_RX,
+- 	STB7109_FDMA_REQ_UART_0_TX,//16-19
+- 	STB7109_FDMA_REQ_UART_1_TX,
+- 	STB7109_FDMA_REQ_UART_2_TX,
+- 	STB7109_FDMA_REQ_UART_3_TX,
+- 	STB7109_FDMA_REQ_REQ_EXT_PIO_0,//20
+- 	STB7109_FDMA_REQ_REQ_EXT_PIO_1,//21
+- 	STB7109_FDMA_REQ_CPXM_DECRYPT,
+- 	STB7109_FDMA_REQ_CPXM_ENCRYPT,
+- 	STB7109_FDMA_REQ_PCM_0=24,//24
+- 	STB7109_FDMA_REQ_PCM_1,
+- 	STB7109_FDMA_REQ_PCM_READ,
+- 	STB7109_FDMA_REQ_SPDIF,
+- 	STB7109_FDMA_REQ_SWTS_0,
+- 	STB7109_FDMA_REQ_SWTS_1,
+- 	STB7109_FDMA_REQ_SWTS_2
+- }stb7109_fdma_req_ids;
+- 
+- 
+- typedef volatile unsigned long device_t;
+- 
+- #define DUMP_FDMA_CHANNEL(chan)\
+- 	(fdma_log("CHANNEL%d is \n CMD_STAT %x\n PTR %x\n CNT %x\n SADDR %x\n DADDR %x\n REQ_CTL %x\n", \
+- 		chan, \
+- 		(int)readl((chip.io_base + CMD_STAT_OFFSET * chan) + chip.regs.fdma_cmd_statn), \
+- 		(int)readl((chip.io_base + NODE_DATA_OFFSET * chan) + chip.regs.fdma_ptrn), \
+- 		(int)readl((chip.io_base + NODE_DATA_OFFSET * chan) + chip.regs.fdma_cntn), \
+- 		(int)readl((chip.io_base + NODE_DATA_OFFSET * chan) + chip.regs.fdma_saddrn), \
+- 		(int)readl((chip.io_base + NODE_DATA_OFFSET * chan) + chip.regs.fdma_daddrn), \
+- 		(int)readl((chip.io_base + CMD_STAT_OFFSET * chan) +chip.regs.fdma_req_ctln)))
+- 
+- #define DUMP_FDMA_INTERFACE()(\
+- 	fdma_log(" FDMA_CMD_STA %x\n FDMA_CMD_SET %x\n FDMA_CMD_CLR %x\n FDMA_CMD_MASK %x\n FDMA_INT_STA %x\n FDMA_INT_SET %x\n FDMA_INT_CLR %x\n FDMA_INT_MASK %x\n", \
+- 		(int)readl(chip.io_base + chip.regs.fdma_cmd_sta),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_cmd_set),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_cmd_clr),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_cmd_mask),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_int_sta),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_int_set),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_int_clr),\
+- 		(int)readl(chip.io_base + chip.regs.fdma_int_mask)))
+- 
+- 
+- #define DUMP_NODE_FROM_EXTMEM(addr)(\
+- 	printk(" %s\n ADDR %x\n NEXT %x\n CTL %x\n NBYTES %x\n SADDR %x\n DADDR %x\n NODELEN %x\n SSTRIDE %x\n DSTRIDE %x\n\n",\
+- 		__FUNCTION__,\
+- 		(int)(addr),\
+- 		(int)readl(addr), \
+- 		(int)readl(addr+0x04),\
+- 		(int)readl(addr+0x08),\
+- 		(int)readl(addr+0xc),\
+- 		(int)readl(addr+0x10),\
+- 		(int)readl(addr+0x14),\
+- 		(int)readl(addr+0x18),\
+- 		(int)readl(addr+0x1c)))
+- 
+- #define DUMP_FDMA_REG_OFFSETS(chip) (\
+- 	fdma_log(" ID %x\n VER %x\n EN %x\n REV_ID %x\n CMD_STAT %x\n PTRN %x\n CNTn %x\n SADDR %x\n DADDR %x\n REQ_CTL %x\n CMD_STA %x\n CMD_SET %x\n CMD_CLR %x\n CMD_MASK %x\n INT_STA %x\n INT_SET %x\n INT_CLR %x\n INT_MASK %x\n SYNC %x\n CLK %x\n IMEM %x\n DMEM %x\n", \
+- 		(u32)(chip.io_base +chip.regs.fdma_id), \
+- 		(u32)(chip.io_base +chip.regs.fdma_ver), \
+- 	        (u32)(chip.io_base +chip.regs.fdma_en), \
+-        		(u32)(chip.io_base +chip.regs.fdma_rev_id),\
+-         	(u32)(chip.io_base +chip.regs.fdma_cmd_statn), \
+-         	(u32)(chip.io_base +chip.regs.fdma_ptrn), \
+-         	(u32)(chip.io_base +chip.regs.fdma_cntn), \
+-         	(u32)(chip.io_base +chip.regs.fdma_saddrn), \
+-          	(u32)(chip.io_base +chip.regs.fdma_daddrn), \
+-          	(u32)(chip.io_base +chip.regs.fdma_req_ctln), \
+-          	(u32)(chip.io_base +chip.regs.fdma_cmd_sta), \
+-          	(u32)(chip.io_base +chip.regs.fdma_cmd_set), \
+-          	(u32)(chip.io_base +chip.regs.fdma_cmd_clr), \
+-          	(u32)(chip.io_base +chip.regs.fdma_cmd_mask), \
+-          	(u32)(chip.io_base +chip.regs.fdma_int_sta), \
+-          	(u32)(chip.io_base +chip.regs.fdma_int_set), \
+-          	(u32)(chip.io_base +chip.regs.fdma_int_clr), \
+-          	(u32)(chip.io_base +chip.regs.fdma_int_mask), \
+-          	(u32)(chip.io_base +chip.regs.fdma_sync_reg),\
+-          	(u32)(chip.io_base +chip.regs.fdma_clk_gate), \
+-          	(u32)(chip.io_base +chip.regs.fdma_imem_region), \
+-          	(u32)(chip.io_base +chip.regs.fdma_dmem_region)))
+- 
+- static inline void walk_nodelist(struct fdma_llu_entry * first_node)
+- {
+- 	struct fdma_llu_entry ** np = & first_node;
+- 	do{
+- 		DUMP_NODE_FROM_EXTMEM(*np);
+- 	}while((*np =(struct fdma_llu_entry*) (*np)->next_item));
+- }
+- 
+- #endif
+--- 0 ----
+*** linux/drivers/stm/710x_fdma2.c	2009-02-10 00:22:56.000000000 +0100
+--- UFS922_Orig/710x_fdma2.c	2009-02-10 22:34:23.000000000 +0100
+***************
+*** 1,31 ****
+  /*
+!  *  STb710x FDMA Driver
+!  *  Copyright (c) 2005 STMicroelectronics Limited.
+!  *  Authors: 	Mark Glaisher <Mark.Glaisher@st.com>
+!  * 		Stuart Menefy <Stuart.Menefy@st.com>
+!  *
+!  *   This program is free software; you can redistribute it and/or modify
+!  *   it under the terms of the GNU General Public License as published by
+!  *   the Free Software Foundation; either version 2 of the License, or
+!  *   (at your option) any later version.
+!  *
+!  *   This program is distributed in the hope that it will be useful,
+!  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  *   GNU General Public License for more details.
+!  *
+!  *   You should have received a copy of the GNU General Public License
+!  *   along with this program; if not, write to the Free Software
+!  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+   *
+   */
+! #include <linux/stm/710x_fdma.h>
+  #include <linux/platform_device.h>
+! static fdma_chip chip;
+  
+! static int setup_freerunning_node(struct stm_dma_params *params)
+  {
+- 	fdma_llu_entry* llu = params->priv.node->virt_addr;
+  	memset(llu, 0, sizeof(*llu));
+  
+  	if (params->node_pause)
+--- 1,25 ----
+  /*
+!  * Copyright (C) 2005,7 STMicroelectronics Limited
+!  * Authors: Mark Glaisher <Mark.Glaisher@st.com>
+!  *          Stuart Menefy <stuart.menefy@st.com>
+   *
++  * May be copied or modified under the terms of the GNU General Public
++  * License.  See linux/COPYING for more information.
+   */
+! 
+! #include <linux/interrupt.h>
+! #include <linux/device.h>
+! #include <linux/firmware.h>
+  #include <linux/platform_device.h>
+! #include <linux/dmapool.h>
+! #include <linux/stm/fdma-plat.h>
+! #include <linux/stm/stm-dma.h>
+  
+! #include "fdma.h"
+! 
+! static int setup_freerunning_node(struct stm_dma_params *params,
+! 				  struct fdma_llu_entry* llu)
+  {
+  	memset(llu, 0, sizeof(*llu));
+  
+  	if (params->node_pause)
+***************
+*** 46,499 ****
+  		llu->control |= NODE_ADDR_INCR <<DEST_ADDR;
+  	}
+  
+- 	/*correct parms for the dimension ar set by API layer*/
+  	llu->line_len		= params->line_len;
+  	llu->sstride 		= params->sstride;
+  	llu->dstride 		= params->dstride;
+  	return 0;
+  }
+  
+! static int setup_paced_node(struct stm_dma_params *params)
+! {
+! 	fdma_llu_entry* llu = params->priv.node->virt_addr;
+! 	struct fmdareq_RequestConfig_s *prq  = &chip.req_tbl[ params->req_line];
+  
+  	memset(llu, 0, sizeof(*llu));
+  
+! 	llu->control= params->req_line;
+  	llu->size_bytes= params->node_bytes;
+  	llu->line_len = params->node_bytes;
+  
+  	if (params->node_pause)
+! 		/*in order to recieve the pause interrupt
+! 		 *  we must also enable end of node interrupts*/
+  		llu->control |=  SET_NODE_COMP_PAUSE | SET_NODE_COMP_IRQ;
+  
+  	if (params->node_interrupt)
+  		llu->control |= SET_NODE_COMP_IRQ;
+  
+! 	if (prq->Access == WRITE) {
+  		llu->control |= NODE_ADDR_INCR <<SOURCE_ADDR;
+- 		llu->control |= NODE_ADDR_STATIC <<DEST_ADDR;
+  	}
+! 	else if (prq->Access == READ) {
+! 		llu->control |= NODE_ADDR_STATIC <<SOURCE_ADDR;
+  		llu->control |= NODE_ADDR_INCR <<DEST_ADDR;
+  	}
+- 	else return -EINVAL;
+  
+  	return 0;
+  }
+  
+! static int stb710x_get_engine_status(int channel)
+! {
+! 	return readl(CMD_STAT_REG(channel))&3;
+! }
+  
+! static void extrapolate_simple(struct stm_dma_params *xfer)
+! {
+! 	struct fdma_llu_entry* dest_llu =xfer->priv.node->virt_addr;
+! 	dest_llu->size_bytes = xfer->node_bytes;
+! 	dest_llu->saddr = xfer->sar;
+! 	dest_llu->daddr = xfer->dar;
+! 	if (xfer->priv.extrapolate_line_len)
+! 		dest_llu->line_len = xfer->node_bytes;
+  }
+  
+! static void extrapolate_sg_src(struct stm_dma_params *xfer)
+  {
+  	int i;
+! 	struct scatterlist * sg = xfer->srcsg;
+! 	struct fdma_llu_entry* dest_llu=0;
+! 	struct llu_node * cur_node = xfer->priv.node;
+! 	unsigned long control =xfer->priv.node->virt_addr->control;
+! 
+! 	for (i=0; i<xfer->priv.sublist_nents; i++) {
+! 		dest_llu = cur_node->virt_addr;
+! 		dest_llu->control = control;
+! 		dest_llu->size_bytes = sg_dma_len(sg);
+! 		dest_llu->saddr = sg_dma_address(sg);
+! 		dest_llu->daddr = xfer->dar;
+! 		dest_llu->sstride = xfer->sstride;
+! 		if (xfer->priv.extrapolate_line_len)
+! 			dest_llu->line_len = sg_dma_len(sg);
+! 		else
+! 			dest_llu->line_len = xfer->line_len;
+! 		dest_llu->dstride=0;
+! 		cur_node++;
+! 		dest_llu->next_item = cur_node->dma_addr;
+! 		sg++;
+! 	}
+! 	dest_llu->next_item=0;
+! }
+! static void extrapolate_sg_dst(struct stm_dma_params *xfer)
+! {
+! 	int i;
+! 	struct scatterlist * sg = xfer->dstsg;
+! 	struct fdma_llu_entry* dest_llu=0;
+! 	struct llu_node * cur_node = xfer->priv.node;
+! 	unsigned long control =xfer->priv.node->virt_addr->control;
+! 
+! 	for (i=0; i<xfer->priv.sublist_nents; i++) {
+! 		dest_llu= cur_node->virt_addr;
+! 		dest_llu->control = control;
+! 		dest_llu->size_bytes = sg_dma_len(sg);
+! 		dest_llu->saddr = xfer->sar;
+! 		dest_llu->daddr = sg_dma_address(sg);
+! 		dest_llu->sstride = 0;
+! 		if (xfer->priv.extrapolate_line_len)
+  			dest_llu->line_len = sg_dma_len(sg);
+  		else
+! 			dest_llu->line_len = xfer->line_len;
+! 		dest_llu->dstride=xfer->dstride;
+! 		cur_node++;
+! 		dest_llu->next_item = cur_node->dma_addr;
+  		sg++;
+  	}
+! 	dest_llu->next_item=0;
+  }
+  
+! static inline void set_to_sublist_end(struct stm_dma_params *transfer,unsigned addr)
+  {
+- 	struct llu_node * cur_node = transfer->priv.node;
+- 	struct fdma_llu_entry* dest_llu=0;
+  	int i;
+  
+! 	for (i=0; i<transfer->priv.sublist_nents; i++)
+! 		dest_llu = (cur_node++)->virt_addr;
+! 
+! 	dest_llu->next_item = addr;
+! }
+! 
+! static void create_llu_list(struct stm_dma_params *transfer)
+! {
+! 	struct stm_dma_params * this = transfer;
+! 	struct stm_dma_params * next = transfer->next;
+  
+! 	while(this->next){
+! 		if(this->mode == MODE_SRC_SCATTER || this->mode == MODE_DST_SCATTER)
+! 			set_to_sublist_end(this,next->priv.node->dma_addr);
+  		else
+! 			this->priv.node->virt_addr->next_item = next->priv.node->dma_addr;
+! 		this = next;
+! 		next = next->next;
+! 	};
+  
+! 	if(transfer->circular_llu)
+! 		set_to_sublist_end(this,transfer->priv.node->dma_addr);
+! 	else
+! 		set_to_sublist_end(this,0);
+  }
+  
+! static int alloc_nodelist_mem(struct stm_dma_params *transfer,int nents)
+  {
+! 	int res=0;
+! 	int i=0;
+! 	int list_size = sizeof(struct llu_node)*nents;
+! 	struct llu_node* first=0;
+! 	struct llu_node* new_node = kmalloc(list_size,transfer->context);
+! 
+! 	if (new_node == NULL)
+! 		return -ENOMEM;
+  
+! 	first = new_node;
+  
+! 	for(;i<nents;i++){
+! 		new_node->virt_addr = dma_pool_alloc(
+! 					chip.llu_pool,
+! 					transfer->context,
+! 					&new_node->dma_addr);
+! 
+! 		if (new_node->virt_addr == NULL){
+! 			/* SIM need to free nodes as well */
+! 			kfree(first);
+! 			return -ENOMEM;
+! 		}
+! 		new_node++;
+  	}
+- 	transfer->priv.node = first;
+- 	transfer->priv.alloced_nents = nents;
+- 	return res;
+- }
+  
+! static inline int fdma_sh_compatibility_setup(struct dma_channel *channel,
+! 					struct channel_status * chan,
+! 					unsigned long sar, unsigned long dar,
+! 					size_t count, unsigned int mode)
+! {
+! 	struct stm_dma_params dmap= {0};
+! 	dmap.mode =mode;
+! 	dmap.dim = (channel->flags & 0xf0);
+! 	dmap.context =(channel->flags & STM_DMA_SETUP_CONTEXT_ISR) ?
+! 						GFP_ATOMIC:GFP_KERNEL;
+! 	dmap.sar =sar;
+! 	dmap.dar =dar;
+! 	dmap.node_bytes = count;
+! 	dmap.line_len = count;
+! 	dmap.priv.extrapolate_fn = extrapolate_simple;
+! 	dmap.priv.nodelist_setup =setup_freerunning_node;
+! 	if (alloc_nodelist_mem(&dmap,1) != 0){
+! 		fdma_log("%s Cant allocate memory for xfer\n",__FUNCTION__);
+! 		return -ENOMEM;
+  	}
+- 	dmap.priv.nodelist_setup(&dmap);
+- 	dmap.priv.extrapolate_fn(&dmap);
+- 	create_llu_list(&dmap);
+- 	memcpy(&chan->params,&dmap,sizeof(struct stm_dma_params));
+- 	return 0;
+- }
+  
+! static inline void fdma_check_xfer_params(stm_dma_params * params)
+! {
+! 	BUG_ON((params->priv.node->dma_addr & 0x1F)!=0);
+! 	BUG_ON(ASSERT_NODE_BUS_ADDR(params->priv.node->virt_addr->saddr)==0);
+! 	BUG_ON(ASSERT_NODE_BUS_ADDR(params->priv.node->virt_addr->daddr)==0);
+! 	BUG_ON(params->priv.node->virt_addr->size_bytes==0);
+! }
+  
+! static void completion_ok(int channel)
+! {
+! 	unsigned long irqflags=0;
+! 	struct channel_status *chan= &chip.channel[channel];
+! 	void (*comp_cb)(void*) = chan->params.comp_cb;
+! 	void *comp_cb_parm = chan->params.comp_cb_parm;
+! 
+! 	if((!chan->callback_only) || chan->ch_term){
+! 		spin_lock_irqsave(&chip.channel_lock,irqflags);
+! 		memset(&chip.channel[channel].params,0,sizeof(struct stm_dma_params));
+! 		chan->is_xferring = 0;
+! 		chan->ch_term=0;
+! 		spin_unlock_irqrestore(&chip.channel_lock,irqflags);
+  	}
+- 	chan->callback_only=0;
+  
+! 	wake_up(&chan->cur_cfg->wait_queue);
+! 	if (comp_cb)
+! 		comp_cb(comp_cb_parm);
+! }
+  
+! static void completion_err(int channel)
+! {
+! 	unsigned long irqflags=0;
+! 	struct channel_status *chan= &chip.channel[channel];
+! 	void (*err_cb)(void*) = chan->params.err_cb;
+! 	void *err_cb_parm = chan->params.err_cb_parm;
+! 
+! 	if((!chan->callback_only)  || chan->ch_term){
+! 		spin_lock_irqsave(&chip.channel_lock,irqflags);
+! 		memset(&chan->params,0,sizeof(struct stm_dma_params));
+! 		chan->is_xferring = 0;
+! 		chan->ch_term=0;
+! 		spin_unlock_irqrestore(&chip.channel_lock,irqflags);
+  	}
+! 	chan->callback_only=0;
+! 	wake_up(&chan->cur_cfg->wait_queue);
+! 	if(err_cb)
+! 		err_cb(err_cb_parm);
+! }
+  
+! static void handle_completion(int channel,int comp_code)
+! {
+! 	struct channel_status *chan = &chip.channel[channel];
+  
+! 	if(FDMA_COMPLETE_OK == comp_code) {
+! 		if(chan->params.comp_cb_isr)
+! 			completion_ok(channel);
+! 		else{
+! 			chan->fdma_complete.data = channel;
+! 			tasklet_schedule(&chan->fdma_complete);
+! 		}
+! 	} else {
+! 		if(chan->params.err_cb_isr)
+! 			completion_err(channel);
+! 		else{
+! 			chan->fdma_error.data = channel;
+! 			tasklet_schedule(&chan->fdma_error);
+! 		}
+! 	}
+  }
+  
+! static int fdma_start_channel(int ch_num,
+  			      unsigned long start_addr)
+  {
+- 	unsigned long irqflags=0;
+  	u32 cmd_sta_value = (start_addr  | CMDSTAT_FDMA_START_CHANNEL);
+  
+- 	spin_lock_irqsave(&chip.fdma_lock,irqflags);
+  	writel(cmd_sta_value,CMD_STAT_REG(ch_num));
+! 	writel(MBOX_STR_CMD(ch_num),chip.io_base +chip.regs.fdma_cmd_set);
+! 	spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+! 	return 0;
+  }
+  
+! static void fdma_cb_continue(int channel)
+  {
+! 	unsigned long irqflags=0;
+! 	unsigned long new_reg_val=0;
+! 	struct channel_status * ch = &chip.channel[channel];
+! 	if(ch->comp_cb && ch->comp_cb_isr)
+! 		ch->comp_cb(ch->comp_cb_param);
+! 	else{
+! 		ch->fdma_complete.data = channel;
+! 		if(!ch->ch_term)
+! 			ch->callback_only = 1;
+! 		tasklet_schedule(&ch->fdma_complete);
+! 	}
+! 	if(ch->ch_pause){ /*usr signals pause*/
+! 		ch->ch_pause=0;
+! 		/*we want to continue the current transfer*/
+! 		writel(MBOX_STR_CMD(channel),chip.io_base + chip.regs.fdma_cmd_set);
+! 	} else {
+! 		/*we need to load the next node*/
+! 		spin_lock_irqsave(&chip.fdma_lock,irqflags);
+! 		new_reg_val = (readl(CH_PTR_REG(channel))|CMDSTAT_FDMA_START_CHANNEL);
+! 		writel( new_reg_val,CMD_STAT_REG(channel) );
+! 		writel(MBOX_STR_CMD(channel) ,chip.io_base + chip.regs.fdma_cmd_set);
+! 		spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+! 	}
+  }
+  
+! static inline void __handle_fdma_err_irq(int channel)
+  {
+  	printk("%s ERROR CH_%d err %d\n",
+  		__FUNCTION__,
+! 		channel,
+! 		(int)( readl(CMD_STAT_REG(channel))& 0x1c) >>2);
+  			/*err is bits 2-4*/
+  	/*clearing the channel interface here will stop further
+  	 * transactions after the err and reset the channel*/
+! 	writel(0,CMD_STAT_REG(channel));
+! 	writel(readl(chip.io_base + chip.regs.fdma_cmd_sta),chip.io_base + chip.regs.fdma_cmd_clr);
+! 	handle_completion(channel,FDMA_COMPLETE_ERR);
+  }
+  
+! static inline void __handle_fdma_completion_irq(int channel)
+! {
+! 	/*now we look for reason of int may be*/
+! 	switch(stb710x_get_engine_status(channel)){
+! 		case FDMA_CHANNEL_PAUSED:
+! 			if(chip.channel[channel].ch_term==1){
+! 				writel(0,CMD_STAT_REG(channel));
+! 				handle_completion(channel,FDMA_COMPLETE_OK);
+! 			}
+! 			else if(chip.channel[channel].ch_pause)
+! 				chip.channel[channel].ch_pause=0;
+! 			else
+! 				fdma_cb_continue(channel);
+  			break;
+! 		case FDMA_CHANNEL_IDLE:
+! 			handle_completion(channel,FDMA_COMPLETE_OK);
+  			break;
+! 		case FDMA_CHANNEL_RUNNING:
+  			break;
+  		default:
+! 			fdma_log("ERR::FDMA2 unknown interrupt status \n");
+! 			handle_completion(channel,FDMA_COMPLETE_ERR);
+  	}
+  }
+  
+  static irqreturn_t fdma_irq(int irq, void *dev_id, struct pt_regs *regs)
+  {
+! 	int channel=chip.ch_min;
+! 	unsigned long clear_mask = ~((0x1 << (chip.ch_min*2))-1);
+! 	/*this gives us a bitmask of the channels in available range to clear*/
+! 	u32 int_stat_val = readl(chip.io_base + chip.regs.fdma_int_sta);
+! 	u32 cur_val = int_stat_val >> (channel *2);
+! 
+! 	writel(int_stat_val & clear_mask, chip.io_base +chip.regs.fdma_int_clr);
+! 	do{
+  		/*error interrupts will raise boths bits, so check
+  		 * the err bit first*/
+  		if(unlikely(cur_val & 2))
+! 				__handle_fdma_err_irq(channel);
+! 
+  		else if (cur_val & 1)
+! 				__handle_fdma_completion_irq(channel);
+! 
+! 		cur_val = cur_val>>2;
+! 	}while(channel++ < chip.ch_max);
+  
+  	/*here we check to see if there is still pending ints for the other dmac, if so
+  	 * rely on it to signal IRQ_HANDLED once all vectors are cleared, we return IRQ_NONE.
+  	 * otherwise we have handled everything so we can now safely returnd IRQ_HANDLED
+  	 * to lower the IRQ.*/
+! 	return (cur_val == 0) && ((int_stat_val & (0x1 << ((chip.ch_min*2)-1)))==0)  ?
+! 			IRQ_HANDLED:
+! 			IRQ_NONE;
+  }
+  
+! /*---------------------------------------------------------------------*
+!  *---------------------------------------------------------------------*
+!  * FIRMWARE DOWNLOAD & ENGINE INIT
+!  *---------------------------------------------------------------------*
+!  *---------------------------------------------------------------------*/
+  
+! static int fdma_get_fw_revision(char* revision, int major, int minor)
+  {
+! 	int reg = readl(chip.io_base + chip.regs.fdma_dmem_region);
+! 	major  = (reg &  0xff00) >>8;
+! 	minor  = reg &  0xff;
+  
+! 	if(! (major || minor))
+! 		return -ENODEV;
+  
+! 	sprintf(revision,"FDMA_FW V%d.%d",major,minor);
+  	return 0;
+  }
+  
+! static int fdma_get_hw_revision(char * revision,int major, int minor)
+  {
+! 	major = readl(chip.io_base + chip.regs.fdma_id);
+! 	minor = readl(chip.io_base + chip.regs.fdma_ver);
+! 	sprintf(revision,"SLIMCORE_HW V%d.%d",major,minor);
+! 	return 0;
+  }
+  
+! static int fdma_do_bootload(void)
+  {
+! 	int major=0,minor=0;
+! 	char fw_revision[20];
+! 	char hw_revision[20];
+! 	device_t* ptr=0;
+! 	fdma_fw_data_t fw=chip.fw;
+! 	unsigned long unused_ibytes;
+! 	unsigned long unused_dbytes;
+! 	unsigned long irqflags;
+! 	void * addr =(char*)chip.io_base;
+  
+! 	fdma_log("FDMA: Loading Firmware...");
+! 	unused_ibytes= fw.imem_len - fw.imem_fw_sz;
+! 	unused_dbytes= fw.dmem_len - fw.dmem_fw_sz;
+  
+! 	spin_lock_irqsave(&chip.fdma_lock,irqflags);
+! 	ptr = (device_t*) ((char*) addr +chip.regs.fdma_dmem_region);
+! 	memcpy((void*)ptr,&fw.data_reg[0],fw.dmem_fw_sz * sizeof(u32));
+! 	if(unused_dbytes){
+! 		ptr =(device_t*) ((char*)addr +chip.regs.fdma_dmem_region
+! 				  +(fw.dmem_fw_sz*sizeof(u32)));
+! 		memset((void*)ptr ,0, unused_dbytes);
+  	}
+  
+! 	ptr = (device_t*) ((char*) addr +chip.regs.fdma_imem_region);
+! 	memcpy((void*)ptr,&fw.imem_reg[0],fw.imem_fw_sz* sizeof(u32));
+! 	if(unused_ibytes){
+! 		ptr =(device_t*) ((char*)addr +chip.regs.fdma_imem_region
+! 				  +(fw.imem_fw_sz*sizeof(u32)));
+! 		memset((void*)ptr,0, unused_ibytes);
+  	}
+- 	spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+  
+! 	chip.firmware_loaded=1;
+! 	fdma_get_fw_revision(&fw_revision[0],major,minor);
+! 	fdma_get_hw_revision(&hw_revision[0],major,minor);
+! 	wake_up(&chip.fw_load_q);
+  
+! 	printk(KERN_INFO "   STB_%dC%d %s %s \n",
+! 		 chip.cpu_subtype,chip.cpu_rev,hw_revision,fw_revision);
+  	return 0;
+  }
+  
+! static void fdma_initialise(void)
+  {
+  /*These pokes come from the current STAPI tree.
+   * The three magic vals are pokes to undocumented regs so
+--- 40,533 ----
+  		llu->control |= NODE_ADDR_INCR <<DEST_ADDR;
+  	}
+  
+  	llu->line_len		= params->line_len;
+  	llu->sstride 		= params->sstride;
+  	llu->dstride 		= params->dstride;
+  	return 0;
+  }
+  
+! static int setup_paced_node(struct stm_dma_params *params,
+! 			    fdma_llu_entry* llu)
+  
++ {
+  	memset(llu, 0, sizeof(*llu));
+  
+! 	/* Moved this into the extrapolate functions so that we can
+! 	 * change channel in the same way as address. Yech */
+! 	/* llu->control= params->req_line; */
+  	llu->size_bytes= params->node_bytes;
+  	llu->line_len = params->node_bytes;
+  
+  	if (params->node_pause)
+! 		/* In order to recieve the pause interrupt
+! 		 * we must also enable end of node interrupts. */
+  		llu->control |=  SET_NODE_COMP_PAUSE | SET_NODE_COMP_IRQ;
+  
+  	if (params->node_interrupt)
+  		llu->control |= SET_NODE_COMP_IRQ;
+  
+! 	if (DIM_SRC(params->dim) == 0) {
+! 		llu->control |= NODE_ADDR_STATIC <<SOURCE_ADDR;
+! 	} else {
+  		llu->control |= NODE_ADDR_INCR <<SOURCE_ADDR;
+  	}
+! 
+! 	if (DIM_DST(params->dim) == 0) {
+! 		llu->control |= NODE_ADDR_STATIC <<DEST_ADDR;
+! 	} else {
+  		llu->control |= NODE_ADDR_INCR <<DEST_ADDR;
+  	}
+  
+  	return 0;
+  }
+  
+! static struct llu_node* extrapolate_simple(
+! 	struct stm_dma_params *params,
+! 	struct dma_xfer_descriptor *desc,
+! 	struct llu_node* llu_node)
+! {
+! 	struct fdma_llu_entry* dest_llu = llu_node->virt_addr;
+! 
+! 	dest_llu->control	= desc->template_llu.control |
+! 		(params->req ? params->req->local_req_line : 0);
+! 	dest_llu->size_bytes	= params->node_bytes;
+! 	dest_llu->saddr		= params->sar;
+! 	dest_llu->daddr		= params->dar;
+! 	if (desc->extrapolate_line_len)
+! 		dest_llu->line_len = params->node_bytes;
+! 	else
+! 		dest_llu->line_len = desc->template_llu.line_len;
+! 	dest_llu->sstride	= desc->template_llu.sstride;
+! 	dest_llu->dstride	= desc->template_llu.dstride;
+  
+! 	return llu_node;
+  }
+  
+! static struct llu_node* extrapolate_sg_src(
+! 	struct stm_dma_params *params,
+! 	struct dma_xfer_descriptor *desc,
+! 	struct llu_node* llu_node)
+  {
+  	int i;
+! 	struct scatterlist * sg = params->srcsg;
+! 	struct llu_node* last_llu_node = llu_node;
+! 
+! 	for (i=0; i<params->sglen; i++) {
+! 		struct fdma_llu_entry* dest_llu = llu_node->virt_addr;
+! 
+! 		dest_llu->control	= desc->template_llu.control;
+! 		dest_llu->size_bytes	= sg_dma_len(sg);
+! 		dest_llu->saddr		= sg_dma_address(sg);
+! 		dest_llu->daddr		= params->dar;
+! 		if (desc->extrapolate_line_len)
+  			dest_llu->line_len = sg_dma_len(sg);
+  		else
+! 			dest_llu->line_len = desc->template_llu.line_len;
+! 		dest_llu->sstride	= desc->template_llu.sstride;
+! 		dest_llu->dstride	= 0;
+! 
+! 		last_llu_node = llu_node++;
+! 		dest_llu->next_item	= llu_node->dma_addr;
+  		sg++;
+  	}
+! 
+! 	return last_llu_node;
+  }
+  
+! static struct llu_node* extrapolate_sg_dst(
+! 	struct stm_dma_params *params,
+! 	struct dma_xfer_descriptor *desc,
+! 	struct llu_node* llu_node)
+  {
+  	int i;
++ 	struct scatterlist * sg = params->dstsg;
++ 	struct llu_node* last_llu_node = llu_node;
+  
+! 	for (i=0; i<params->sglen; i++) {
+! 		struct fdma_llu_entry* dest_llu = llu_node->virt_addr;
+  
+! 		dest_llu->control	= desc->template_llu.control;
+! 		dest_llu->size_bytes	= sg_dma_len(sg);
+! 		dest_llu->saddr		= params->sar;
+! 		dest_llu->daddr		= sg_dma_address(sg);
+! 		if (desc->extrapolate_line_len)
+! 			dest_llu->line_len = sg_dma_len(sg);
+  		else
+! 			dest_llu->line_len = desc->template_llu.line_len;
+! 		dest_llu->sstride	= 0;
+! 		dest_llu->dstride	= desc->template_llu.dstride;
+  
+! 		last_llu_node = llu_node++;
+! 		dest_llu->next_item	= llu_node->dma_addr;
+! 		sg++;
+! 	}
+! 
+! 	return last_llu_node;
+  }
+  
+! static int resize_nodelist_mem(struct fdma_dev * fd,
+! 			       struct dma_xfer_descriptor *desc,
+! 			       unsigned int new_nnodes, gfp_t context)
+  {
+! 	int old_list_size, new_list_size;
+! 	unsigned int cur_nnodes;
+! 	struct llu_node* new_nodes;
+  
+! 	/* This holds the number of allocated nodes, which may differ
+! 	 * from the old or new size. It must be maintained so that
+! 	 * free_list works. */
+! 	cur_nnodes = desc->alloced_nodes;
+  
+! 	/* The only resize down we need to support is freeing everything. */
+! 	if (new_nnodes == 0) {
+! 		goto free_list;
+  	}
+  
+! 	old_list_size = sizeof(struct llu_node)*desc->alloced_nodes;
+! 	new_list_size = sizeof(struct llu_node)*new_nnodes;
+! 	new_nodes = kmalloc(new_list_size, context);
+! 	if (new_nodes == NULL)
+! 		goto free_list;
+! 
+! 	if (old_list_size > 0) {
+! 		memcpy(new_nodes, desc->llu_nodes, old_list_size);
+! 		kfree(desc->llu_nodes);
+  	}
+  
+! 	desc->llu_nodes = new_nodes;
+  
+! 	for (new_nodes += desc->alloced_nodes;
+! 	     cur_nnodes < new_nnodes;
+! 	     cur_nnodes++, new_nodes++) {
+! 		new_nodes->virt_addr = dma_pool_alloc(
+! 					fd->llu_pool,
+! 					context,
+! 					&new_nodes->dma_addr);
+! 		if (new_nodes->virt_addr == NULL)
+! 			goto free_list;
+  	}
+  
+! 	desc->alloced_nodes = new_nnodes;
+! 	return 0;
+  
+! free_list:
+! 	new_nodes = desc->llu_nodes;
+! 	for( ; cur_nnodes; cur_nnodes--, new_nodes++) {
+! 		dma_pool_free(fd->llu_pool,
+! 			      new_nodes->virt_addr,
+! 			      new_nodes->dma_addr);
+  	}
+! 	if (desc->llu_nodes)
+! 		kfree(desc->llu_nodes);
+  
+! 	desc->llu_nodes = NULL;
+! 	desc->alloced_nodes = 0;
+  
+! 	return -ENOMEM;
+  }
+  
+! static void fdma_start_channel(struct fdma_dev * fd,
+! 			      int ch_num,
+  			      unsigned long start_addr)
+  {
+  	u32 cmd_sta_value = (start_addr  | CMDSTAT_FDMA_START_CHANNEL);
+  
+  	writel(cmd_sta_value,CMD_STAT_REG(ch_num));
+! 	writel(MBOX_STR_CMD(ch_num),fd->io_base +fd->regs.fdma_cmd_set);
+  }
+  
+! static int stb710x_get_engine_status(struct fdma_dev * fd,int channel)
+  {
+! 	return readl(CMD_STAT_REG(channel))&3;
+  }
+  
+! static inline void __handle_fdma_err_irq(struct fdma_dev * fd,int chan_num)
+  {
++ 	struct channel_status *chan = &fd->channel[chan_num];
++ 	void (*err_cb)(unsigned long) = chan->params->err_cb;
++ 	unsigned long err_cb_parm = chan->params->err_cb_parm;
++ 
++ 	spin_lock(&fd->channel_lock);
++ 
+  	printk("%s ERROR CH_%d err %d\n",
+  		__FUNCTION__,
+! 		chan_num,
+! 		(int)( readl(CMD_STAT_REG(chan_num))& 0x1c) >>2);
+  			/*err is bits 2-4*/
+  	/*clearing the channel interface here will stop further
+  	 * transactions after the err and reset the channel*/
+! 	writel(0,CMD_STAT_REG(chan_num));
+! 	writel(readl(fd->io_base + fd->regs.fdma_cmd_sta),
+! 	       fd->io_base + fd->regs.fdma_cmd_clr);
+! 	chan->sw_state = FDMA_IDLE;
+! 
+! 	spin_unlock(&fd->channel_lock);
+! 
+! //printk("%s: wake_up %x\n", __FUNCTION__, &chan->cur_cfg->wait_queue);
+! 	wake_up(&chan->cur_cfg->wait_queue);
+! 	if (err_cb) {
+! 		if (chan->params->err_cb_isr)
+! 			err_cb(err_cb_parm);
+! 		else
+! 			tasklet_schedule(&chan->fdma_error);
+! 	}
+  }
+  
+! static inline void __handle_fdma_completion_irq(struct fdma_dev *fd,int chan_num)
+! {
+! 	struct channel_status *chan = &fd->channel[chan_num];
+! 	void (*comp_cb)(unsigned long) = chan->params->comp_cb;
+! 	unsigned long comp_cb_parm = chan->params->comp_cb_parm;
+! 
+! 	spin_lock(&fd->channel_lock);
+! 
+! 	switch(stb710x_get_engine_status(fd,chan_num)){
+! 	case FDMA_CHANNEL_PAUSED:
+! 		switch (chan->sw_state) {
+! 		case FDMA_RUNNING:	/* Hit a pause node */
+! 		case FDMA_PAUSING:
+! 			chan->sw_state = FDMA_PAUSED;
+  			break;
+! 		case FDMA_STOPPING:
+! 			writel(0, CMD_STAT_REG(chan_num));
+! 			chan->sw_state = FDMA_IDLE;
+  			break;
+! 		default:
+! 			BUG();
+! 		}
+! 		break;
+! 	case FDMA_CHANNEL_IDLE:
+! 		switch (chan->sw_state) {
+! 		case FDMA_RUNNING:
+! 		case FDMA_PAUSING:
+! 		case FDMA_STOPPING:
+! 			chan->sw_state = FDMA_IDLE;
+  			break;
+  		default:
+! 			BUG();
+! 		}
+! 		break;
+! 	case FDMA_CHANNEL_RUNNING:
+! 		break;
+! 	default:
+! 		fdma_dbg(fd, "ERR::FDMA2 unknown interrupt status \n");
+! 	}
+! 
+! 	spin_unlock(&fd->channel_lock);
+! 
+! 	wake_up(&chan->cur_cfg->wait_queue);
+! 	if (comp_cb) {
+! 		if (chan->params->comp_cb_isr)
+! 			comp_cb(comp_cb_parm);
+! 		else
+! 			tasklet_schedule(&chan->fdma_complete);
+  	}
+  }
+  
+  static irqreturn_t fdma_irq(int irq, void *dev_id, struct pt_regs *regs)
+  {
+! 	struct fdma_dev * fd = (struct fdma_dev *)dev_id;
+! 	int chan_num;
+! 	u32 int_stat_val = readl(fd->io_base + fd->regs.fdma_int_sta);
+! 	u32 cur_val = int_stat_val & fd->ch_status_mask;
+! 
+! 	writel(cur_val, fd->io_base +fd->regs.fdma_int_clr);
+! 	for (cur_val >>= fd->ch_min * 2, chan_num=fd->ch_min;
+! 	     cur_val != 0;
+! 	     cur_val >>= 2, chan_num++) {
+  		/*error interrupts will raise boths bits, so check
+  		 * the err bit first*/
+  		if(unlikely(cur_val & 2))
+! 			__handle_fdma_err_irq(fd,chan_num);
+  		else if (cur_val & 1)
+! 			__handle_fdma_completion_irq(fd, chan_num);
+! 	}
+  
+  	/*here we check to see if there is still pending ints for the other dmac, if so
+  	 * rely on it to signal IRQ_HANDLED once all vectors are cleared, we return IRQ_NONE.
+  	 * otherwise we have handled everything so we can now safely returnd IRQ_HANDLED
+  	 * to lower the IRQ.*/
+! 	return IRQ_RETVAL( !(cur_val & (~fd->ch_status_mask)) );
+  }
+  
+! /* Paced channel handling */
+  
+! #ifdef CONFIG_CPU_SUBTYPE_STB7100
+! 
+! static struct stm_dma_req fdma_reqs[STB7100_REQ_LINES];
+! 
+! /* This is the dummy xbar for 710x devices */
+! static int xbar_local_req(int req_line,
+! 			  struct channel_status *chan)
+  {
+! 	return req_line;
+! }
+  
+! static void xbar_local_free(struct channel_status *chan, int local_req_line)
+! {
+! }
+  
+! static int __init xbar_init(void)
+! {
+  	return 0;
+  }
++ module_init(xbar_init)
++ 
++ #else
++ 
++ /* Real xbar device */
+  
+! static struct stm_dma_req fdma_reqs[STB7200_REQ_LINES];
+! 
+! struct xbar_dev {
+! 	struct resource *phys_mem;
+! 	void* io_base;
+! };
+! 
+! /* Gross hack, we use a global static so the FDMA code can find the
+!  * xbar. */
+! static struct xbar_dev* xbar_dev;
+! 
+! /* Needs to be called with both the channel and xbar locks taken. */
+! static int xbar_local_req(int req_line,
+! 			  struct channel_status *chan)
+  {
+! 	struct fdma_dev *fd = chan->fd;
+! 	int local_req_line;
+! 	void* xbar_addr;
+! 
+! 	if (fd->req_lines_inuse == ~0UL)
+! 		return -1;
+! 
+! 	local_req_line = ffz(fd->req_lines_inuse);
+! 	fd->req_lines_inuse |= 1<<local_req_line;
+! 
+! 	xbar_addr = xbar_dev->io_base +
+! 		(fd->fdma_num * 0x80) +
+! 		(local_req_line * 4);
+! 	writel(req_line, xbar_addr);
+! 
+! 	return local_req_line;
+  }
+  
+! static void xbar_local_free(struct channel_status *chan, int local_req_line)
+  {
+! 	struct fdma_dev *fd = chan->fd;
+! 	fd->req_lines_inuse &= ~(1<<local_req_line);
+! }
+  
+! static int __init xbar_driver_probe(struct platform_device *pdev)
+! {
+! 	struct xbar_dev *xd;
+! 	struct resource *mem_res;
+! 	unsigned long phys_base, phys_size;
+  
+! 	xd = kzalloc(sizeof(struct xbar_dev), GFP_KERNEL);
+! 	if (xd == NULL) {
+! 		return -ENOMEM;
+  	}
+  
+! 	mem_res = platform_get_resource(pdev,IORESOURCE_MEM,0);
+!         phys_base = mem_res->start;
+!         phys_size = mem_res->end - mem_res->start + 1;
+! 
+!         xd->phys_mem = request_mem_region(phys_base, phys_size, "xbar");
+! 	if (xd->phys_mem == NULL) {
+! 		kfree(xd);
+!                 return -EBUSY;
+  	}
+  
+! 	xd->io_base = ioremap_nocache(phys_base, phys_size);
+! 	if (xd->io_base == NULL) {
+! 		release_resource(xd->phys_mem);
+! 		kfree(xd);
+! 	}
+! 
+! 	platform_set_drvdata(pdev, xd);
+! 	xbar_dev = xd;
+! 
+!        	return 0;
+! }
+  
+! static int xbar_driver_remove(struct platform_device *pdev)
+! {
+  	return 0;
+  }
+  
+! static struct platform_driver xbar_driver = {
+! 	.driver = {
+! 		.name = "fdma-xbar",
+! 	},
+! 	.probe = xbar_driver_probe,
+! 	.remove = xbar_driver_remove,
+! };
+! 
+! static int __init xbar_init(void)
+! {
+! 	return platform_driver_register(&xbar_driver);
+! }
+! 
+! static void __exit xbar_exit(void)
+! {
+! 	platform_driver_unregister(&xbar_driver);
+! }
+! 
+! module_init(xbar_init)
+! module_exit(xbar_exit)
+! 
+! #endif
+! 
+! static DEFINE_SPINLOCK(fdma_req_lock);
+! 
+! struct stm_dma_req *fdma_req_allocate(unsigned int req_line, struct channel_status *chan)
+! {
+! 	struct stm_dma_req* req = NULL;
+! 	int local_req_line;
+! 
+! 	if ((req_line < 0) || (req_line >= ARRAY_SIZE(fdma_reqs)))
+! 		return NULL;
+! 
+! 	spin_lock(&fdma_req_lock);
+! 	if (fdma_reqs[req_line].chan != NULL) {
+! 		goto out;
+! 	}
+! 
+! 	req = &fdma_reqs[req_line];
+! 
+! 	local_req_line = xbar_local_req(req_line, chan);
+! 	if (local_req_line == -1) {
+! 		goto out;
+! 	}
+! 
+! 	req->chan = chan;
+! 	req->local_req_line = local_req_line;
+! out:
+! 	spin_unlock(&fdma_req_lock);
+! 	return req;
+! }
+! 
+! /* Note that this may be called multiple times for the same req, for
+!  * example linked list of params with the same req line in each.
+!  * Maybe we should have an explicit free as there is an explicit
+!  * allocate via stb710x_configure_pace_channel() ? */
+! static void fdma_req_free(struct stm_dma_req *req)
+! {
+! 	spin_lock(&fdma_req_lock);
+! 
+! 	if (req->chan)
+! 		xbar_local_free(req->chan, req->local_req_line);
+! 	req->chan = NULL;
+! 
+! 	spin_unlock(&fdma_req_lock);
+! }
+! 
+! /*---------------------------------------------------------------------*
+!  *---------------------------------------------------------------------*
+!  * FIRMWARE DOWNLOAD & ENGINE INIT
+!  *---------------------------------------------------------------------*
+!  *---------------------------------------------------------------------*/
+! 
+! static void fdma_initialise(struct fdma_dev * fd)
+  {
+  /*These pokes come from the current STAPI tree.
+   * The three magic vals are pokes to undocumented regs so
+***************
+*** 503,655 ****
+   * and set all channels off*/
+  
+  	/*clear the status regs MBOX & IRQ*/
+! 	writel(CLEAR_WORD, chip.io_base+chip.regs.fdma_int_clr);
+! 	writel(CLEAR_WORD, chip.io_base+chip.regs.fdma_cmd_clr);
+  
+  	/* Enable the FDMA block */
+! 	writel(1,chip.io_base+chip.regs.fdma_sync_reg);
+! 	writel(5,chip.io_base+chip.regs.fdma_clk_gate);
+! 	writel(0,chip.io_base+chip.regs.fdma_clk_gate);
+  
+  }
+  /*this function enables messaging and intr generation for all channels &
+   * starts the fdma running*/
+! static int fdma_enable_all_channels(void)
+  {
+! 	writel(CLEAR_WORD,chip.io_base + chip.regs.fdma_int_mask);
+! 	writel(CLEAR_WORD,chip.io_base + chip.regs.fdma_cmd_mask);
+! 	writel(ENABLE_FLG ,chip.io_base +chip.regs.fdma_en);
+! 	return (readl(chip.io_base + chip.regs.fdma_en) &1);
+  }
+  
+! static void fdma_reset_channels(void)
+  {
+  	int channel=0;
+! 	for(;channel <(chip.ch_max-1);channel++)
+  		writel(0,CMD_STAT_REG(channel));
+  }
+  
+! static int stb710x_configure_pace_channel(struct fmdareq_RequestConfig_s * prq)
+  {
+! 	unsigned long ReqC=0;
+! 	unsigned long req_base_reg = chip.io_base+chip.regs.fdma_req_ctln;
+  
+! 	if(prq->Index <0 || prq->Index > chip.num_req_lines)
+! 		return -EINVAL;
+  
+! 	ReqC = (u32)(prq->HoldOff    & 0x0f) <<  0;/*Bits 3.0*/
+! 	ReqC |= (u32)(prq->OpCode    & 0x0f) <<  4;/*7..4*/
+! 	ReqC |= (u32)(prq->Access    & 0x01) << 14;/*14*/
+! 	ReqC |= (u32)(prq->Initiator & 0x03) << 22;/*23..22*/
+! 	ReqC |= (u32)((prq->Count-1) & 0x1F) << 24;/*28..24*/
+! 	ReqC |= (u32)(prq->Increment & 0x01) << 29;/*29*/
+! 
+! 	writel(ReqC,req_base_reg+(prq->Index *CMD_STAT_OFFSET));
+! 	return (readl(req_base_reg+(prq->Index *CMD_STAT_OFFSET)) == ReqC) ?
+! 		 0:
+! 		 -ENODEV;
+! }
+  
+! static void fdma_initialise_req_ctl(void)
+! {
+! 	int i=0;
+! 	for(;i < (chip.num_req_lines -1 );i++){
+! 		if(stb710x_configure_pace_channel(&chip.req_tbl[i])<0)
+! 			fdma_log("%s Error programming FDMA_REQ %d\n",
+! 					__FUNCTION__, chip.req_tbl[i].Index);
+! 	}
+  }
+  
+! static int fdma_register_caps(void)
+  {
+! 	int channel = chip.ch_min;
+  	int res=0;
+! 	int num_caps = chip.ch_max - chip.ch_min + 1;
+  	struct dma_chan_caps  dmac_caps[num_caps];
+- 	const char  * dmac_id = (const char *)STM_DMAC_ID;
+  	static const char* hb_caps[] = {STM_DMA_CAP_HIGH_BW,NULL};
+  	static const char* lb_caps[] = {STM_DMA_CAP_LOW_BW,NULL};
+  	static const char* eth_caps[] = {STM_DMA_CAP_ETH_BUF,NULL};
+  
+! 	for (;channel <= chip.ch_max;channel++) {
+! 		dmac_caps[channel-chip.ch_min].ch_num = channel;
+  		switch (channel) {
+  		case 0 ... 3:
+! 			dmac_caps[channel-chip.ch_min].caplist = hb_caps;
+  			break;
+  		case 11:
+! 			dmac_caps[channel-chip.ch_min].caplist = eth_caps;
+  			break;
+  		default:
+! 			dmac_caps[channel-chip.ch_min].caplist = lb_caps;
+  			break;
+  		}
+  	}
+! 	res= register_chan_caps(dmac_id,&dmac_caps[0]);
+  
+  	if(res!=0){
+! 		fdma_log("%s %s failed to register capabilities\n",
+! 			__FUNCTION__,dmac_id);
+  		return -ENODEV;
+  	}
+  	else return 0;
+  }
+  
+! static int fdma_run_initialise_sequence(void)
+  {
+! 	int i=0;
+! 	chip.llu_pool = dma_pool_create("STB710X FDMA", NULL,
+  					sizeof(struct fdma_llu_entry),32,0);
+! 	if (chip.llu_pool == NULL) {
+! 		fdma_log("%s Can't allocate dma_pool memory",__FUNCTION__);
+  		return -ENOMEM;
+  	}
+! 	fdma_initialise();
+! 	fdma_reset_channels();
+! 	fdma_initialise_req_ctl();
+! 
+! 	for(i=0;i < chip.ch_max+1;i++){
+! 		tasklet_init(&chip.channel[i].fdma_error,(void*)completion_err,i);
+! 		tasklet_init(&chip.channel[i].fdma_complete,(void*)completion_ok,i);
+! 	}
+! 	if(!fdma_enable_all_channels())
+  		return -ENODEV;
+  	else return  0;
+  }
+  
+! static int fdma_load_firmware(void)
+  {
+  	unsigned long irqflags=0;
+! 	spin_lock_irqsave(&chip.channel_lock,irqflags);
+! 	switch ( chip.firmware_loaded ) {
+  		case 0:
+! 			chip.firmware_loaded = -1;
+! 			spin_unlock_irqrestore(&chip.channel_lock,irqflags);
+! 			if (fdma_do_bootload()!=0 ){
+! 				chip.firmware_loaded=0;
+  				return  -ENOMEM;
+  			}
+! 			if(fdma_run_initialise_sequence()!=0)
+  				return -ENODEV;
+  
+! 			return (chip.firmware_loaded==1) ? 0:-ENODEV;
+  		case 1:
+! 			spin_unlock_irqrestore(&chip.channel_lock,irqflags);
+  			return 0;
+  		default:
+  		case -1:
+! 			spin_unlock_irqrestore(&chip.channel_lock,irqflags);
+! 			wait_event_interruptible(chip.fw_load_q,(chip.firmware_loaded==1));
+! 			if(!chip.firmware_loaded)
+  				return -ENODEV;
+  			else return 0;
+  	}
+  	return 0;
+  }
+  
+! static int fdma_check_firmware_state(void)
+  {
+! 	return (chip.firmware_loaded) ? 0:fdma_load_firmware();
+  }
+  
+  /*---------------------------------------------------------------------*
+--- 537,859 ----
+   * and set all channels off*/
+  
+  	/*clear the status regs MBOX & IRQ*/
+! 	writel(CLEAR_WORD, fd->io_base+fd->regs.fdma_int_clr);
+! 	writel(CLEAR_WORD, fd->io_base+fd->regs.fdma_cmd_clr);
+  
+  	/* Enable the FDMA block */
+! 	writel(1,fd->io_base+fd->regs.fdma_sync_reg);
+! 	writel(5,fd->io_base+fd->regs.fdma_clk_gate);
+! 	writel(0,fd->io_base+fd->regs.fdma_clk_gate);
+  
+  }
+  /*this function enables messaging and intr generation for all channels &
+   * starts the fdma running*/
+! static int fdma_enable_all_channels(struct fdma_dev * fd)
+! {
+! 	writel(CLEAR_WORD,fd->io_base + fd->regs.fdma_int_mask);
+! 	writel(CLEAR_WORD,fd->io_base + fd->regs.fdma_cmd_mask);
+! 	writel(1,fd->io_base +fd->regs.fdma_en);
+! 	return (readl(fd->io_base + fd->regs.fdma_en) &1);
+! }
+! static int fdma_disable_all_channels(struct fdma_dev * fd)
+  {
+! 	writel(0x00,fd->io_base + fd->regs.fdma_int_mask);
+! 	writel(0x00,fd->io_base + fd->regs.fdma_cmd_mask);
+! 	writel(0,fd->io_base + fd->regs.fdma_en);
+! 	return (readl(fd->io_base + fd->regs.fdma_en) &~1);
+  }
+  
+! static void fdma_reset_channels(struct fdma_dev * fd)
+  {
+  	int channel=0;
+! 	for(;channel <(fd->ch_max-1);channel++)
+  		writel(0,CMD_STAT_REG(channel));
+  }
+  
+! static struct stm_dma_req *stb710x_configure_pace_channel(struct fdma_dev *fd,
+! 	struct dma_channel *channel,
+! 	struct stm_dma_req_config *req_config)
+  {
+! 	struct channel_status *chan = FDMA_CHAN(channel);
+! 	void __iomem *req_base_reg = fd->io_base+fd->regs.fdma_req_ctln;
+! 	struct stm_dma_req *fdma_req;
+! 	u32 req_ctl;
+  
+! 	fdma_req = fdma_req_allocate(req_config->req_line, chan);
+! 	if (fdma_req == NULL) {
+! 		return NULL;
+! 	}
+  
+! 	req_ctl = 0;
+! 	req_ctl |= (req_config->hold_off	& 0x0f) <<  0;/*Bits 3.0*/
+! 	req_ctl |= (req_config->opcode		& 0x0f) <<  4;/*7..4*/
+! 	req_ctl |= (req_config->rw		& 0x01) << 14;/*14*/
+! 	req_ctl |= (req_config->initiator	& 0x03) << 22;/*23..22*/
+! 	req_ctl |= ((req_config->count-1)	& 0x1F) << 24;/*28..24*/
+! 	req_ctl |= (req_config->increment	& 0x01) << 29;/*29*/
+  
+! 	writel(req_ctl, req_base_reg + (fdma_req->local_req_line * CMD_STAT_OFFSET));
+! 
+! 	return fdma_req;
+  }
+  
+! static int fdma_register_caps(struct fdma_dev * fd)
+  {
+! 	int channel = fd->ch_min;
+  	int res=0;
+! 	int num_caps = fd->ch_max - fd->ch_min + 1;
+  	struct dma_chan_caps  dmac_caps[num_caps];
+  	static const char* hb_caps[] = {STM_DMA_CAP_HIGH_BW,NULL};
+  	static const char* lb_caps[] = {STM_DMA_CAP_LOW_BW,NULL};
+  	static const char* eth_caps[] = {STM_DMA_CAP_ETH_BUF,NULL};
+  
+! 	for (;channel <= fd->ch_max;channel++) {
+! 		dmac_caps[channel-fd->ch_min].ch_num = channel;
+  		switch (channel) {
+  		case 0 ... 3:
+! 			dmac_caps[channel-fd->ch_min].caplist = hb_caps;
+  			break;
+  		case 11:
+! 			dmac_caps[channel-fd->ch_min].caplist = eth_caps;
+  			break;
+  		default:
+! 			dmac_caps[channel-fd->ch_min].caplist = lb_caps;
+  			break;
+  		}
+  	}
+! 	res= register_chan_caps(fd->name, &dmac_caps[0]);
+  
+  	if(res!=0){
+! 		fdma_dbg(fd, "%s %s failed to register capabilities err-%d\n",
+! 			__FUNCTION__, fd->name, res);
+  		return -ENODEV;
+  	}
+  	else return 0;
+  }
+  
+! static int fdma_run_initialise_sequence(struct fdma_dev *fd)
+  {
+! 	fd->llu_pool = dma_pool_create(fd->name, NULL,
+  					sizeof(struct fdma_llu_entry),32,0);
+! 	if (fd->llu_pool == NULL) {
+! 		fdma_dbg(fd, "%s Can't allocate dma_pool memory",__FUNCTION__);
+  		return -ENOMEM;
+  	}
+! 	fdma_initialise(fd);
+! 	fdma_reset_channels(fd);
+! 
+! 	if(!fdma_enable_all_channels(fd))
+  		return -ENODEV;
+  	else return  0;
+  }
+  
+! /*---------------------------------------------------------------------*
+!  *---------------------------------------------------------------------*
+!  * FIRMWARE DOWNLOAD & ENGINE INIT
+!  *---------------------------------------------------------------------*
+!  *---------------------------------------------------------------------*/
+! 
+! static void fdma_get_fw_revision(struct fdma_dev * fd, int *major, int *minor)
+! {
+! 	int reg = readl(fd->io_base + fd->regs.fdma_dmem_region);
+! 	*major  = (reg & 0xff00) >>8;
+! 	*minor  = reg & 0xff;
+! }
+! 
+! static void fdma_get_hw_revision(struct fdma_dev * fd, int *major, int *minor)
+! {
+! 	*major = readl(fd->io_base + fd->regs.fdma_id);
+! 	*minor = readl(fd->io_base + fd->regs.fdma_ver);
+! }
+! 
+! #if  defined(CONFIG_STM_DMA_FW_KERNEL)
+! 
+! static int fdma_do_bootload(struct fdma_dev * fd)
+! {
+! 	device_t* ptr=0;
+! 	struct fdma_fw fw=fd->fw;
+! 	unsigned long unused_ibytes;
+! 	unsigned long unused_dbytes;
+! 	unsigned long irqflags;
+! 	void * addr =(char*)fd->io_base;
+! 
+! 	fdma_dbg(fd, "FDMA: Loading Firmware...");
+! 	unused_ibytes= fw.imem_len - fw.imem_fw_sz;
+! 	unused_dbytes= fw.dmem_len - fw.dmem_fw_sz;
+! 
+! 	spin_lock_irqsave(&fd->channel_lock,irqflags);
+! 	ptr = (device_t*) ((char*) addr +fd->regs.fdma_dmem_region);
+! 	memcpy((void*)ptr,&fw.data_reg[0],fw.dmem_fw_sz * sizeof(u32));
+! 	if(unused_dbytes){
+! 		ptr =(device_t*) ((char*)addr +fd->regs.fdma_dmem_region
+! 				  +(fw.dmem_fw_sz*sizeof(u32)));
+! 		memset((void*)ptr ,0, unused_dbytes);
+! 	}
+! 
+! 	ptr = (device_t*) ((char*) addr +fd->regs.fdma_imem_region);
+! 	memcpy((void*)ptr,&fw.imem_reg[0],fw.imem_fw_sz* sizeof(u32));
+! 	if(unused_ibytes){
+! 		ptr =(device_t*) ((char*)addr +fd->regs.fdma_imem_region
+! 				  +(fw.imem_fw_sz*sizeof(u32)));
+! 		memset((void*)ptr,0, unused_ibytes);
+! 	}
+! 	spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 
+! 	fd->firmware_loaded=1;
+! 	wake_up(&fd->fw_load_q);
+! 
+! 	return 0;
+! }
+! #elif defined(CONFIG_STM_DMA_FW_USERSPACE)
+! 
+! /* Awkwardly the current FDMA elf instruction section is stored with
+!  * 3 byte words. The Slim requires the following - fmt(0x00nnnnnn).
+!  * where - 	0 - appended 0 byte
+!  * 	 	n value read from elf
+!  *
+!  * So we must manually insert these word by word from the elf,
+!  * This also means the size parameter is incorrect
+!  * - Grrrr.
+! */
+! static void build_elf_imem(	struct fdma_dev * fd,
+! 				struct elf32_shdr * sect_hd,
+! 				struct firmware * slimcore_elf)
+! {
+! 	int pos=0;
+! 	char * file_off=0;
+! 	int imem_sz = sect_hd->sh_size+ (sect_hd->sh_size /3);
+! 	u8 * imem_st=  kmalloc(imem_sz,GFP_KERNEL);
+! 	u8 * imem_ptr =imem_st;
+! 	char * imem_sect = (char*)fd->io_base + fd->regs.fdma_imem_region;
+! 
+! 	file_off =(u8*) &slimcore_elf->data[sect_hd->sh_offset];
+! 
+! 	do{
+! 		memcpy(imem_ptr,file_off,sizeof(char)*3);
+! 		imem_ptr+=3;
+! 		file_off+=3;
+! 		*imem_ptr=0x00;
+! 		imem_ptr++;
+! 	}while((pos+=3)< sect_hd->sh_size);
+! 
+! 	memcpy(imem_sect,imem_st ,imem_sz);
+! 	kfree(imem_ptr);
+! }
+! 
+! static void build_elf_dmem(	struct fdma_dev * fd,
+! 				struct elf32_shdr * sect_hd,
+! 				struct firmware * slimcore_elf)
+! {
+! 	char * dmem_sect = (char*)fd->io_base + fd->regs.fdma_dmem_region;
+! 	char * file_off=0;
+! 
+! 	file_off = (char*)&slimcore_elf->data[sect_hd->sh_offset];
+! 	memcpy(dmem_sect,(char*)file_off ,sect_hd->sh_size);
+! }
+! 
+! 
+! static int fdma_do_bootload(struct fdma_dev * fd)
+! {
+! 	int err=0;
+! 	int i=0,imem_loaded=0,dmem_loaded=0;
+! 	char fw_revision[20];
+! 	char hw_revision[20];
+! 	int major=0,minor=0;
+! 	struct firmware *slimcore_elf={0};
+! 	struct elf32_hdr hdr;
+! 
+! 	fdma_dbg(fd, "FDMA: Loading Firmware ELF...");
+! 
+! 	err = request_firmware((const struct firmware **)&slimcore_elf,
+! 				fd->fw_name,&fdma_device_list[fd->hwid]);
+! 	if(err != 0 ){
+! 		fdma_dbg(fd, "%s Can't Locate/Load Firmware %s\n",
+! 		       __FUNCTION__, fd->fw_name);
+! 		return -ENOENT;
+! 	}
+! 
+! 	memcpy(&hdr,slimcore_elf->data,sizeof(struct elf32_hdr));
+! 
+! 
+! 	// build the section header tbl
+! 	for(i=0;i < hdr.e_shnum;i++){
+! 		struct elf32_shdr sect_hdr;
+! 		char* sh_addr = (char*)&slimcore_elf->data[hdr.e_shoff + (i * sizeof(struct elf32_shdr))];
+! 		memcpy(&sect_hdr,(char*)sh_addr ,sizeof(struct elf32_shdr));
+! 
+! 		if(SHT_PROGBITS== sect_hdr.sh_type){
+! 			if(sect_hdr.sh_flags & SHF_ALLOC){
+! 
+! 				if((sect_hdr.sh_flags & SHF_EXECINSTR) == SHF_EXECINSTR){
+! 					build_elf_imem(fd,&sect_hdr,slimcore_elf);
+! 					imem_loaded=1;
+! 				}
+! 				else if((sect_hdr.sh_flags & SHF_WRITE) == SHF_WRITE){
+! 					build_elf_dmem(fd,&sect_hdr,slimcore_elf);
+! 					dmem_loaded=1;
+! 				}
+! 			}
+! 			if(dmem_loaded && imem_loaded){
+! 				/*we can discard the remainder of the elf now*/
+! 				break;
+! 			}
+! 		}
+! 	}
+! 	release_firmware(slimcore_elf);
+! 	if(dmem_loaded && imem_loaded){
+! 		fd->firmware_loaded=1;
+! 		wake_up(&fd->fw_load_q);
+! 	}
+! 	else return -ENODEV;
+! 
+! 	fdma_get_fw_revision(fd,&fw_revision[0],major,minor);
+! 	fdma_get_hw_revision(fd,&hw_revision[0],major,minor);
+! 	fdma_dbg(fd, "STB_%dC%d %s %s OK\n",
+! 		 fd->cpu_subtype,fd->cpu_rev,hw_revision,fw_revision);
+! 	return 0;
+! }
+! #endif
+! 
+! static int fdma_load_firmware(struct fdma_dev * fd)
+  {
+  	unsigned long irqflags=0;
+! 	int hw_major, hw_minor;
+! 	int fw_major, fw_minor;
+! 	spin_lock_irqsave(&fd->channel_lock,irqflags);
+! 	switch ( fd->firmware_loaded ) {
+  		case 0:
+! 			fd->firmware_loaded = -1;
+! 			spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 			if (fdma_do_bootload(fd)!=0){
+! 				fd->firmware_loaded=0;
+  				return  -ENOMEM;
+  			}
+! 			fdma_get_hw_revision(fd, &hw_major, &hw_minor);
+! 			fdma_get_fw_revision(fd, &fw_major, &fw_minor);
+! 			fdma_info(fd, "SLIM hw %d.%d, FDMA fw %d.%d\n",
+! 				  hw_major, hw_minor, fw_major, fw_minor);
+! 
+! 			if(fdma_run_initialise_sequence(fd)!=0)
+  				return -ENODEV;
+  
+! 			return (fd->firmware_loaded==1) ? 0:-ENODEV;
+  		case 1:
+! 			spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+  			return 0;
+  		default:
+  		case -1:
+! 			spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 			wait_event_interruptible(fd->fw_load_q,(fd->firmware_loaded==1));
+! 			if(!fd->firmware_loaded)
+  				return -ENODEV;
+  			else return 0;
+  	}
+  	return 0;
+  }
+  
+! static int fdma_check_firmware_state(struct fdma_dev * fd)
+  {
+! 	return (fd->firmware_loaded) ? 0:fdma_load_firmware(fd);
+  }
+  
+  /*---------------------------------------------------------------------*
+***************
+*** 661,676 ****
+  /*returns the number of bytes left to transfer for the current node*/
+  static  int stb710x_fdma_get_residue(struct dma_channel *chan)
+  {
+  	unsigned long irqflags;
+- 	u32 chan_base = chip.io_base + (chan->chan * NODE_DATA_OFFSET);
+  	unsigned long total = 0,count=0;
+  	void *first_ptr=0;
+  	fdma_llu_entry *cur_ptr;
+  
+! 	spin_lock_irqsave(&chip.fdma_lock, irqflags);
+! 	count = readl(chan_base +chip.regs.fdma_cntn);
+  	/*first read the current node data*/
+! 	first_ptr = (void *) readl(chan_base + chip.regs.fdma_ptrn);
+  	if(! first_ptr)
+  		goto list_complete;
+  
+--- 865,881 ----
+  /*returns the number of bytes left to transfer for the current node*/
+  static  int stb710x_fdma_get_residue(struct dma_channel *chan)
+  {
++ 	struct fdma_dev *fd = FDMA_DEV(chan);
++ 	void __iomem *chan_base = fd->io_base + (chan->chan * NODE_DATA_OFFSET);
+  	unsigned long irqflags;
+  	unsigned long total = 0,count=0;
+  	void *first_ptr=0;
+  	fdma_llu_entry *cur_ptr;
+  
+! 	spin_lock_irqsave(&fd->channel_lock, irqflags);
+! 	count = readl(chan_base +fd->regs.fdma_cntn);
+  	/*first read the current node data*/
+! 	first_ptr = (void *) readl(chan_base + fd->regs.fdma_ptrn);
+  	if(! first_ptr)
+  		goto list_complete;
+  
+***************
+*** 685,968 ****
+  		total += cur_ptr->size_bytes;
+  	} while ((cur_ptr = P2SEGADDR((fdma_llu_entry *) cur_ptr->next_item))!=0);
+  list_complete:
+! 	spin_unlock_irqrestore(&chip.fdma_lock, irqflags);
+  	total+= count;
+  	return total;
+  }
+  
+- 
+- 
+  /*must only be called when channel is in pasued state*/
+! static int stb710x_fdma_unpause(struct dma_channel * chan)
+  {
+! 	if(IS_CHANNEL_PAUSED(chan->chan)){
+! 		writel(MBOX_CMD_START_CHANNEL << (chan->chan*2),
+! 				chip.io_base +chip.regs.fdma_cmd_set);
+! 		return 0;
+  	}
+! 	return -EBUSY;
+  }
+  
+! static int stb710x_fdma_pause(struct dma_channel * chan,int flush)
+  {
+  	unsigned long irqflags=0;
+- 	spin_lock_irqsave(&chip.fdma_lock,irqflags);
+- 	if(IS_CHANNEL_RUNNING(chan->chan)){
+- 		chip.channel[chan->chan].ch_pause =1;
+- 		if(flush)
+- 			writel( MBOX_CMD_PAUSE_FLUSH_CHANNEL << (chan->chan*2),
+- 					chip.io_base + chip.regs.fdma_cmd_set);
+- 		else
+- 			writel( MBOX_CMD_PAUSE_CHANNEL << (chan->chan*2),
+- 					chip.io_base + chip.regs.fdma_cmd_set);
+  
+! 		spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+! 		return IS_CHANNEL_PAUSED (chan->chan) ? 0:
+! 			-ENODEV;
+  	}
+- 	spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+- 	fdma_log("%s Cant Pause - CH_%d not running\n",__FUNCTION__,chan->chan);
+- 	return -EBUSY;
+- }
+  
+  
+! static int stb710x_fdma_request(struct dma_channel *ch)
+  {
+! 	if(fdma_check_firmware_state()==0){
+! 		if(!(IS_CHANNEL_RESERVED(ch->chan))){
+! 			chip.channel[ch->chan].reserved=1;
+! 			chip.channel[ch->chan].cur_cfg = ch;
+! 			return 0;
+! 		}
+! 	/*the upper level API code requires a positive err code*/
+! 		else return EBUSY;
+  	}
+  	return ENOSYS;
+  }
+  
+! 
+! static int stb710x_fdma_stop(struct dma_channel *chan)
+  {
+! 	unsigned long cmd_val = (MBOX_CMD_PAUSE_CHANNEL << (chan->chan*2));
+  	unsigned long irqflags=0;
+  
+! 	/*Issuing a pause on an inactive channel results in the FDMA
+! 	* attempting to load the next ptr*/
+! 	spin_lock_irqsave(&chip.fdma_lock,irqflags);
+! 	if(!(IS_CHANNEL_IDLE(chan->chan))){
+! 		chip.channel[chan->chan].ch_term=1;
+! 		writel(cmd_val,(chip.io_base +chip.regs.fdma_cmd_set));
+! 		spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+! 		return 0;
+! 	}
+! 	else{/*throw an error if trying to stop an inactive channel*/
+! 		fdma_log("%s Cant stop Idle Channel %d \n",__FUNCTION__,chan->chan);
+! 		spin_unlock_irqrestore(&chip.fdma_lock,irqflags);
+! 		return -ENODEV;
+  	}
+  }
+  
+! static int stb710x_list_mem_free(stm_dma_params * xfer_ptr)
+  {
+! 	if(xfer_ptr->priv.node){
+! 		int i=0;
+! 		for(;i<xfer_ptr->priv.alloced_nents;i++){
+! 			dma_pool_free(
+! 				chip.llu_pool,
+! 				xfer_ptr->priv.node[i].virt_addr,
+! 				xfer_ptr->priv.node[i].dma_addr);
+  		}
+- 		kfree(xfer_ptr->priv.node);
+- 		xfer_ptr->priv.node = 0;
+- 		xfer_ptr->priv.alloced_nents =0;
+- 		return 0;
+  	}
+! 	else return -ENOMEM;
+  }
+  
+! /*not be be called with locks held !*/
+! static int handle_ch_busy(int channel)
+  {
+! 	struct channel_status *chan = &chip.channel[channel];
+  
+! 	if(chan->is_xferring){
+! 		fdma_log("%s Channel_%d Busy - xfer %s \n",__FUNCTION__,
+! 			channel,(chan->params.blocking ?"BLOCK":"ABORT"));
+! 		if(chan->params.blocking){
+! 			BUG_ON(in_interrupt());
+! 			wait_event(chan->cur_cfg->wait_queue,(chan->is_xferring==0));
+  		}
+! 		else return -EBUSY;
+  	}
+  	return 0;
+  }
+  
+! static int stb710x_fdma_compile_params(struct stm_dma_params *params)
+  {
+! 	struct stm_dma_params * this =  params;
+  
+! 	if(unlikely((params->context == GFP_ATOMIC) && params->blocking)){
+! 		fdma_log("%s Cant specify blocking transfers from isr ctx\n",__FUNCTION__);
+! 		return -EINVAL;
+  	}
+- 	do{
+- 		/*here we are looking for a re/un-used node - if so then we must alloc enough mem
+- 		for the dma node or nodes(sg only).*/
+- 		if( (!IS_NODE_MALLOCED(this->priv)) ||(!IS_NODELIST_EQUAL(this->priv))) {
+- 
+- 			if( IS_NODE_MALLOCED(this->priv) &&(!IS_NODELIST_EQUAL(this->priv)))
+- 				stb710x_list_mem_free(this);
+- 
+- 			if (alloc_nodelist_mem(this,this->priv.sublist_nents) != 0){
+- 				fdma_log("%s Cant allocate memory for xfer\n",__FUNCTION__);
+- 				return -ENOMEM;
+- 			}
+- 			if(IS_TRANSFER_SG(this)){
+  
+! 				if(MODE_SRC_SCATTER==this->mode)
+! 					this->priv.extrapolate_fn = extrapolate_sg_src;
+! 				else if(MODE_DST_SCATTER==this->mode)
+! 					this->priv.extrapolate_fn = extrapolate_sg_dst;
+! 				else return -EINVAL;
+! 			}
+! 			else this->priv.extrapolate_fn = extrapolate_simple;
+  
+! 			this->priv.nodelist_setup =(this->mode == MODE_PACED) ?
+! 					setup_paced_node:
+! 					setup_freerunning_node;
+! 
+! 			/* For any 1D transfers, line_len = nbytes */
+! 			this->priv.extrapolate_line_len =
+! 				!((DIM_SRC(this->dim) == 2) || (DIM_DST(this->dim) == 2));
+! 		}
+! 		if (this->priv.nodelist_setup(this) < 0)
+! 			return -EINVAL;
+  
+- 		this->priv.extrapolate_fn(this);
+  		this = this->next;
+! 	}while(this);
+  
+- 	create_llu_list(params);
+  	return 0;
+  }
+  
+  static void stb710x_fdma_free(struct dma_channel *channel)
+  {
+! 	struct channel_status *this_ch = &chip.channel[channel->chan];
+! 	if(CHAN_OTB(channel->chan)==0)
+! 		return;
+  
+! 	if(!IS_CHANNEL_RESERVED(channel->chan))
+! 		return;
+! 	else this_ch->reserved=0;
+  
+! 	if(!(IS_CHANNEL_IDLE(channel->chan))){
+! 		stb710x_fdma_stop(channel);
+! 		/*TODO :-should have some confirmation the cmd has been processed here before
+! 		 * continuing - either a wait, not always possible, or a spin ? */
+! 		if(handle_ch_busy(channel->chan)==-EBUSY){
+! 			fdma_log("%s Cant free memory on active channel %d sts %d\n",
+! 				__FUNCTION__,channel->chan,stb710x_get_engine_status(channel->chan));
+! 			return;
+! 		}
+  	}
+!         if(IS_NODE_MALLOCED(this_ch->params.priv))
+! 	       stb710x_list_mem_free(&this_ch->params);
+  }
+  
+! static int stb710x_fdma_configure(struct dma_channel *channel,
+! 				  unsigned long flags)
+  {
+! 	struct channel_status *chan;
+  	struct stm_dma_params * params;
+  	unsigned long irq_flags=0;
+- 	BUG_ON( CHAN_OTB(channel->chan)==0);
+  
+! 	if(handle_ch_busy(channel->chan)==-EBUSY)
+  		return -EBUSY;
+- 
+- 	if(unlikely(flags & MODE_SH_COMPATIBILITY)){
+- 	/*nothing to do here - we setup our llu when we
+- 	 * have the data on the call to xfer*/
+- 		channel->flags = flags;
+- 		return 0;
+  	}
+- 	spin_lock_irqsave(&chip.channel_lock,irq_flags);
+- 	chan = &chip.channel[channel->chan];
+  
+! 	if(channel->priv_data != NULL)
+! 		params  = (stm_dma_params *) channel->priv_data;
+! 	else{
+! 		 fdma_log("%s Channel %d not compiled - xfer abort ! \n",
+! 			  __FUNCTION__,channel->chan);
+! 		 spin_unlock_irqrestore(&chip.channel_lock,irq_flags);
+! 		 return -EINVAL;
+! 	}
+! 	if(!params->priv.node->dma_addr){
+! 		fdma_log("%s no nodelist allocation !\n",__FUNCTION__);
+! 		spin_unlock_irqrestore(&chip.channel_lock,irq_flags);
+  		return -ENOMEM;
+  	}
+! 	/*Nodelist Not Configured to channel or memory badness*/
+! 	/*now we are associating the compiled transfer llu & parms to the channel*/
+! 	memcpy(&chan->params,params,sizeof(struct stm_dma_params));
+! 	chan->is_xferring=1;
+! 	spin_unlock_irqrestore(&chip.channel_lock,irq_flags);
+  	return 0;
+  }
+  
+! 
+! static int stb710x_fdma_xfer(struct dma_channel *channel, unsigned long sar,
+! 			     unsigned long dar, size_t count, unsigned int mode)
+! {
+! 	struct channel_status *chan = &chip.channel[channel->chan];
+  	unsigned long irqflags=0;
+  
+- 	BUG_ON(CHAN_OTB(channel->chan)==0);
+- 	if(unlikely(MODE_SH_COMPATIBILITY == mode)){
+- 		if(fdma_sh_compatibility_setup(channel,chan,sar,dar,count,mode)!=0)
+- 			return -ENOMEM;
+- 	}
+  	/*we need to check that the compile has been completed*/
+! 	spin_lock_irqsave(&chip.channel_lock, irqflags);
+  
+! 	if(!IS_NODE_MALLOCED(chan->params.priv)){
+! 		spin_unlock_irqrestore(&chip.channel_lock, irqflags);
+! 		fdma_log("%s CH_%d invalid descriptor\n",__FUNCTION__,channel->chan);
+  		return -EINVAL;
+  	}
+- 	if(!(IS_CHANNEL_IDLE(channel->chan))){
+- 		spin_unlock_irqrestore(&chip.channel_lock, irqflags);
+- 		fdma_log("%s FDMA engine not ready - status %d\n",
+- 			__FUNCTION__,
+- 			stb710x_get_engine_status(channel->chan));
+- 		return -ENODEV;
+- 	}
+- 	fdma_check_xfer_params(&chan->params);
+  
+! 	spin_unlock_irqrestore(&chip.channel_lock, irqflags);
+! 	return fdma_start_channel(channel->chan, chan->params.priv.node->dma_addr);
+  }
+  
+  static int stb710x_fdma_extended_op(struct dma_channel *  ch,
+  				    unsigned long opcode,
+  				    void * parm)
+  {
+  	switch(opcode){
+  		case STM_DMA_OP_PAUSE:
+! 			return stb710x_fdma_pause(ch,(int) parm);
+  		case STM_DMA_OP_UNPAUSE:
+! 			return  stb710x_fdma_unpause(ch);
+  		case STM_DMA_OP_STOP:
+! 			return stb710x_fdma_stop(ch);
+  		case STM_DMA_OP_COMPILE:
+! 			return stb710x_fdma_compile_params((struct stm_dma_params *)parm);
+  		case STM_DMA_OP_STATUS:
+! 			return stb710x_get_engine_status(ch->chan);
+! 		case STM_DMA_OP_MEM_FREE:
+! 			return stb710x_list_mem_free((struct stm_dma_params *)parm);
+  		case STM_DMA_OP_PACING:
+! 			return stb710x_configure_pace_channel((struct fmdareq_RequestConfig_s *)parm);
+  		default:
+  			return -ENOSYS;
+  	}
+--- 890,1254 ----
+  		total += cur_ptr->size_bytes;
+  	} while ((cur_ptr = P2SEGADDR((fdma_llu_entry *) cur_ptr->next_item))!=0);
+  list_complete:
+! 	spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+  	total+= count;
+  	return total;
+  }
+  
+  /*must only be called when channel is in pasued state*/
+! static int stb710x_fdma_unpause(struct fdma_dev * fd,struct dma_channel * channel)
+  {
+! 	struct channel_status *chan = FDMA_CHAN(channel);
+! 	unsigned long irqflags=0;
+! 
+! 	spin_lock_irqsave(&fd->channel_lock,irqflags);
+! 	if (chan->sw_state != FDMA_PAUSED) {
+! 		spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 		return -EBUSY;
+  	}
+! 
+! 	writel(MBOX_CMD_START_CHANNEL << (channel->chan*2),
+! 	       fd->io_base + fd->regs.fdma_cmd_set);
+! 	chan->sw_state = FDMA_RUNNING;
+! 	spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 	return 0;
+  }
+  
+! static int stb710x_fdma_pause(struct fdma_dev * fd,struct dma_channel * channel)
+  {
++ 	struct channel_status *chan = FDMA_CHAN(channel);
+  	unsigned long irqflags=0;
+  
+! 	spin_lock_irqsave(&fd->channel_lock,irqflags);
+! 	switch (chan->sw_state) {
+! 	case FDMA_IDLE:
+! 	case FDMA_CONFIGURED:
+! 		/* Hardware isn't set up yet, so treat this as an error */
+! 		spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 		return -EBUSY;
+! 	case FDMA_PAUSED:
+! 		/* Hardware is already paused */
+! 		spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 		return 0;
+! 	case FDMA_RUNNING:
+! 		/* Hardware is running, send the command */
+! 		writel(MBOX_CMD_PAUSE_CHANNEL << (channel->chan*2),
+! 		       fd->io_base + fd->regs.fdma_cmd_set);
+! 		/* Fall through */
+! 	case FDMA_PAUSING:
+! 	case FDMA_STOPPING:
+! 		/* Hardware is pausing already, wait for interrupt */
+! 		chan->sw_state = FDMA_PAUSING;
+! 		spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! #if 0
+! 		/* In some cases this is called from a context which cannot
+! 		 * block, so disable the wait at the moment. */
+! 		wait_event(chan->cur_cfg->wait_queue,
+! 			   chan->sw_state == FDMA_PAUSED);
+! #endif
+! 		break;
+  	}
+  
++ 	return 0;
++ }
+  
+! static int stb710x_fdma_request(struct dma_channel *channel)
+  {
+! 	struct fdma_dev *fd = FDMA_DEV(channel);
+! 
+! 	if(fdma_check_firmware_state(fd)==0){
+! 		return 0;
+  	}
++ 
+  	return ENOSYS;
+  }
+  
+! static int stb710x_fdma_stop(struct fdma_dev * fd,struct dma_channel *channel)
+  {
+! 	struct channel_status *chan = FDMA_CHAN(channel);
+! 	unsigned long cmd_val = (MBOX_CMD_PAUSE_CHANNEL << (channel->chan*2));
+  	unsigned long irqflags=0;
+  
+! 	spin_lock_irqsave(&fd->channel_lock,irqflags);
+! 	switch (chan->sw_state) {
+! 	case FDMA_IDLE:
+! 	case FDMA_CONFIGURED:
+! 	case FDMA_PAUSED:
+! 		/* Hardware is already idle, simply change state */
+! 		chan->sw_state = FDMA_IDLE;
+! 		writel(0,CMD_STAT_REG(channel->chan));
+! 		spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! 		break;
+! 	case FDMA_RUNNING:
+! 		/* Hardware is running, send the command */
+! 		writel(cmd_val,(fd->io_base +fd->regs.fdma_cmd_set));
+! 		/* Fall through */
+! 	case FDMA_PAUSING:
+! 	case FDMA_STOPPING:
+! 		/* Hardware is pausing already, wait for interrupt */
+! 		chan->sw_state = FDMA_STOPPING;
+! 		spin_unlock_irqrestore(&fd->channel_lock,irqflags);
+! #if 0
+! 		/* In some cases this is called from a context which cannot
+! 		 * block, so disable the wait at the moment. */
+! 		wait_event(chan->cur_cfg->wait_queue,
+! 			   chan->sw_state == FDMA_IDLE);
+! #endif
+! 		break;
+  	}
++ 
++ 	return 0;
+  }
+  
+! static int stb710x_fdma_free_params(struct stm_dma_params *params)
+  {
+! 	struct fdma_dev * fd = params->params_ops_priv;
+! 	struct stm_dma_params *this;
+! 
+! 	for (this = params; this; this = this->next) {
+! 		struct dma_xfer_descriptor *desc = (struct dma_xfer_descriptor*)this->priv;
+! 		if (desc) {
+! 			resize_nodelist_mem(fd, desc, 0, 0);
+! 			kfree(desc);
+! 		}
+! 
+! 		if (this->req) {
+! 			fdma_req_free(this->req);
+  		}
+  	}
+! 
+! 	return 0;
+  }
+  
+! static struct params_ops fdma_params_ops = {
+! 	.free_params	= stb710x_fdma_free_params
+! };
+! 
+! /* Compile params part 1: generate template nodes */
+! static int _compile1(struct fdma_dev * fd,struct stm_dma_params *params)
+  {
+! 	struct stm_dma_params *this;
+! 
+! 	for (this = params; this; this = this->next) {
+! 		struct dma_xfer_descriptor *desc;
+! 
+! 		desc = (struct dma_xfer_descriptor*)this->priv;
+! 		if (desc != NULL)
+! 			continue;
+! 
+! 		desc = kzalloc(sizeof(struct dma_xfer_descriptor), params->context);
+! 		if (desc == NULL)
+! 			return -ENOMEM;
+! 		this->priv = desc;
+  
+! 		if (IS_TRANSFER_SG(this)){
+! 			if(MODE_SRC_SCATTER==this->mode)
+! 				desc->extrapolate_fn = extrapolate_sg_src;
+! 			else if(MODE_DST_SCATTER==this->mode)
+! 				desc->extrapolate_fn = extrapolate_sg_dst;
+! 			else return -EINVAL;
+! 		} else {
+! 			desc->extrapolate_fn = extrapolate_simple;
+  		}
+! 
+! 		if(this->mode == MODE_PACED){
+! 			setup_paced_node(this, &desc->template_llu);
+! 		} else {
+! 			setup_freerunning_node(this, &desc->template_llu);
+! 		}
+! 
+! 		/* For any 1D transfers, line_len = nbytes */
+! 		desc->extrapolate_line_len =
+! 			!((DIM_SRC(this->dim) == 2) || (DIM_DST(this->dim) == 2));
+  	}
++ 
+  	return 0;
+  }
+  
+! /* Compile params part 2: allocate node list */
+! static int _compile2(struct fdma_dev * fd,struct stm_dma_params *params)
+  {
+! 	struct stm_dma_params *this;
+! 	int numnodes = 0;
+! 	struct dma_xfer_descriptor *desc;
+! 
+! 	for (this = params; this; this = this->next) {
+! 		if (IS_TRANSFER_SG(this))
+! 			numnodes += this->sglen;
+! 		else
+! 			numnodes++;
+! 	}
+  
+! 	desc = (struct dma_xfer_descriptor*)params->priv;
+! 	if (desc->alloced_nodes < numnodes) {
+! 		int res;
+! 		res = resize_nodelist_mem(fd, desc, numnodes, params->context);
+! 		if (res)
+! 			return res;
+  	}
+  
+! 	return 0;
+! }
+  
+! /* Compile params part 3: extrapolate */
+! static int _compile3(struct fdma_dev * fd,struct stm_dma_params *params)
+! {
+! 	struct stm_dma_params *this;
+! 	struct dma_xfer_descriptor *this_desc;
+! 	struct llu_node *first_node, *last_node, *node;
+! 
+! 	this = params;
+! 	this_desc = (struct dma_xfer_descriptor*)this->priv;
+! 	first_node = this_desc->llu_nodes;
+! 
+! 	node = first_node;
+! 	while (1) {
+! 
+! 		last_node = this_desc->extrapolate_fn(this, this_desc, node);
+  
+  		this = this->next;
+! 		if (this == NULL)
+! 			break;
+! 
+! 		this_desc = (struct dma_xfer_descriptor*)this->priv;
+! 		node = last_node + 1;
+! 		last_node->virt_addr->next_item = node->dma_addr;
+! 	}
+! 
+! 	if(params->circular_llu)
+! 		last_node->virt_addr->next_item = first_node->dma_addr;
+! 	else
+! 		last_node->virt_addr->next_item = 0;
+  
+  	return 0;
+  }
+  
++ static int stb710x_fdma_compile_params(struct fdma_dev * fd,struct stm_dma_params *params)
++ {
++ 	int res;
++ 
++ 	res = _compile1(fd, params);
++ 	if (res)
++ 		return res;
++ 
++ 	res = _compile2(fd, params);
++ 	if (res)
++ 		return res;
++ 
++ 	res = _compile3(fd, params);
++ 	if (res == 0) {
++ 		params->params_ops = &fdma_params_ops;
++ 		params->params_ops_priv = fd;
++ 	}
++ 
++ 	return res;
++ }
++ 
+  static void stb710x_fdma_free(struct dma_channel *channel)
+  {
+! 	struct fdma_dev *fd = FDMA_DEV(channel);
+! 	struct channel_status *chan = FDMA_CHAN(channel);
+! 	unsigned long irq_flags=0;
+  
+! 	spin_lock_irqsave(&fd->channel_lock,irq_flags);
+  
+! 	if (chan->sw_state != FDMA_IDLE) {
+! 		spin_unlock_irqrestore(&fd->channel_lock,irq_flags);
+! 		fdma_dbg(fd, "%s channel not idle\n",__FUNCTION__);
+! 		return;
+  	}
+! 
+! 	BUG_ON(!(IS_CHANNEL_IDLE(fd,channel->chan)));
+! 
+! 	spin_unlock_irqrestore(&fd->channel_lock,irq_flags);
+  }
+  
+! /* Note although this returns an int, the dma-api code throws this away. */
+! static int stb710x_fdma_configure(	struct dma_channel *channel,
+! 				  	unsigned long flags)
+  {
+! 	struct fdma_dev *fd = FDMA_DEV(channel);
+! 	struct channel_status *chan = FDMA_CHAN(channel);
+  	struct stm_dma_params * params;
+  	unsigned long irq_flags=0;
+  
+! 	spin_lock_irqsave(&fd->channel_lock,irq_flags);
+! 	if (chan->sw_state != FDMA_IDLE) {
+! 		spin_unlock_irqrestore(&fd->channel_lock,irq_flags);
+! 		fdma_dbg(fd, "%s channel not idle\n",__FUNCTION__);
+  		return -EBUSY;
+  	}
+  
+! 	params = (struct stm_dma_params *)flags;
+! 	if(!((struct dma_xfer_descriptor*)(params->priv))->llu_nodes){
+! 		fdma_dbg(fd, "%s no nodelist alloced\n",__FUNCTION__);
+! 		spin_unlock_irqrestore(&fd->channel_lock,irq_flags);
+  		return -ENOMEM;
+  	}
+! 
+! 	/* Now we are associating the compiled transfer llu & params to the channel*/
+! 	chan->params = params;
+! 	tasklet_init(&chan->fdma_complete,
+! 		     params->comp_cb, (unsigned long)params->comp_cb_parm);
+! 	tasklet_init(&chan->fdma_error,
+! 		     params->err_cb, (unsigned long)params->err_cb_parm);
+! 	chan->sw_state = FDMA_CONFIGURED;
+! 
+! 	spin_unlock_irqrestore(&fd->channel_lock,irq_flags);
+! 
+  	return 0;
+  }
+  
+! static int stb710x_fdma_xfer(
+! 				struct dma_channel *channel,
+! 				unsigned long sar,
+! 			     	unsigned long dar,
+! 			     	size_t count,
+! 			     	unsigned int mode)
+! {
+! 	struct fdma_dev *fd = FDMA_DEV(channel);
+! 	struct channel_status *chan = FDMA_CHAN(channel);
+! 	struct dma_xfer_descriptor *desc;
+  	unsigned long irqflags=0;
+  
+  	/*we need to check that the compile has been completed*/
+! 	spin_lock_irqsave(&fd->channel_lock, irqflags);
+  
+! 	if (chan->sw_state != FDMA_CONFIGURED) {
+! 		spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+  		return -EINVAL;
+  	}
+  
+! 	desc = (struct dma_xfer_descriptor*)chan->params->priv;
+! 
+! 	BUG_ON(!(IS_CHANNEL_IDLE(fd,channel->chan)));
+! 
+! 	fdma_start_channel(fd,channel->chan, desc->llu_nodes->dma_addr);
+! 	chan->sw_state = FDMA_RUNNING;
+! 
+! 	spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+! 
+! 	return 0;
+  }
+  
+  static int stb710x_fdma_extended_op(struct dma_channel *  ch,
+  				    unsigned long opcode,
+  				    void * parm)
+  {
++ 	struct fdma_dev *fd = FDMA_DEV(ch);
+  	switch(opcode){
+  		case STM_DMA_OP_PAUSE:
+! 			return stb710x_fdma_pause(fd,ch);
+  		case STM_DMA_OP_UNPAUSE:
+! 			return  stb710x_fdma_unpause(fd,ch);
+  		case STM_DMA_OP_STOP:
+! 			return stb710x_fdma_stop(fd,ch);
+  		case STM_DMA_OP_COMPILE:
+! 			return stb710x_fdma_compile_params(fd, (struct stm_dma_params*)parm);
+  		case STM_DMA_OP_STATUS:
+! 			return stb710x_get_engine_status(fd,ch->chan);
+  		case STM_DMA_OP_PACING:
+! 			return (int)stb710x_configure_pace_channel(fd, ch, (struct stm_dma_req_config*)parm);
+  		default:
+  			return -ENOSYS;
+  	}
+***************
+*** 983,1100 ****
+  	.extend			= stb710x_fdma_extended_op,
+  };
+  
+! static struct dma_info stb710x_fdma_info = {
+! 	.name			= (char*)STM_DMAC_ID,
+! /*	.nr_channels		= defined at probe time*/
+! 	.ops			= &stb710x_fdma_ops,
+! 	.flags			= DMAC_CHANNELS_TEI_CAPABLE,
+! };
+! 
+! static int __init stb710x_platform_fdma_probe(struct device *dev)
+  {
+! 	fdma_platform_device_data * plat_data;
+! 	chip.platform_dev = to_platform_device(dev);
+  
+! 	if (!chip.platform_dev->name){
+! 		fdma_log("FDMA probe failed. Check your kernel SoC config\n");
+! 		return -EINVAL;
+  	}
+! 	plat_data = chip.platform_dev->dev.platform_data;
+! 	if((plat_data->cpu_subtype ==7109)&& (plat_data->cpu_rev==1)){
+! 		panic("%s Unsupportable CPU revision STB_%d C%d. "
+! 		      "Try Disabling CONFIG_STM_DMA.",
+! 		      __FUNCTION__, plat_data->cpu_subtype, plat_data->cpu_rev);
+  		return -EINVAL;
+  	}
+- 	else return 0;
+- }
+  
+! static struct device_driver fdma_driver = {
+! 	.name  = "710x_FDMA",
+! 	.owner = THIS_MODULE,
+! 	.bus   = &platform_bus_type,
+! 	.probe = stb710x_platform_fdma_probe,
+! };
+  
+- static int fdma_do_platform_device_setup(void)
+- {
+- 	fdma_platform_device_data * plat_data={0};
+- 	unsigned long req_tbl_sz=0;
+  
+! 	sprintf(chip.dev.bus_id,"fdma_710x");
+! 	chip.dev.parent   = &platform_bus ;
+! 	chip.dev.bus      = &platform_bus_type;
+! 	chip.dev.driver   = &fdma_driver;
+  
+! 	if(device_register(&chip.dev)){
+! 		fdma_log("%s Error on FDMA device registration\n",__FUNCTION__);
+! 		return -EINVAL;
+! 	}
+! 	if(!chip.platform_dev) {
+! 		fdma_log("%s No FDMA device available\n",__FUNCTION__);
+! 		return -ENODEV;
+! 	}
+  
+- 	plat_data  = chip.platform_dev->dev.platform_data;
+- 	chip.io_base = (u32)ioremap_nocache(plat_data->fdma_base,
+- 					    plat_data->fdma_base +0x100);
+- 	chip.irq_val = plat_data->irq_vect;
+- 	chip.num_req_lines = plat_data->nr_reqlines;
+- 	chip.ch_min = plat_data->min_ch_num;
+- 	chip.ch_max = plat_data->max_ch_num;
+- 
+- 	req_tbl_sz = sizeof( fdmareq_RequestConfig_t)* chip.num_req_lines;
+- 	chip.req_tbl =(fdmareq_RequestConfig_t*)kmalloc(req_tbl_sz,GFP_KERNEL);
+- 	memcpy(chip.req_tbl,(u32*)plat_data->req_line_tbl_adr,req_tbl_sz);
+- 
+- 	memcpy(&chip.regs,(u32*)plat_data->registers_ptr,sizeof(fdma_regs_t));
+- 	chip.cpu_subtype = plat_data->cpu_subtype;
+- 	chip.cpu_rev= plat_data->cpu_rev;
+- 	chip.fw_name = plat_data->fw_device_name;
+- 	chip.fw = plat_data->fw;
+  	return 0;
+  }
+  
+! static void __exit deinitialise_710x_fdma2(void)
+  {
+! 	writel(0,chip.io_base + chip.regs.fdma_en);
+! 	kfree(chip.req_tbl);
+! 	iounmap((u32*)chip.io_base);
+! 	device_unregister(&chip.dev);
+! 	unregister_dmac(chip.info);
+! 	dma_pool_destroy(chip.llu_pool);
+! 	free_irq(chip.irq_val,(void *)&chip);
+  }
+  
+! static int __init initialise_710x_fdma2(void)
+! {
+! 	int err=0;
+  
+! 	memset(&chip,0,sizeof(struct fdma_chip));
+! 	chip.info = &stb710x_fdma_info;
+! 	driver_register(&fdma_driver);
+! 	spin_lock_init(&chip.channel_lock);
+! 	spin_lock_init(&chip.fdma_lock);
+! 	init_waitqueue_head(&chip.fw_load_q);
+! 
+! 	if(fdma_do_platform_device_setup()!=0)
+! 		return -ENOSYS;
+! 
+! 	/*must take accoutn of CH 0*/
+! 	chip.info->nr_channels = (chip.ch_max+1) -chip.ch_min;
+! 
+! 	err =request_irq(chip.irq_val,fdma_irq,
+! 			SA_INTERRUPT | SA_SHIRQ,
+! 			"STB710x FDMA",
+! 			(void*)&chip );
+! 	if(err <0)
+! 		panic(" Cant Register irq %d for FDMA engine err %d\n",
+! 					chip.irq_val,err);
+  
+! 	register_dmac(chip.info,chip.ch_min);
+! 	fdma_register_caps();
+! 	fdma_check_firmware_state();
+! 	return 0;
+  }
+! module_init(initialise_710x_fdma2)
+! module_exit(deinitialise_710x_fdma2)
+--- 1269,1395 ----
+  	.extend			= stb710x_fdma_extended_op,
+  };
+  
+! static int __init fdma_driver_probe(struct platform_device *pdev)
+  {
+! 	struct fdma_platform_device_data * plat_data;
+! 	struct fdma_dev *fd=NULL;
+! 	struct resource *res;
+! 	int i=0;
+! 	int err=0;
+  
+! 	plat_data = pdev->dev.platform_data;
+! 
+! 	fd = kzalloc(sizeof(struct fdma_dev), GFP_KERNEL);
+! 	if (fd == NULL) {
+! 		return -ENOMEM;
+! 	};
+! 
+! 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+! 	if (!res) {
+! 		return -ENODEV;
+  	}
+! 
+! 	fd->phys_mem = request_mem_region(res->start, res->end - res->start + 1,
+! 					  pdev->name);
+! 	if (fd->phys_mem == NULL) {
+! 		return -EBUSY;
+! 	};
+! 
+! 	fd->io_base = ioremap_nocache(res->start, res->end - res->start + 1);
+! 	if (fd->io_base == NULL) {
+  		return -EINVAL;
+  	}
+  
+! 	fd->ch_min = plat_data->min_ch_num;
+! 	fd->ch_max = plat_data->max_ch_num;
+! 	fd->fdma_num = pdev->id;
+! 	fd->ch_status_mask =
+! 		((1ULL << (fd->ch_max*2)) - 1ULL) ^
+! 		((1    << (fd->ch_min*2)) - 1);
+! 
+! 	memcpy(&fd->regs,(u32*)plat_data->registers_ptr,sizeof(struct fdma_regs));
+! 	fd->fw_name = plat_data->fw_device_name;
+! 	fd->fw = plat_data->fw;
+! 
+! 	/* 7200: Req lines 0 and 31 are connected internally, not to the xbar */
+! 	fd->req_lines_inuse = (1<<31) | (1<<0);
+! 
+! 	spin_lock_init(&(fd)->channel_lock);
+! 	init_waitqueue_head(&(fd)->fw_load_q);
+! 
+! 	fd->dma_info.nr_channels = (fd->ch_max+1) - fd->ch_min;
+! 	fd->dma_info.ops	= &stb710x_fdma_ops;
+! 	fd->dma_info.flags	= DMAC_CHANNELS_TEI_CAPABLE;
+! 	strlcpy(fd->name, STM_DMAC_ID, FDMA_NAME_LEN);
+! 	if (pdev->id != -1) {
+! 		int len=strlen(fd->name);
+! 		snprintf(fd->name+len, FDMA_NAME_LEN-len, ".%d", pdev->id);
+! 	}
+! 	fd->dma_info.name = fd->name;
+! 
+! 	if(register_dmac(&fd->dma_info, fd->ch_min)!=0)
+! 		printk("%s Error Registering DMAC\n",__FUNCTION__);
+! 	/*must take account of CH 0*/
+! 
+! 	for (i=fd->ch_min; i<=fd->ch_max; i++) {
+! 		struct dma_channel *channel;
+! 		channel = get_dma_channel(i);
+! 		channel->priv_data = &fd->channel[i];
+! 		fd->channel[i].cur_cfg = channel;
+! 		fd->channel[i].fd = fd;
+! 	}
+! 
+! 	err =request_irq(platform_get_irq(pdev, 0),
+! 			 fdma_irq,
+! 			 SA_INTERRUPT | SA_SHIRQ,
+! 			 fd->name,
+! 			 fd);
+! 	if(err <0)
+! 		panic(" Cant Register irq %d for FDMA engine err %d\n",
+! 					fd->irq_val,err);
+  
+  
+! 	fdma_register_caps(fd);
+  
+! 	fdma_check_firmware_state(fd);
+! 
+! 	platform_set_drvdata(pdev, fd);
+  
+  	return 0;
+  }
+  
+! static int fdma_driver_remove(struct platform_device *pdev)
+  {
+! 	struct fdma_dev *fd = platform_get_drvdata(pdev);
+! 
+! 	fdma_disable_all_channels(fd);
+! 	iounmap(fd->io_base);
+! 	dma_pool_destroy(fd->llu_pool);
+! 	free_irq(fd->irq_val, fd);
+! 	unregister_dmac(&fd->dma_info);
+! 	release_resource(fd->phys_mem);
+! 	kfree(fd);
+! 
+! 	return 0;
+  }
+  
+! static struct platform_driver fdma_driver = {
+! 	.driver = {
+! 		.name = "stmfdma",
+! 	},
+! 	.probe = fdma_driver_probe,
+! 	.remove = fdma_driver_remove,
+! };
+  
+! static int __init fdma_init(void)
+! {
+! 	return platform_driver_register(&fdma_driver);
+! }
+  
+! static void __exit fdma_exit(void)
+! {
+! 	platform_driver_unregister(&fdma_driver);
+  }
+! 
+! module_init(fdma_init)
+! module_exit(fdma_exit)
+*** /dev/null	2007-09-21 23:50:58.000000000 +0200
+--- linux/include/linux/stm/fdma-plat.h	2009-02-10 22:45:23.000000000 +0100
+***************
+*** 0 ****
+--- 1,122 ----
++ /*
++  * Copyright (C) 2007 STMicroelectronics Limited
++  * Authors: Mark Glaisher <Mark.Glaisher@st.com>
++  *          Stuart Menefy <stuart.menefy@st.com>
++  *
++  * May be copied or modified under the terms of the GNU General Public
++  * License.  See linux/COPYING for more information.
++  */
++ 
++ /* Memory section offsets from FDMA base address */
++ #define STB7100_FDMA_BASE 					0x19220000
++ #define STB7109_FDMA_BASE 					STB7100_FDMA_BASE
++ 
++ #define STB7100_DMEM_OFFSET            				0x8000     /* Contains the control word interface */
++ #define STB7100_IMEM_OFFSET            				0xC000     /* Contains config data */
++ 
++ #define STB7109_DMEM_OFFSET					STB7100_DMEM_OFFSET
++ #define STB7109_IMEM_OFFSET					STB7100_IMEM_OFFSET
++ 
++ #define STB7200_DMEM_OFFSET					STB7100_DMEM_OFFSET
++ #define STB7200_IMEM_OFFSET					STB7100_IMEM_OFFSET
++ 
++ #define STB7200_FDMA0_BASE					0xFD810000
++ #define STB7200_FDMA1_BASE					0xFD820000
++ #define STB7200_XBAR_BASE					0xFD830000
++ 
++ #define STB7200_IMEM_OFFSET					STB7100_IMEM_OFFSET
++ #define STB7200_DMEM_OFFSET					STB7100_DMEM_OFFSET
++ 
++ #define IMEM_REGION_LENGTH					0xa00
++ #define DMEM_REGION_LENGTH					0x600
++ 
++ #define NODE_DATA_OFFSET					0x40
++ #define CMD_STAT_OFFSET       					0x04
++ 
++ #define FDMA2_ID						0x0000   /* Block Id */
++ #define FDAM2_VER						0x0004
++ #define FDMA2_ENABLE_REG					0x0008
++ #define FDMA2_CLOCKGATE						0x000C       /* Clock enable control */
++ #define FDMA2_REV_ID						0x8000
++ 
++ /*here our our current node params region */
++ #define STB7100_FDMA_CMD_STATn_REG 				0x8040 /* (+ n * 0x04) */
++ #define STB7100_FDMA_PTR_REG 					0x9180 /* (+ n * 0x40) */
++ #define STB7100_FDMA_COUNT_REG					0x9188 /* (+ n * 0x40) */
++ #define STB7100_FDMA_SADDR_REG					0x918c /* (+ n * 0x40) */
++ #define STB7100_FDMA_DADDR_REG					0x9190 /* (+ n * 0x40) */
++ #define STB7100_FDMA_REQ_CTLn_REG				0x9780 /* (+ n * 0x04) */
++ 
++ #define STB7109_FDMA_CMD_STATn_REG				0x9140 /* (+ n * 0x04) */
++ #define STB7109_FDMA_REQ_CTLn_REG				0x9180 /* (+ n * 0x04) */
++ #define STB7109_FDMA_PTR_REG					0x9400 /* (+ n * 0x40) */
++ #define STB7109_FDMA_COUNT_REG					0x9408 /* (+ n * 0x40) */
++ #define STB7109_FDMA_SADDR_REG					0x940c /* (+ n * 0x40) */
++ #define STB7109_FDMA_DADDR_REG					0x9410 /* (+ n * 0x40) */
++ 
++ #define STB7200_FDMA_CMD_STATn_REG				0x9140 /* (+ n * 0x04) */
++ #define STB7200_FDMA_REQ_CTLn_REG				0x9180 /* (+ n * 0x04) */
++ #define STB7200_FDMA_PTR_REG					0x9580 /* (+ n * 0x40) */
++ #define STB7200_FDMA_COUNT_REG					0x9588 /* (+ n * 0x40) */
++ #define STB7200_FDMA_SADDR_REG					0x958c /* (+ n * 0x40) */
++ #define STB7200_FDMA_DADDR_REG					0x9590 /* (+ n * 0x40) */
++ 
++ #define FDMA2_SYNCREG                 				0xBF88
++ #define FDMA2_CMD_MBOX_STAT_REG					0xBFC0
++ #define FDMA2_CMD_MBOX_SET_REG					0xBFC4
++ #define FDMA2_CMD_MBOX_CLR_REG					0xBFC8
++ #define FDMA2_CMD_MBOX_MASK_REG 				0xBFCC
++ 
++ #define FDMA2_INT_STAT_REG					0xBFD0
++ #define FDMA2_INT_SET_REG					0xBFD4
++ #define FDMA2_INT_CLR_REG					0xBFD8
++ #define FDMA2_INT_MASK_REG					0xBFDC
++ 
++ #define LINUX_FDMA_STB7100_IRQ_VECT			140
++ #define LINUX_FDMA_STB7109_IRQ_VECT			LINUX_FDMA_STB7100_IRQ_VECT
++ #define LINUX_FDMA0_STB7200_IRQ_VECT			MUXED_IRQ_BASE + 13/*these are ILC offsets now so handle differently ? */
++ #define LINUX_FDMA1_STB7200_IRQ_VECT			MUXED_IRQ_BASE + 15/**/
++ 
++ struct fdma_regs
++ {
++ 	unsigned long fdma_id;
++ 	unsigned long fdma_ver;
++ 	unsigned long fdma_en;
++ 	unsigned long fdma_rev_id;
++ 	unsigned long fdma_cmd_statn;
++ 	unsigned long fdma_ptrn;
++ 	unsigned long fdma_cntn;
++ 	unsigned long fdma_saddrn;
++ 	unsigned long fdma_daddrn;
++ 	unsigned long fdma_req_ctln;
++ 	unsigned long fdma_cmd_sta;
++ 	unsigned long fdma_cmd_set;
++ 	unsigned long fdma_cmd_clr;
++ 	unsigned long fdma_cmd_mask;
++ 	unsigned long fdma_int_sta;
++ 	unsigned long fdma_int_set;
++ 	unsigned long fdma_int_clr;
++ 	unsigned long fdma_int_mask;
++ 	unsigned long fdma_sync_reg;
++ 	unsigned long fdma_clk_gate;
++ 	unsigned long fdma_imem_region;
++ 	unsigned long fdma_dmem_region;
++ };
++ 
++ struct fdma_fw {
++ 	unsigned long * data_reg;
++ 	unsigned long * imem_reg;
++ 	unsigned long imem_fw_sz;
++ 	unsigned long dmem_fw_sz;
++ 	unsigned long imem_len;
++ 	unsigned long dmem_len;
++ };
++ 
++ struct fdma_platform_device_data {
++ 	struct fdma_regs *registers_ptr;
++ 	int    min_ch_num;
++ 	int    max_ch_num;
++ 	char  * fw_device_name;
++ 	struct fdma_fw fw;
++ 	//struct fdma_dev *fd;
++ };
+*** /dev/null	2007-09-21 23:50:58.000000000 +0200
+--- linux/include/linux/stm/fdma-reqs.h	2009-02-10 22:45:51.000000000 +0100
+***************
+*** 0 ****
+--- 1,130 ----
++ /*
++  * Copyright (C) 2007 STMicroelectronics Limited
++  * Authors: Mark Glaisher <Mark.Glaisher@st.com>
++  *          Stuart Menefy <stuart.menefy@st.com>
++  *
++  * May be copied or modified under the terms of the GNU General Public
++  * License.  See linux/COPYING for more information.
++  */
++ 
++ enum __stb7100_fdma_req_ids {
++ 	STB7100_FDMA_REQ_SPDIF_TEST =	0,
++ 	STB7100_FDMA_REQ_NOT_CONN_1,
++ 	STB7100_FDMA_REQ_NOT_CONN_2,
++ 	STB7100_FDMA_REQ_VIDEO_HDMI,
++ 	STB7100_FDMA_REQ_DISEQC_HALF_EMPTY,
++ 	STB7100_FDMA_REQ_DISEQC_HALF_FULL,
++ 	STB7100_FDMA_REQ_SH4_SCIF_RX,
++ 	STB7100_FDMA_REQ_SH4_SCIF_TX,
++ 	STB7100_FDMA_REQ_SSC_0_RX,
++ 	STB7100_FDMA_REQ_SSC_1_RX,
++ 	STB7100_FDMA_REQ_SSC_2_RX,	/* 10 */
++ 	STB7100_FDMA_REQ_SSC_0_TX,
++ 	STB7100_FDMA_REQ_SSC_1_TX,
++ 	STB7100_FDMA_REQ_SSC_2_TX,
++ 	STB7100_FDMA_REQ_UART_0_RX,
++ 	STB7100_FDMA_REQ_UART_1_RX,
++ 	STB7100_FDMA_REQ_UART_2_RX,
++ 	STB7100_FDMA_REQ_UART_3_RX,
++ 	STB7100_FDMA_REQ_UART_0_TX,
++ 	STB7100_FDMA_REQ_UART_1_TX,
++ 	STB7100_FDMA_REQ_UART_2_TX,	/* 20 */
++ 	STB7100_FDMA_REQ_UART_3_TX,
++ 	STB7100_FDMA_REQ_EXT_PIO_0,
++ 	STB7100_FDMA_REQ_EXT_PIO_1,
++ 	STB7100_FDMA_REQ_CPXM_DECRYPT,
++ 	STB7100_FDMA_REQ_CPXM_ENCRYPT,
++ 	STB7100_FDMA_REQ_PCM_0,
++ 	STB7100_FDMA_REQ_PCM_1,
++ 	STB7100_FDMA_REQ_PCM_READ,
++ 	STB7100_FDMA_REQ_SPDIF,
++ 	STB7100_FDMA_REQ_SWTS,		/* 30 */
++ 	STB7100_FDMA_REQ_UNUSED
++ };
++ 
++ enum __stb7109_fdma_reqids {
++ 	STB7109_FDMA_REQ_UNUSED =0,//0
++ 	STB7109_FDMA_DMA_REQ_HDMI_AVI,
++ 	STB7109_FDMA_REQ_DISEQC_HALF_EMPTY,
++ 	STB7109_FDMA_REQ_DISEQC_HALF_FULL,
++ 	STB7109_FDMA_REQ_SH4_SCIF_RX,
++ 	STB7109_FDMA_REQ_SH4_SCIF_TX,//5
++ 	STB7109_FDMA_REQ_SSC_0_RX,//6-8
++ 	STB7109_FDMA_REQ_SSC_1_RX,
++ 	STB7109_FDMA_REQ_SSC_2_RX,
++ 	STB7109_FDMA_REQ_SSC_0_TX,//9-11
++ 	STB7109_FDMA_REQ_SSC_1_TX,
++ 	STB7109_FDMA_REQ_SSC_2_TX,
++ 	STB7109_FDMA_REQ_UART_0_RX,//12-15
++ 	STB7109_FDMA_REQ_UART_1_RX,
++ 	STB7109_FDMA_REQ_UART_2_RX,
++ 	STB7109_FDMA_REQ_UART_3_RX,
++ 	STB7109_FDMA_REQ_UART_0_TX,//16-19
++ 	STB7109_FDMA_REQ_UART_1_TX,
++ 	STB7109_FDMA_REQ_UART_2_TX,
++ 	STB7109_FDMA_REQ_UART_3_TX,
++ 	STB7109_FDMA_REQ_REQ_EXT_PIO_0,//20
++ 	STB7109_FDMA_REQ_REQ_EXT_PIO_1,//21
++ 	STB7109_FDMA_REQ_CPXM_DECRYPT,
++ 	STB7109_FDMA_REQ_CPXM_ENCRYPT,
++ 	STB7109_FDMA_REQ_PCM_0=24,//24
++ 	STB7109_FDMA_REQ_PCM_1,
++ 	STB7109_FDMA_REQ_PCM_READ,
++ 	STB7109_FDMA_REQ_SPDIF,
++ 	STB7109_FDMA_REQ_SWTS_0,
++ 	STB7109_FDMA_REQ_SWTS_1,
++ 	STB7109_FDMA_REQ_SWTS_2
++ };
++ 
++ enum __stb7200_fdma_reqids {
++ 	STB7200_FDMA_REQ_CNT0 =0,
++ 	STB7200_FDMA_REQ_CNT1,
++ 	STB7200_FDMA_REQ_HDMI,
++ 	STB7200_FDMA_REQ_DISEQC0_TX_HALF_EMPTY,
++ 	STB7200_FDMA_REQ_DISEQC0_RX_HALF_FULL,
++ 	STB7200_FDMA_REQ_DISEQC1_TX_HALF_EMPTY,
++ 	STB7200_FDMA_REQ_DISEQC1_RX_HALF_FULL,
++ 	STB7200_FDMA_REQ_SH4_SCIF_RX,
++ 	STB7200_FDMA_REQ_SH4_SCIF_TX,
++ 	STB7200_FDMA_REQ_SSC_0_RX,
++ 	STB7200_FDMA_REQ_SSC_1_RX,//10
++ 	STB7200_FDMA_REQ_SSC_2_RX,
++ 	STB7200_FDMA_REQ_SSC_3_RX,
++ 	STB7200_FDMA_REQ_SSC_4_RX,
++ 	STB7200_FDMA_REQ_SSC_0_TX,
++ 	STB7200_FDMA_REQ_SSC_1_TX,
++ 	STB7200_FDMA_REQ_SSC_2_TX,
++ 	STB7200_FDMA_REQ_SSC_3_TX,
++ 	STB7200_FDMA_REQ_SSC_4_TX,//18
++ 	STB7200_FDMA_REQ_UART_0_RX,
++ 	STB7200_FDMA_REQ_UART_1_RX,
++ 	STB7200_FDMA_REQ_UART_2_RX,
++ 	STB7200_FDMA_REQ_UART_3_RX,
++ 	STB7200_FDMA_REQ_UART_0_TX,
++ 	STB7200_FDMA_REQ_UART_1_TX,
++ 	STB7200_FDMA_REQ_UART_2_TX,
++ 	STB7200_FDMA_REQ_UART_3_TX,
++ 	STB7200_FDMA_REQ_EMI_DMA0,
++ 	STB7200_FDMA_REQ_EMI_DMA1,
++ 	STB7200_FDMA_REQ_CPXM_DECRYPT_IN,
++ 	STB7200_FDMA_REQ_CPXM_DECRYPT_OUT,//30
++ 	STB7200_FDMA_REQ_CPXM_ENCRYPT_IN,
++ 	STB7200_FDMA_REQ_CPXM_ENCRYPT_OUT,
++ 	STB7200_FDMA_REQ_PCM0,
++ 	STB7200_FDMA_REQ_PCM1,
++ 	STB7200_FDMA_REQ_PCM2,
++ 	STB7200_FDMA_REQ_PCM3,
++ 	STB7200_FDMA_REQ_PCMIN,
++ 	STB7200_FDMA_REQ_SPDIF,
++ 	STB7200_FDMA_REQ_HDMI_PCM,
++ 	STB7200_FDMA_REQ_HDMI_SPDIF,
++ 	STB7200_FDMA_REQ_TELETEXT,
++ 	STB7200_FDMA_REQ_TELETEXT_SDOUT,
++ 	STB7200_FDMA_REQ_MODEM_PCM_PLAY,
++ 	STB7200_FDMA_REQ_MODEM_PCM_READ,
++ 	STB7200_FDMA_REQ_UHF_EMPTY,
++ 	STB7200_FDMA_REQ_UHF_FULL,
++ 	STB7200_FDMA_REQ_SRC_IP,
++ 	STB7200_FDMA_REQ_SRC_OP
++ 	/*49 - 54 reserved*/
++ };
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0040/drivers/ide/sh/ide-piodma.c linux-2.6.17.14_stm22_0040/drivers/ide/sh/ide-piodma.c
+--- oldlinux-2.6.17.14_stm22_0040/drivers/ide/sh/ide-piodma.c	2008-03-30 17:36:07.000000000 +0200
++++ linux-2.6.17.14_stm22_0040/drivers/ide/sh/ide-piodma.c	2007-11-07 12:16:05.000000000 +0100
+@@ -339,26 +339,23 @@
+ 					unsigned long len)
+ {
+ 	if(!pd->read_configured){
+-		declare_dma_parms(	&pd->read_dmap,
++		dma_params_init(		&pd->read_dmap,
+ 					MODE_DST_SCATTER,
+-					STM_DMA_LIST_OPEN,
+-					STM_DMA_SETUP_CONTEXT_ISR,
+-					STM_DMA_NOBLOCK_MODE,
+-					( char*)STM_DMAC_ID);
++					STM_DMA_LIST_OPEN);
+ 
+-		dma_parms_comp_cb(	&pd->read_dmap,
++		dma_params_comp_cb(	&pd->read_dmap,
+ 					ide_piodma_dma_completion_handler,
+ 					drive,
+ 					STM_DMA_CB_CONTEXT_TASKLET);
+ 
+-		dma_parms_DIM_0_x_1(&pd->read_dmap,pd->xfer_sz);
++		dma_params_DIM_0_x_1(&pd->read_dmap);
+ 
+-		dma_parms_addrs(&pd->read_dmap,pd->ide_data_reg,0,len);
++		dma_params_addrs(&pd->read_dmap,pd->ide_data_reg,0,len);
+ 
+ 		pd->read_configured=1;
+ 	}
+-	dma_parms_sg(&pd->read_dmap,pd->dst_sg,pd->dst_sg_len);
+-	return dma_compile_list(&pd->read_dmap);
++	dma_params_sg(&pd->read_dmap,pd->dst_sg,pd->dst_sg_len);
++	return dma_compile_list(pd->dma_chan_id, &pd->read_dmap, GFP_KERNEL);
+ }
+ 
+ static int ide_piodma_prepare_write_dma( ide_piodma_t *pd,
+@@ -366,26 +363,23 @@
+ 					 unsigned long len)
+ {
+ 	if(!pd->write_configured){
+-		declare_dma_parms(&pd->write_dmap,
+-				  MODE_SRC_SCATTER,
+-				  STM_DMA_LIST_OPEN,
+-				  STM_DMA_SETUP_CONTEXT_ISR,
+-				  STM_DMA_NOBLOCK_MODE,
+-				  (char*)STM_DMAC_ID);
++		dma_params_init(&pd->write_dmap,
++			       MODE_SRC_SCATTER,
++			       STM_DMA_LIST_OPEN);
+ 
+-		dma_parms_comp_cb(&pd->write_dmap,
++		dma_params_comp_cb(&pd->write_dmap,
+ 					      ide_piodma_dma_completion_handler,
+ 					      drive,
+ 					      STM_DMA_CB_CONTEXT_TASKLET);
+ 
+-		dma_parms_DIM_1_x_0(&pd->write_dmap,pd->xfer_sz);
++		dma_params_DIM_1_x_0(&pd->write_dmap);
+ 
+-		dma_parms_addrs(&pd->write_dmap,0,pd->ide_data_reg,len);
++		dma_params_addrs(&pd->write_dmap,0,pd->ide_data_reg,len);
+ 
+ 		pd->write_configured=1;
+ 	}
+-	dma_parms_sg(&pd->write_dmap,pd->src_sg,pd->src_sg_len);
+-	return dma_compile_list(&pd->write_dmap);
++	dma_params_sg(&pd->write_dmap,pd->src_sg,pd->src_sg_len);
++	return dma_compile_list(pd->dma_chan_id, &pd->write_dmap, GFP_KERNEL);
+ }
+ 
+ static int ide_piodma_prepare_channel(ide_drive_t *drive, unsigned int len,
+@@ -398,7 +392,7 @@
+ 	pd->xfer_sz = drive->io_32bit ? 4 : 2;
+ 	pd->ide_data_reg =  virt_to_bus((void *) IDE_DATA_REG);
+ 
+-#ifdef CONFIG_STB7100_FDMA
++#ifdef CONFIG_STM_DMA
+ 	/* Currently any attempt to set the FDMA transfer size smaller than
+ 	 * 32 bytes results in serious failure. Fortunately when the IDE device
+ 	 * is attached to EMI then the bottom bits of the address bus are
+@@ -516,9 +510,9 @@
+ 		if (! any_using_dma) {
+ 			free_dma(pd->dma_chan_id);
+ 			if (pd->read_configured)
+-				dma_free_descriptor(&pd->read_dmap);
++				dma_params_free(&pd->read_dmap);
+ 			if (pd->write_configured)
+-				dma_free_descriptor(&pd->write_dmap);
++				dma_params_free(&pd->write_dmap);
+ 			kfree(pd);
+ 			ide_set_hwifdata(hwif, NULL);
+ 		}
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0040/drivers/stm/fdma.h linux-2.6.17.14_stm22_0040/drivers/stm/fdma.h
+--- oldlinux-2.6.17.14_stm22_0040/drivers/stm/fdma.h	1970-01-01 01:00:00.000000000 +0100
++++ linux-2.6.17.14_stm22_0040/drivers/stm/fdma.h	2007-11-07 12:16:05.000000000 +0100
+@@ -0,0 +1,170 @@
++/*
++ * Copyright (C) 2005,7 STMicroelectronics Limited
++ * Authors: Mark Glaisher <Mark.Glaisher@st.com>
++ *          Stuart Menefy <stuart.menefy@st.com>
++ *
++ * May be copied or modified under the terms of the GNU General Public
++ * License.  See linux/COPYING for more information.
++ */
++
++#ifndef STB7100_FDMA_H
++#define STB7100_FDMA_H
++
++#define CHAN_ALL_ENABLE 				3
++
++/**cmd stat vals*/
++#define SET_NODE_COMP_PAUSE		    		1 <<30
++#define SET_NODE_COMP_IRQ				1 <<31
++#define NODE_ADDR_STATIC 				0x01
++#define NODE_ADDR_INCR	 				0x02
++
++#define SOURCE_ADDR 					0x05
++#define DEST_ADDR   					0x07
++
++#define CMDSTAT_FDMA_START_CHANNEL  			1
++#define CMDSTAT_FDMA_PAUSE_CHANNEL  			3
++
++
++#define STB7100_FDMA_CHANS              		16
++#define STB7109_FDMA_CHANS              		STB7100_FDMA_CHANS
++#define STB7200_FDMA_CHANS				32
++#define STB7100_REQ_LINES				32
++#define STB7200_REQ_LINES				64
++
++/*******************************/
++/*MBOX SETUP VALUES*/
++
++#define MBOX_CMD_PAUSE_CHANNEL		 		2
++#define MBOX_CMD_START_CHANNEL       			1
++#define CLEAR_WORD					0XFFFFFFFF
++
++#define IS_PACED_CHANNEL_SET(flags)(flags & 0x1f)
++#define ASSERT_NODE_BUS_ADDR(addr)( (((PXSEG(addr) == P0SEG) && addr))?1:0)
++#define IS_CHANNEL_PAUSED(fd,ch)(stb710x_get_engine_status(fd,ch)== FDMA_CHANNEL_PAUSED ?1:0)
++#define IS_CHANNEL_RUNNING(fd,ch)(stb710x_get_engine_status(fd,ch)== FDMA_CHANNEL_RUNNING ?1:0)
++#define IS_CHANNEL_IDLE(fd,ch)(stb710x_get_engine_status(fd,ch)== FDMA_CHANNEL_IDLE ?1:0)
++#define IS_TRANSFER_SG(parms)((MODE_SRC_SCATTER==parms->mode)||(MODE_DST_SCATTER==parms->mode )?1:0)
++#define MBOX_STR_CMD(ch) (MBOX_CMD_START_CHANNEL << (ch*2))
++#define CMD_STAT_REG(ch)(fd->io_base + fd->regs.fdma_cmd_statn + (ch * CMD_STAT_OFFSET))
++#define CH_PTR_REG(ch)(fd->io_base + fd->regs.fdma_ptrn  + (ch * CMD_STAT_OFFSET))
++
++#define IS_NODE_MALLOCED(priv)((priv.node!=0))
++
++
++#define IS_NODELIST_EQUAL(priv)((priv.sublist_nents == priv.alloced_nents))
++#define FDMA_CHAN(channel) ((struct channel_status*)(channel->priv_data))
++#define FDMA_DEV(channel) (FDMA_CHAN(channel)->fd)
++struct fdma_dev;
++
++typedef void (*pf)(void * data);
++
++#define CHANNEL_ERR_IRQ 		3
++#define CHANNEL_IRQ     		1
++
++#define FDMA_CHANNEL_IDLE 		0
++#define FDMA_CHANNEL_RUNNING 		2
++#define FDMA_CHANNEL_PAUSED 		3
++
++/*FDMA Channel FLAGS*/
++/*values below D28 are reserved for REQ_LINE parameter*/
++#define REQ_LINE_MASK 	0x1f
++
++#define CHAN_NUM(chan) ((chan) - chip.channel)
++
++typedef struct fdma_llu_entry {
++	u32 next_item;
++	u32 control;
++	u32 size_bytes;
++	u32 saddr;
++	u32 daddr;
++	u32 line_len;
++	u32 sstride;
++	u32 dstride;
++}fdma_llu_entry;
++
++
++struct llu_node{
++	struct fdma_llu_entry * virt_addr;
++	dma_addr_t dma_addr;
++};
++
++
++typedef struct dma_xfer_descriptor {
++	struct llu_node* (*extrapolate_fn)(struct stm_dma_params *xfer,
++					   struct dma_xfer_descriptor *desc,
++					   struct llu_node* nodes);
++	int	extrapolate_line_len;
++	struct fdma_llu_entry template_llu;
++
++	/* only used when this is the first parameter in a list */
++	struct 	llu_node *llu_nodes;
++	int 	alloced_nodes;
++}dma_xfer_descriptor;
++
++
++enum fdma_state {
++	FDMA_IDLE,
++	FDMA_CONFIGURED,
++	FDMA_RUNNING,
++	FDMA_STOPPING,
++	FDMA_PAUSING,
++	FDMA_PAUSED,
++};
++
++struct channel_status {
++	struct fdma_dev *fd;
++	enum fdma_state sw_state;
++	struct dma_channel * cur_cfg;
++	struct stm_dma_params *params;
++	struct tasklet_struct fdma_complete;
++	struct tasklet_struct fdma_error;
++};
++
++#define FDMA_NAME_LEN 20
++
++struct fdma_dev {
++	char				name[FDMA_NAME_LEN];
++	struct dma_info 		dma_info;
++	struct channel_status		channel[STB7100_FDMA_CHANS];
++	spinlock_t 			channel_lock;
++	struct resource *		phys_mem;
++	void __iomem			*io_base;
++	u32				firmware_loaded;
++	u8				ch_min;
++	u8 				ch_max;
++	u8				irq_val;
++	u8				fdma_num;
++	u32				ch_status_mask;
++	struct dma_pool 		*llu_pool;
++	wait_queue_head_t		fw_load_q;
++
++	struct fdma_regs		regs;
++
++	char *				fw_name;
++	struct fdma_fw			fw;
++	int				comp_ch;
++
++	/* This is used with the xbar to allocate the next available req line */
++	unsigned long 			req_lines_inuse;
++};
++
++typedef volatile unsigned long device_t;
++
++#define fdma_printk(level, fd, format, arg...)	\
++	dev_printk(level, &fd->dma_info.pdev->dev, format, ## arg);
++#define fdma_info(fd, format, arg...)		\
++	fdma_printk(KERN_INFO, fd, format, ## arg)
++
++#if defined(CONFIG_STM_DMA_DEBUG)
++#define fdma_dbg(fd, format, arg...)		\
++	fdma_printk(KERN_DEBUG, fd, format, ## arg)
++#else
++#define fdma_dbg(fd, format, arg...)		do { } while (0)
++#endif
++
++struct stm_dma_req {
++	struct channel_status *chan;
++	int local_req_line;
++};
++
++#endif
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0040/drivers/stm/fdma-xbar.c linux-2.6.17.14_stm22_0040/drivers/stm/fdma-xbar.c
+--- oldlinux-2.6.17.14_stm22_0040/drivers/stm/fdma-xbar.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-2.6.17.14_stm22_0040/drivers/stm/fdma-xbar.c	2007-11-07 12:16:05.000000000 +0100
+@@ -0,0 +1,88 @@
++#if defined(CONFIG_CPU_SUBTYPE_STX7200)
++
++/*TODO:- We need to think about how we handle concurrent / Parallel access to the
++ * xbar.  Between our DMAC's - if both engines owned by linux - can be handled
++ * by the spins below- but what about access from STAPI ?
++ *
++ * We have to think about the live/dead lock scenario where STAPI reprograms a
++ * paced signal against another channel, while either the channel number or the peripheral
++ * is used elsewhere -  each peripheral can only be programmed to
++ * one dmac+one channel at a time.
++ *
++ * Plus - xbar has byte registers - but they must be address per word !! meeper !
++ * Sounds like a bad day a Goodwood to me !
++ */
++static int demux_xbar_idx(struct fdma_chip * chip,int req_in)
++{
++	u8 dmx = readl(chip->xbar_base + (u32)req_in /sizeof(u32)+1);
++	switch(req_in %4 ){
++		case 0:
++			dmx &= 0xf;
++			break;
++		case 1:
++			dmx =(dmx & 0x00f0) >>8;
++			break;
++		case 2:
++			dmx =(dmx & 0xf00) >>16;
++			break;
++		case 3:
++			dmx =(dmx &0xf000) >>24;
++			break;
++		default:
++			printk("%s Illegal RQ value %x\n",__FUNCTION__,req_in %4);
++			return -EINVAL;
++	}
++	return (dmx & 0x1f);
++
++}
++static int demux_xbar_eng(struct fdma_chip * chip,int req_in)
++{
++	return 	(int)(readl(chip->xbar_base + (u32)req_in) & 0x20) >>6;
++}
++
++static int free_xbar_rq(struct fdma_chip * chip,int req_in)
++{
++	writel(0,chip->xbar_base +(u32)req_in);
++	return 0;
++}
++
++static int claim_xbar_rq(struct fdma_chip * chip,int req_in,int addr_req_out)
++{
++	u8 newval = (chip->hwid << 5) + (addr_req_out & 0x1F);
++	u32 xbar_cfg,temp,reg_val,irqflags;
++	u8 reg_offset = req_in /sizeof(u32)+1;
++
++	spin_lock_irqsave(&xbar_lock,irqflags);
++	xbar_cfg = readl(chip->xbar_base+ (u32)reg_offset);
++	switch(req_in %4 ){//work out which offset we are
++		case 0:
++			reg_val = (xbar_cfg & 0xfff0) |  newval ;
++			break;
++		case 1:
++			reg_val = (xbar_cfg & 0xff0f) | (newval << 8) ;
++			break;
++		case 2:
++			reg_val = (xbar_cfg & 0xf0ff) | (newval << 16) ;
++			break;
++		case 3:
++			reg_val = (xbar_cfg & 0x0fff) | (newval << 24) ;
++			break;
++		default:
++			printk("%s Illegal RQ value %x\n",__FUNCTION__,req_in %4);
++			return -EINVAL;
++	}
++	writel(reg_val,chip->xbar_base +(u32)reg_offset);
++	spin_unlock_irqrestore(&xbar_lock,irqflags);
++	return 0;
++}
++#elif defined(CONFIG_CPU_SUBTYPE_STB7100)
++/*we are just wrapping these here to nops for cleanliness elsewhere*/
++static int demux_xbar_idx(struct fdma_chip * chip,int rq_in){return rq_in;}
++static int fdma_program_xbar(struct fdma_chip * chip,int req_in,int addr_req_out){return 0;}
++static int free_xbar_rq(struct fdma_chip * chip,int req_in){return 0;}
++static int demux_xbar_eng(struct fdma_chip * chip,int req_in){return chip->hwid;}
++static int claim_xbar_rq(struct fdma_chip * chip,int req_in,int addr_req_out){return 0;}
++#else
++#error "FDMA: Invalid CPU Subtype select"
++#endif
++
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0040/drivers/stm/Kconfig linux-2.6.17.14_stm22_0040/drivers/stm/Kconfig
+--- oldlinux-2.6.17.14_stm22_0040/drivers/stm/Kconfig	2008-03-30 17:36:07.000000000 +0200
++++ linux-2.6.17.14_stm22_0040/drivers/stm/Kconfig	2007-11-07 12:16:06.000000000 +0100
+@@ -12,7 +12,7 @@
+ 
+ config STM_DMA
+ 	bool "STMicroelectronics DMA API"
+-	depends on CPU_SUBTYPE_STB7100
++	depends on CPU_SUBTYPE_STB7100 || CPU_SUBTYPE_STX7200
+ 	default y
+ 	---help---
+ 	  Selecting this option will provide support for STMicroelectronics'
+@@ -21,7 +21,7 @@
+ 	  to these free-running operations it also allows management of the
+ 	  paced-transfer peripherals on recent STM parts.
+ 
+-	  On STb7100 DMA support is vital for the correct operation of the
++	  On STb710x and STx7200 DMA support is vital for the correct operation of the
+ 	  sound system.
+ 
+ 	  If you have a device from STMicroelectronics, then say Y here.
+@@ -48,8 +48,19 @@
+ 	depends on STM_DMA
+ 	default n
+ 
+-config STB7100_FDMA
+-	def_bool STM_DMA && CPU_SUBTYPE_STB7100
++choice
++	prompt "FDMA firmware loading strategy"
++	depends on STM_DMA
++	default STM_DMA_FW_KERNEL
++
++config  STM_DMA_FW_USERSPACE
++	depends on EXPERIMENTAL
++	bool "Use hotplug firmware loading framework (EXPERIMENTAL)"
++
++config STM_DMA_FW_KERNEL
++	bool "Use firmware linked into the kernel image"
++
++endchoice
+ 
+ config STM_SSC
+        bool "STM Synchronous Serial Controller"
+@@ -93,7 +104,7 @@
+ 
+ choice
+ 	prompt "STMicroelectronics coprocessor support"
+-        depends on CPU_SUBTYPE_STM8000 || CPU_SUBTYPE_STB7100
++        depends on CPU_SUBTYPE_STM8000 || CPU_SUBTYPE_STB7100 || CPU_SUBTYPE_STX7200
+ 	default STM_COPROCESSOR
+         ---help---
+         Many of the ST system-on-chip devices have multiple CPUs, where a
+*** linux/drivers/stm/Makefile	2009-02-11 08:42:56.000000000 +0100
+--- Makefile.new	2009-02-11 08:43:08.000000000 +0100
+***************
+*** 2,8 ****
+  # Makefile for the STMicroelectronics device drivers.
+  #
+  
+! obj-$(CONFIG_STB7100_FDMA)	+= 710x_fdma2.o
+  obj-$(CONFIG_STM_COPROCESSOR)   += stm-coprocessor.o
+  obj-$(CONFIG_STM_SSC)           += stm_ssc.o
+  obj-$(CONFIG_STM_COPROCESSOR_FRMW)   += stm-coprocessor_frmw.o
+--- 2,8 ----
+  # Makefile for the STMicroelectronics device drivers.
+  #
+  
+! obj-$(CONFIG_STM_DMA)		+= 710x_fdma2.o
+  obj-$(CONFIG_STM_COPROCESSOR)   += stm-coprocessor.o
+  obj-$(CONFIG_STM_SSC)           += stm_ssc.o
+  obj-$(CONFIG_STM_COPROCESSOR_FRMW)   += stm-coprocessor_frmw.o
+*** linux/drivers/stm/710x_fdma2.c	2009-10-26 16:50:18.000000000 +0100
+--- FDMA/710x_fdma2.c	2009-10-26 16:48:12.000000000 +0100
+***************
+*** 227,237 ****
+  }
+  
+  static void fdma_start_channel(struct fdma_dev * fd,
+! 			      int ch_num,
+! 			      unsigned long start_addr)
+  {
+  	u32 cmd_sta_value = (start_addr  | CMDSTAT_FDMA_START_CHANNEL);
+  
+  	writel(cmd_sta_value,CMD_STAT_REG(ch_num));
+  	writel(MBOX_STR_CMD(ch_num),fd->io_base +fd->regs.fdma_cmd_set);
+  }
+--- 227,241 ----
+  }
+  
+  static void fdma_start_channel(struct fdma_dev * fd,
+! 			      int ch_num, unsigned long start_addr,
+! 			      unsigned long initial_count)
+  {
+  	u32 cmd_sta_value = (start_addr  | CMDSTAT_FDMA_START_CHANNEL);
+  
++ 	/* See comment in fdma_get_residue() for why we do this. */
++ 	writel(initial_count, fd->io_base + (ch_num *
++ 		NODE_DATA_OFFSET) + fd->regs.fdma_cntn);
++ 
+  	writel(cmd_sta_value,CMD_STAT_REG(ch_num));
+  	writel(MBOX_STR_CMD(ch_num),fd->io_base +fd->regs.fdma_cmd_set);
+  }
+***************
+*** 254,265 ****
+  		chan_num,
+  		(int)( readl(CMD_STAT_REG(chan_num))& 0x1c) >>2);
+  			/*err is bits 2-4*/
+! 	/*clearing the channel interface here will stop further
+! 	 * transactions after the err and reset the channel*/
+! 	writel(0,CMD_STAT_REG(chan_num));
+! 	writel(readl(fd->io_base + fd->regs.fdma_cmd_sta),
+! 	       fd->io_base + fd->regs.fdma_cmd_clr);
+! 	chan->sw_state = FDMA_IDLE;
+  
+  	spin_unlock(&fd->channel_lock);
+  
+--- 258,270 ----
+  		chan_num,
+  		(int)( readl(CMD_STAT_REG(chan_num))& 0x1c) >>2);
+  			/*err is bits 2-4*/
+! 
+! 	/* According to the spec, in case of error transfer "may be
+! 	* aborted" (or may not be, sigh) so let's make the situation
+! 	* clear and stop it explicitly now. */
+! 	writel(MBOX_CMD_PAUSE_CHANNEL << (chan_num * 2),
+! 		       fd->io_base + fd->regs.fdma_cmd_set);
+! 	chan->sw_state = FDMA_STOPPING;
+  
+  	spin_unlock(&fd->channel_lock);
+  
+***************
+*** 866,904 ****
+  static  int stb710x_fdma_get_residue(struct dma_channel *chan)
+  {
+  	struct fdma_dev *fd = FDMA_DEV(chan);
+! 	void __iomem *chan_base = fd->io_base + (chan->chan * NODE_DATA_OFFSET);
+  	unsigned long irqflags;
+! 	unsigned long total = 0,count=0;
+! 	void *first_ptr=0;
+! 	fdma_llu_entry *cur_ptr;
+  
+  	spin_lock_irqsave(&fd->channel_lock, irqflags);
+! 	count = readl(chan_base +fd->regs.fdma_cntn);
+! 	/*first read the current node data*/
+! 	first_ptr = (void *) readl(chan_base + fd->regs.fdma_ptrn);
+! 	if(! first_ptr)
+! 		goto list_complete;
+! 
+! 	first_ptr = P2SEGADDR(first_ptr);
+! 	/* Accumulate the bytes remaining in the list */
+! 	cur_ptr = first_ptr;
+! 	do {
+! 		if(first_ptr >=(void*)P2SEGADDR(cur_ptr->next_item)
+! 		   || cur_ptr->next_item ==0)
+! 			goto list_complete;
+! 
+! 		total += cur_ptr->size_bytes;
+! 	} while ((cur_ptr = P2SEGADDR((fdma_llu_entry *) cur_ptr->next_item))!=0);
+! list_complete:
+  	spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+! 	total+= count;
+! 	return total;
+  }
+  
+  /*must only be called when channel is in pasued state*/
+  static int stb710x_fdma_unpause(struct fdma_dev * fd,struct dma_channel * channel)
+  {
+  	struct channel_status *chan = FDMA_CHAN(channel);
+  	unsigned long irqflags=0;
+  
+  	spin_lock_irqsave(&fd->channel_lock,irqflags);
+--- 871,953 ----
+  static  int stb710x_fdma_get_residue(struct dma_channel *chan)
+  {
+  	struct fdma_dev *fd = FDMA_DEV(chan);
+! 	//void __iomem *chan_base = fd->io_base + (chan->chan * NODE_DATA_OFFSET);
+  	unsigned long irqflags;
+! 	unsigned long count=0;
+! 	//void *first_ptr=0;
+! 	//fdma_llu_entry *cur_ptr;
+! 	struct channel_status *channel = FDMA_CHAN(chan);
+! 	struct stm_dma_params *params = channel->params;
+  
+  	spin_lock_irqsave(&fd->channel_lock, irqflags);
+! 
+! 	if (likely(channel->sw_state != FDMA_IDLE)) {
+! 		struct dma_xfer_descriptor *desc =
+! 			(struct dma_xfer_descriptor *)params->priv;
+! 		void __iomem *chan_base = fd->io_base +
+! 				(chan->chan * NODE_DATA_OFFSET);
+! 		unsigned long current_node_phys;
+! 		unsigned long stat1, stat2;
+! 		struct llu_node *current_node;
+! 		int node_num;
+! 
+! 		/* Get info about current node */
+! 		do {
+! 			stat1 = readl(CMD_STAT_REG(chan->chan));
+! 			count = readl(chan_base + fd->regs.fdma_cntn);
+! 			stat2 = readl(CMD_STAT_REG(chan->chan));
+! 		} while (stat1 != stat2);
+! 
+! 		current_node_phys = stat1 & ~0x1f;
+! 		for (node_num = 0, current_node = desc->llu_nodes;
+! 				current_node->dma_addr != current_node_phys;
+! 				node_num++, current_node++)
+! 			BUG_ON(node_num == desc->alloced_nodes);
+! 
+! 		switch (stat1 & 3) {
+! 		case FDMA_CHANNEL_IDLE:
+! 			/* Channel has stopped, but we haven't taken
+! 			 * the interrupt to change the ->sw_state
+! 			 * field yet. We could legitimatly return zero
+! 			 * here, but instead pretend we haven't quite
+! 			 * finished yet. Is this the right thing to
+! 			 * do? */
+! 			count = 1;
+! 			goto unlock;
+! 
+! 		case FDMA_CHANNEL_RUNNING:
+! 		case FDMA_CHANNEL_PAUSED:
+! 			/* Unfortuntaly the firmware appears to modify
+! 			 * CMD_STAT before it has modifed the COUNT.
+! 			 * However we write the count in
+! 			 * fdma_start_channel() so can assume it is
+! 			 * valid. */
+! 			break;
+! 
+! 		case CMDSTAT_FDMA_START_CHANNEL:
+! 			/* Channel hasn't started running yet, so count
+! 			 * hasn't yet been loaded from the node. But again
+! 			 * the value was written in fdma_start_channel()
+! 			 * so the value read from hardware is valid. */
+! 			break;
+! 		}
+! 
+! 		while (++node_num < desc->alloced_nodes) {
+! 			current_node++;
+! 			count += current_node->virt_addr->size_bytes;
+! 		}
+! 	}
+! 
+! unlock:
+  	spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+! 	return count;
+  }
+  
+  /*must only be called when channel is in pasued state*/
+  static int stb710x_fdma_unpause(struct fdma_dev * fd,struct dma_channel * channel)
+  {
+  	struct channel_status *chan = FDMA_CHAN(channel);
++ 	u32 cmd_sta_value;
+  	unsigned long irqflags=0;
+  
+  	spin_lock_irqsave(&fd->channel_lock,irqflags);
+***************
+*** 907,912 ****
+--- 956,966 ----
+  		return -EBUSY;
+  	}
+  
++ 	cmd_sta_value = readl(CMD_STAT_REG(channel->chan));
++ 	cmd_sta_value &= ~CMDSTAT_FDMA_CMD_MASK;
++ 	cmd_sta_value |= CMDSTAT_FDMA_RESTART_CHANNEL;
++ 	writel(cmd_sta_value, CMD_STAT_REG(channel->chan));
++ 	
+  	writel(MBOX_CMD_START_CHANNEL << (channel->chan*2),
+  	       fd->io_base + fd->regs.fdma_cmd_set);
+  	chan->sw_state = FDMA_RUNNING;
+***************
+*** 960,966 ****
+  		return 0;
+  	}
+  
+! 	return ENOSYS;
+  }
+  
+  static int stb710x_fdma_stop(struct fdma_dev * fd,struct dma_channel *channel)
+--- 1014,1020 ----
+  		return 0;
+  	}
+  
+! 	return -ENOSYS;
+  }
+  
+  static int stb710x_fdma_stop(struct fdma_dev * fd,struct dma_channel *channel)
+***************
+*** 1175,1180 ****
+--- 1229,1235 ----
+  	spin_lock_irqsave(&fd->channel_lock,irq_flags);
+  	if (chan->sw_state != FDMA_IDLE) {
+  		spin_unlock_irqrestore(&fd->channel_lock,irq_flags);
++ 		printk("FDMA not idle: %d\n", chan->sw_state);
+  		fdma_dbg(fd, "%s channel not idle\n",__FUNCTION__);
+  		return -EBUSY;
+  	}
+***************
+*** 1223,1229 ****
+  
+  	BUG_ON(!(IS_CHANNEL_IDLE(fd,channel->chan)));
+  
+! 	fdma_start_channel(fd,channel->chan, desc->llu_nodes->dma_addr);
+  	chan->sw_state = FDMA_RUNNING;
+  
+  	spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+--- 1278,1285 ----
+  
+  	BUG_ON(!(IS_CHANNEL_IDLE(fd,channel->chan)));
+  
+! 	fdma_start_channel(fd,channel->chan, desc->llu_nodes->dma_addr,
+! 			desc->llu_nodes->virt_addr->size_bytes);
+  	chan->sw_state = FDMA_RUNNING;
+  
+  	spin_unlock_irqrestore(&fd->channel_lock, irqflags);
+*** linux/drivers/stm/fdma.h	2009-10-26 16:50:18.000000000 +0100
+--- FDMA/fdma.h	2009-10-26 16:48:19.000000000 +0100
+***************
+*** 21,28 ****
+  #define SOURCE_ADDR 					0x05
+  #define DEST_ADDR   					0x07
+  
+! #define CMDSTAT_FDMA_START_CHANNEL  			1
+! #define CMDSTAT_FDMA_PAUSE_CHANNEL  			3
+  
+  
+  #define STB7100_FDMA_CHANS              		16
+--- 21,29 ----
+  #define SOURCE_ADDR 					0x05
+  #define DEST_ADDR   					0x07
+  
+! #define CMDSTAT_FDMA_CMD_MASK				0x1f
+! #define CMDSTAT_FDMA_START_CHANNEL			1
+! #define CMDSTAT_FDMA_RESTART_CHANNEL			0
+  
+  
+  #define STB7100_FDMA_CHANS              		16

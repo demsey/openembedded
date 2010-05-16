@@ -1,0 +1,40 @@
+*** linux/arch/sh/Kconfig	2009-05-30 19:02:28.000000000 +0200
+--- UFS922_Orig/sched/Kconfig	2009-05-30 18:57:40.000000000 +0200
+***************
+*** 976,978 ****
+--- 976,980 ----
+  source "crypto/Kconfig"
+  
+  source "lib/Kconfig"
++ 
++ source "kernel/Kconfig.sched"
+*** linux/kernel/sched.c	2009-05-16 19:37:06.000000000 +0200
+--- UFS922_Orig/sched/sched.c	2009-05-30 18:38:31.000000000 +0200
+***************
+*** 2915,2924 ****
+--- 2915,2926 ----
+  	 * Otherwise, whine if we are scheduling when we should not be.
+  	 */
+  	if (unlikely(in_atomic() && !current->exit_state)) {
++ #ifndef CONFIG_NO_SCHED
+  		printk(KERN_ERR "BUG: scheduling while atomic: "
+  			"%s/0x%08x/%d\n",
+  			current->comm, preempt_count(), current->pid);
+  		dump_stack();
++ #endif
+  	}
+  	profile_hit(SCHED_PROFILING, __builtin_return_address(0));
+  
+*** /dev/null	2009-04-14 12:32:53.000000000 +0200
+--- linux/kernel/Kconfig.sched	2009-05-30 19:07:17.000000000 +0200
+***************
+*** 0 ****
+--- 1,8 ----
++ # TDT scheduling en-/disabling config
++ 
++ config NO_SCHED
++ 	bool "Activate no scheduling"
++ 	help
++ 	  Disable the output of the stack when scheduling. This is
++ 	  not proper but sometimes the only way to debug.
++ 

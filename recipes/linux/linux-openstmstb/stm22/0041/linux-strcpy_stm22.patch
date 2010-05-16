@@ -1,0 +1,20 @@
+*** linux/arch/sh/kernel/sh_ksyms.c	2009-11-22 15:19:36.000000000 +0100
+--- STRCPY/sh_ksyms.c	2009-11-22 15:20:18.000000000 +0100
+***************
+*** 96,102 ****
+  #endif
+  
+  /* If we remove -ffreestanding from Makefile, then this needs to be exported */
+! /* EXPORT_SYMBOL(strcpy); */
+  
+  #ifdef CONFIG_CPU_SH4
+  /* needed by some modules */
+--- 96,103 ----
+  #endif
+  
+  /* If we remove -ffreestanding from Makefile, then this needs to be exported */
+! /* Dagobert: Need to export this if we use CONFIG_CC_OPTIMIZE_FOR_SIZE */
+! EXPORT_SYMBOL(strcpy);
+  
+  #ifdef CONFIG_CPU_SH4
+  /* needed by some modules */

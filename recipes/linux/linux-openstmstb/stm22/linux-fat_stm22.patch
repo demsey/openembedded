@@ -1,0 +1,15 @@
+--- linux/fs/fat/misc.c	2009-11-18 18:39:53.000000000 +0100
++++ linux/fs/fat/misc.c	2009-11-18 18:07:29.000000000 +0100
+@@ -27,10 +27,12 @@
+ 	va_end(args);
+ 	printk("\n");
+ 
++/*
+ 	if (!(s->s_flags & MS_RDONLY)) {
+ 		s->s_flags |= MS_RDONLY;
+ 		printk(KERN_ERR "    File system has been set read-only\n");
+ 	}
++*/
+ }
+ 
+ EXPORT_SYMBOL_GPL(fat_fs_panic);

@@ -1,0 +1,59 @@
+--- linux/fs/squashfs/LzmaDecode.h      2009-09-15 16:01:53.789834382 +0200
++++ linux/fs/squashfs/LzmaDecode.h      2009-09-15 16:01:40.477831660 +0200
+@@ -32,7 +32,7 @@
+ /* It can increase speed on some 32-bit CPUs,
+    but memory usage will be doubled in that case */
+
+-/* #define _LZMA_LOC_OPT */
++#define _LZMA_LOC_OPT
+ /* Enable local speed optimizations inside code */
+
+ #ifndef UInt32
+
+--- linux/fs/cifs/cifspdu.h     2006-06-18 03:49:35.000000000 +0200
++++ linux/fs/cifs/cifspdu.h     2009-09-17 10:08:12.104342641 +0200
+@@ -95,7 +95,7 @@
+ /*
+  * Starting value for maximum SMB size negotiation
+  */
+-#define CIFS_MAX_MSGSIZE (4*4096)
++#define CIFS_MAX_MSGSIZE (16*4096)
+
+ /*
+  * Size of encrypted user password in bytes
+
+--- linux/include/net/af_unix.h	2009-11-22 00:08:19.000000000 +0100
++++ linux/include/net/af_unix.h	2009-11-22 00:08:47.000000000 +0100
+@@ -11,7 +11,7 @@
+ extern void unix_notinflight(struct file *fp);
+ extern void unix_gc(void);
+ 
+-#define UNIX_HASH_SIZE	256
++#define UNIX_HASH_SIZE	16
+ 
+ extern struct hlist_head unix_socket_table[UNIX_HASH_SIZE + 1];
+ extern spinlock_t unix_table_lock;
+
+--- linux/include/linux/tty.h	2009-11-22 01:01:58.000000000 +0100
++++ linux/include/linux/tty.h	2009-11-22 01:02:52.000000000 +0100
+@@ -36,7 +36,7 @@
+ #define NR_PTYS	CONFIG_LEGACY_PTY_COUNT   /* Number of legacy ptys */
+ #define NR_UNIX98_PTY_DEFAULT	4096      /* Default maximum for Unix98 ptys */
+ #define NR_UNIX98_PTY_MAX	(1 << MINORBITS) /* Absolute limit */
+-#define NR_LDISCS		16
++#define NR_LDISCS		4
+ 
+ /*
+  * This character is the same as _POSIX_VDISABLE: it cannot be used as
+
+--- linux/include/net/protocol.h	2009-11-24 16:02:46.000000000 +0100
++++ linux/include/net/protocol.h	2009-11-24 16:03:54.000000000 +0100
+@@ -30,7 +30,7 @@
+ #include <linux/ipv6.h>
+ #endif
+ 
+-#define MAX_INET_PROTOS	256		/* Must be a power of 2		*/
++#define MAX_INET_PROTOS	32		/* Must be a power of 2		*/
+ 
+ 
+ /* This is used to register protocols. */

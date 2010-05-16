@@ -1,0 +1,197 @@
+--- linux/drivers/usb/serial/ftdi_sio.c	2008-04-02 16:06:28.000000000 +0200
++++ linux/drivers/usb/serial/ftdi_sio.c	2009-12-30 15:49:00.000000000 +0100
+@@ -266,7 +266,7 @@
+  */
+ #define DRIVER_VERSION "v1.4.3"
+ #define DRIVER_AUTHOR "Greg Kroah-Hartman <greg@kroah.com>, Bill Ryder <bryder@sgi.com>, Kuba Ober <kuba@mareimbrium.org>"
+-#define DRIVER_DESC "USB FTDI Serial Converters Driver"
++#define DRIVER_DESC "USB FTDI Serial Converters Driver [sh4-Mod v0.06]"
+ 
+ static int debug;
+ static __u16 vendor = FTDI_VID;
+@@ -682,7 +682,7 @@
+ static int update_mctrl(struct usb_serial_port *port, unsigned int set, unsigned int clear)
+ {
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+-	char *buf;
++	unsigned char *buf;
+ 	unsigned urb_value;
+ 	int rv;
+ 
+@@ -691,7 +691,8 @@
+ 		return 0;	/* no change */
+ 	}
+ 
+-	buf = kmalloc(1, GFP_NOIO);
++	//buf = kmalloc(1, GFP_NOIO);
++	buf = kzalloc (2, GFP_KERNEL);
+ 	if (!buf) {
+ 		return -ENOMEM;
+ 	}
+@@ -739,13 +740,14 @@
+ static int change_speed(struct usb_serial_port *port)
+ {
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+-	char *buf;
++	unsigned char *buf;
+         __u16 urb_value;
+ 	__u16 urb_index;
+ 	__u32 urb_index_value;
+ 	int rv;
+ 
+-	buf = kmalloc(1, GFP_NOIO);
++	//buf = kmalloc(1, GFP_NOIO);
++	buf = kzalloc (1, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+@@ -1035,7 +1037,8 @@
+ 	struct usb_serial_port *port = to_usb_serial_port(dev);
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ 	struct usb_device *udev;
+-	char buf[1];
++	unsigned char *buf;
++	buf = kzalloc (2, GFP_KERNEL);
+ 	int v = simple_strtoul(valbuf, NULL, 10);
+ 	int rv = 0;
+ 	
+@@ -1050,6 +1053,7 @@
+ 			     v, priv->interface, 
+ 			     buf, 0, WDR_TIMEOUT);
+ 	
++	kfree(buf);
+ 	if (rv < 0) {
+ 		dev_err(dev, "Unable to write latency timer: %i", rv);
+ 		return -EIO;
+@@ -1066,7 +1070,9 @@
+ 	struct usb_serial_port *port = to_usb_serial_port(dev);
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ 	struct usb_device *udev;
+-	char buf[1];
++	unsigned char *buf;
++
++	buf = kzalloc (2, GFP_KERNEL);
+ 	int v = simple_strtoul(valbuf, NULL, 10);
+ 	int rv = 0;
+ 	
+@@ -1085,7 +1091,7 @@
+ 		dbg("Unable to write event character: %i", rv);
+ 		return -EIO;
+ 	}
+-	
++	kfree(buf);
+ 	return count;
+ }
+ 
+@@ -1273,9 +1279,11 @@
+ 	struct usb_device *dev = port->serial->dev;
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ 	unsigned long flags;
+-	
++	unsigned char *buf;
+ 	int result = 0;
+-	char buf[1]; /* Needed for the usb_control_msg I think */
++	
++
++	buf = kzalloc (2, GFP_KERNEL);
+ 
+ 	dbg("%s", __FUNCTION__);
+ 
+@@ -1288,7 +1296,7 @@
+ 			FTDI_SIO_RESET_REQUEST, FTDI_SIO_RESET_REQUEST_TYPE, 
+ 			FTDI_SIO_RESET_SIO, 
+ 			priv->interface, buf, 0, WDR_TIMEOUT);
+-
++	kfree (buf);
+ 	/* Termios defaults are set by usb_serial_init. We don't change
+ 	   port->tty->termios - this would loose speed settings, etc.
+ 	   This is same behaviour as serial.c/rs_open() - Kuba */
+@@ -1334,8 +1342,8 @@
+ { /* ftdi_close */
+ 	unsigned int c_cflag = port->tty->termios->c_cflag;
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+-	char buf[1];
+-
++	char *buf;
++	buf = kzalloc (2, GFP_KERNEL);
+ 	dbg("%s", __FUNCTION__);
+ 
+ 	if (c_cflag & HUPCL){
+@@ -1353,6 +1361,8 @@
+ 		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} /* Note change no line if hupcl is off */
+ 
++	kfree(buf);
++
+ 	/* cancel any scheduled reading */
+ 	cancel_delayed_work(&priv->rx_work);
+ 	flush_scheduled_work();
+@@ -1807,8 +1817,8 @@
+ {
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ 	__u16 urb_value = 0; 
+-	char buf[1];
+-	
++	unsigned char *buf;
++	buf = kzalloc (2, GFP_KERNEL);
+ 	/* break_state = -1 to turn on break, and 0 to turn off break */
+ 	/* see drivers/char/tty_io.c to see it used */
+ 	/* last_set_data_urb_value NEVER has the break bit set in it */
+@@ -1844,13 +1854,14 @@
+ 	unsigned int cflag = port->tty->termios->c_cflag;
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+ 	__u16 urb_value; /* will hold the new flags */
+-	char buf[1]; /* Perhaps I should dynamically alloc this? */
++	unsigned char *buf;
++	
+ 	
+ 	// Added for xon/xoff support
+ 	unsigned int iflag = port->tty->termios->c_iflag;
+ 	unsigned char vstop;
+ 	unsigned char vstart;
+-	
++	buf = kzalloc (2, GFP_KERNEL);
+ 	dbg("%s", __FUNCTION__);
+ 
+ 	/* Force baud rate if this device requires it, unless it is set to B0. */
+@@ -1984,6 +1995,7 @@
+ 		}
+ 		
+ 	}
++	kfree(buf);
+ 	return;
+ } /* ftdi_termios */
+ 
+@@ -1991,8 +2003,11 @@
+ static int ftdi_tiocmget (struct usb_serial_port *port, struct file *file)
+ {
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+-	unsigned char buf[2];
++	unsigned char *buf;
+ 	int ret;
++	int r1;
++
++	buf = kzalloc (3, GFP_KERNEL);
+ 
+ 	dbg("%s TIOCMGET", __FUNCTION__);
+ 	switch (priv->chip_type) {
+@@ -2028,13 +2043,16 @@
+ 	default:
+ 		return -EFAULT;
+ 		break;
+-	}
+-	
+-	return  (buf[0] & FTDI_SIO_DSR_MASK ? TIOCM_DSR : 0) |
++	}	
++
++	r1 =  (buf[0] & FTDI_SIO_DSR_MASK ? TIOCM_DSR : 0) |
+ 		(buf[0] & FTDI_SIO_CTS_MASK ? TIOCM_CTS : 0) |
+ 		(buf[0]  & FTDI_SIO_RI_MASK  ? TIOCM_RI  : 0) |
+ 		(buf[0]  & FTDI_SIO_RLSD_MASK ? TIOCM_CD  : 0) |
+ 		priv->last_dtr_rts;			
++
++	kfree(buf);
++	return(r1);
+ }
+ 
+ static int ftdi_tiocmset(struct usb_serial_port *port, struct file * file, unsigned int set, unsigned int clear)

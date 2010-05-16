@@ -1,0 +1,1161 @@
+*** linux/arch/sh/boards/st/stb7100ref/setup.c	2009-08-29 15:22:23.000000000 +0200
+--- PatchedFiles/setup.c	2009-09-28 11:06:15.000000000 +0200
+***************
+*** 16,30 ****
+  #include <linux/stpio.h>
+  #include <linux/st_soc.h>
+  #include <linux/delay.h>
+  #include <linux/platform_device.h>
+  #include <linux/mtd/physmap.h>
+  #include <linux/spi/spi.h>
+  #include <asm/io.h>
+! #include <linux/stm/710x_fdma.h>
+  #include <linux/stm/7100_fdma2_firmware.h>
+  #include <linux/stm/7109_cut2_fdma2_firmware.h>
+  #include <linux/stm/7109_cut3_fdma2_firmware.h>
+  
+  #define SYSCONF_BASE 0xb9001000
+  #define SYSCONF_DEVICEID	(SYSCONF_BASE + 0x000)
+  #define SYSCONF_SYS_STA(n)	(SYSCONF_BASE + 0x008 + ((n) * 4))
+--- 16,58 ----
+  #include <linux/stpio.h>
+  #include <linux/st_soc.h>
+  #include <linux/delay.h>
++ #include <linux/bpa2.h>
+  #include <linux/platform_device.h>
+  #include <linux/mtd/physmap.h>
+  #include <linux/spi/spi.h>
+  #include <asm/io.h>
+! 
+! #include <linux/stm/fdma-plat.h>
+! #include <linux/stm/fdma-reqs.h>
+! 
+! #ifdef CONFIG_STM_DMA
+! 
+  #include <linux/stm/7100_fdma2_firmware.h>
+  #include <linux/stm/7109_cut2_fdma2_firmware.h>
+  #include <linux/stm/7109_cut3_fdma2_firmware.h>
+  
++ #endif
++ 
++ const char *LMI_VID_partalias[] = { "BPA2_Region1", "coredisplay-video", "v4l2-video-buffers", "gfx-memory", NULL };
++ const char *LMI_SYS_partalias[] = { "BPA2_Region0", "bigphysarea",  NULL };
++ 
++ static struct bpa2_partition_desc bpa2_parts_table[] = {
++         {
++                 .name  = "LMI_VID",
++                 .start = 0x10800000,
++                 .size  = 0x03800000,
++                 .flags = 0,
++                 .aka   = LMI_VID_partalias
++         },
++         {
++                 .name  = "LMI_SYS",
++                 .start = 0,
++                 .size  = 0x01200000,
++                 .flags = 0,
++                 .aka   = LMI_SYS_partalias
++         }
++ };
++ 
+  #define SYSCONF_BASE 0xb9001000
+  #define SYSCONF_DEVICEID	(SYSCONF_BASE + 0x000)
+  #define SYSCONF_SYS_STA(n)	(SYSCONF_BASE + 0x008 + ((n) * 4))
+***************
+*** 39,45 ****
+  void stb7109eth_hw_setup(void)
+  {
+  	unsigned long sysconf;
+- 	static struct stpio_pin *ethreset;
+  
+  	sysconf = ctrl_inl(SYSCONF_SYS_CFG(7));
+  	sysconf |= (DVO_ETH_PAD_DISABLE | ETH_IF_ON);
+--- 67,72 ----
+***************
+*** 51,59 ****
+  	sysconf |= 0x0000000f;
+  	ctrl_outl(sysconf, SYSCONF_SYS_CFG(10));
+  
+- 	/* Reset the PHY */
+- 	ethreset = stpio_request_pin(2, 4, "STE100P_RST", STPIO_OUT);
+- 	stpio_set_pin(ethreset, 1);
+  	return;
+  }
+  #endif
+--- 78,83 ----
+***************
+*** 68,74 ****
+  	unsigned long chip_revision, chip_7109;
+  	static struct stpio_pin *usbpower, *ethreset;
+  
+! 	printk("STMicroelectronics STb7100 Reference board initialisation\n");
+  
+  	sysconf = ctrl_inl(SYSCONF_DEVICEID);
+  	chip_7109 = (((sysconf >> 12) & 0x3ff) == 0x02c);
+--- 92,98 ----
+  	unsigned long chip_revision, chip_7109;
+  	static struct stpio_pin *usbpower, *ethreset;
+  
+! 	printk("Fortis/hdbox FS-9200HD PVR board initialisation\n");
+  
+  	sysconf = ctrl_inl(SYSCONF_DEVICEID);
+  	chip_7109 = (((sysconf >> 12) & 0x3ff) == 0x02c);
+***************
+*** 140,145 ****
+--- 164,172 ----
+  #ifdef CONFIG_STM_PWM
+  	stpio_request_pin(4, 7, "PWM", STPIO_ALT_OUT);
+  #endif
++ 	printk("LOAD bpa2_parts_table\n");
++         bpa2_init(bpa2_parts_table, ARRAY_SIZE(bpa2_parts_table));
++ 	printk("END bpa2_parts_table\n");
+  }
+  
+  const char *get_system_type(void)
+***************
+*** 189,195 ****
+  static struct plat_ssc_data ssc_private_info = {
+  	.capability  =
+  		(SSC_I2C_CAPABILITY << (0*2)) |
+! 		(SSC_SPI_CAPABILITY << (1*2)) |
+  		(SSC_I2C_CAPABILITY << (2*2)),
+  	.pio         = ssc_pio
+  };
+--- 216,222 ----
+  static struct plat_ssc_data ssc_private_info = {
+  	.capability  =
+  		(SSC_I2C_CAPABILITY << (0*2)) |
+! 		(SSC_I2C_CAPABILITY << (1*2)) |
+  		(SSC_I2C_CAPABILITY << (2*2)),
+  	.pio         = ssc_pio
+  };
+***************
+*** 350,356 ****
+  
+  static struct plat_stmmacenet_data eth7109_private_data = {
+  	.bus_id = 0,
+! 	.phy_addr = 14,
+  	.phy_mask = 1,
+  	.phy_name = "ste100p",
+  	.pbl = 1,
+--- 377,383 ----
+  
+  static struct plat_stmmacenet_data eth7109_private_data = {
+  	.bus_id = 0,
+! 	.phy_addr = 2,
+  	.phy_mask = 1,
+  	.phy_name = "ste100p",
+  	.pbl = 1,
+***************
+*** 384,399 ****
+  	}
+  };
+  
+- static struct platform_device lirc_device = {
+- 	.name           = "lirc",
+- 	.id             = -1,
+- 	.num_resources  = ARRAY_SIZE(lirc_resource),
+- 	.resource       = lirc_resource,
+- 	.dev = {
+- 	           .platform_data = &lirc_private_info
+- 	}
+- };
+- 
+  static struct resource sata_resource[]= {
+  	[0] = {
+  		.start = 0x18000000 + 0x01209000,
+--- 411,416 ----
+***************
+*** 515,609 ****
+  	.resource	= &physmap_flash_resource,
+  };
+  
+! /*
+!  *  FDMA parameters
+!  */
+! 
+! static fdmareq_RequestConfig_t stb7100_fdma_req_config[] ={
+! /*=========================== 7100 ============================================*/
+! 
+! /*
+! 		Req  			RnW,    Opcode,  Transfer Incr addr,   Hold_off Initiator), */
+! /*           	1-32     				 cnt 1-4  On/Off       0-2        Used) */
+  
+! /*0*/{STB7100_FDMA_REQ_SPDIF_TEST,  		WRITE,  OPCODE_4,  1,     ENABLE_FLG,  0,     1 },/* SPDIF Testing */
+! /*1*/{STB7100_FDMA_REQ_NOT_CONN_1,   		UNUSED, UNUSED,    1,     UNUSED,      0,     1 },/* NOT CONNECTED */
+! /*2*/{STB7100_FDMA_REQ_NOT_CONN_2,   		UNUSED, UNUSED,    1,     UNUSED,      0,     1 },/* NOT CONNECTED */
+! /*3*/{STB7100_FDMA_REQ_VIDEO_HDMI,   		READ,   OPCODE_8,  1,     DISABLE_FLG, 0,     1 },/* Video HDMI */
+! /*4*/{STB7100_FDMA_REQ_DISEQC_HALF_EMPTY,	WRITE,  OPCODE_4,  2,     DISABLE_FLG, 0,     1 },/* DiseqC half empty */
+! /*5*/{STB7100_FDMA_REQ_DISEQC_HALF_FULL, 	READ,   OPCODE_4,  2,     DISABLE_FLG, 0,     1 },/* DiseqC half full */
+! /*6*/{STB7100_FDMA_REQ_SH4_SCIF_RX,   		READ,   OPCODE_4,  2,     DISABLE_FLG, 0,     1 },  /* SH4/SCIF */
+! /*7*/{STB7100_FDMA_REQ_SH4_SCIF_TX,   		WRITE,  OPCODE_4,  2,     DISABLE_FLG, 0,     1 },  /* SH4/SCIF */
+! /*8*/{STB7100_FDMA_REQ_SSC_0_RX,   		READ,   OPCODE_2,  4,     DISABLE_FLG, 0,     1 },  /* SSC 0 rxbuff full */
+! /*9*/{STB7100_FDMA_REQ_SSC_1_RX,   		READ,   OPCODE_2,  4,     DISABLE_FLG, 0,     1 },  /* SSC 1 rxbuff full */
+! /*10*/{STB7100_FDMA_REQ_SSC_2_RX,  		READ,   OPCODE_2,  4,     DISABLE_FLG, 0,     1 },  /* SSC 2 rxbuff full */
+! /*11*/{STB7100_FDMA_REQ_SSC_0_TX,  		WRITE,  OPCODE_2,  4,     DISABLE_FLG, 0,     1 },  /* SSC 0 txbuff empty */
+! /*12*/{STB7100_FDMA_REQ_SSC_1_TX,  		WRITE,  OPCODE_2,  4,     DISABLE_FLG, 0,     1 },  /* SSC 1 txbuff empty */
+! /*13*/{STB7100_FDMA_REQ_SSC_2_TX,  		WRITE,  OPCODE_2,  4,     DISABLE_FLG, 0,     1 },  /* SSC 2 txbuff empty */
+! /*14*/{STB7100_FDMA_REQ_UART_0_RX,  		READ,   OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 0 rx half full */
+! /*15*/{STB7100_FDMA_REQ_UART_1_RX,  		READ,   OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 1 rx half full */
+! /*16*/{STB7100_FDMA_REQ_UART_2_RX,  		READ,   OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 2 rx half full */
+! /*17*/{STB7100_FDMA_REQ_UART_3_RX,  		READ,   OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 3 rx half full */
+! /*18*/{STB7100_FDMA_REQ_UART_0_TX,  		WRITE,  OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 0 tx half empty */
+! /*19*/{STB7100_FDMA_REQ_UART_1_TX,  		WRITE,  OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 1 tx half empty */
+! /*20*/{STB7100_FDMA_REQ_UART_2_TX,  		WRITE,  OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 2 tx half emtpy */
+! /*21*/{STB7100_FDMA_REQ_UART_3_TX,  		WRITE,  OPCODE_1,  1,     DISABLE_FLG, 0,     1 },  /* UART 3 tx half empty */
+! /*22*/{STB7100_FDMA_REQ_EXT_PIO_0,  		READ,   OPCODE_4,  1,     DISABLE_FLG, 0,     1 },  /* External 0 (PIO2bit5) hi priority */
+! /*23*/{STB7100_FDMA_REQ_EXT_PIO_1,  		READ,   OPCODE_4,  1,     DISABLE_FLG, 0,     1 },  /* External 1 (PIO2bit6) hi priority */
+! /*24*/{STB7100_FDMA_REQ_CPXM_DECRYPT,  		READ,   OPCODE_4,  4,     DISABLE_FLG, 0,     1 },  /* CPxM decrypted data request */
+! /*25*/{STB7100_FDMA_REQ_CPXM_ENCRYPT,  		WRITE,  OPCODE_4,  4,     DISABLE_FLG, 0,     1 },  /* CPxm encrypted data request */
+! /*26*/{STB7100_FDMA_REQ_PCM_0,  		WRITE,  OPCODE_4,  1,     DISABLE_FLG, 0,     1 },  /* Audio PCM Player 0 */
+! /*27*/{STB7100_FDMA_REQ_PCM_1,  		WRITE,  OPCODE_4,  1,     DISABLE_FLG, 0,     1 },  /* Audio PCM Player 1 */
+! /*28*/{STB7100_FDMA_REQ_PCM_READ,  		READ,   OPCODE_4,  1,     DISABLE_FLG, 1,     1 },  /* Audio PCM Reader */
+! /*29*/{STB7100_FDMA_REQ_SPDIF,  		WRITE,  OPCODE_4,  2,     DISABLE_FLG, 0,     1 },  /* Audio SPDIF - 2xST4*/
+! /*30*/{STB7100_FDMA_REQ_SWTS,  			WRITE,  OPCODE_16, 1,     DISABLE_FLG, 0,     1 },   /* SWTS */
+! /*31*/{STB7100_FDMA_REQ_UNUSED,  		UNUSED, UNUSED,    1,     UNUSED,      0,     1 }, /* Reserved */
+! 
+! };
+  
+  /*
+! 				Req  				RnW,    Opcode,  Transfer Incr addr,   Hold_off Initiator), */
+! /*           	1-32     		 			cnt 1-4  On/Off       0-2        Used) */
+! static  fdmareq_RequestConfig_t stb7109_fdma_req_config[]= {
+! /*=========================== 7109 ============================================*/
+! 
+! /*  {  Req  RnW, 						Opcode,    TransferCount  Inc,       Hold_off        Initiator), */
+! /*  {               						1-32       1-4            On/Off       0-2           Used) */
+! /*0*/	{STB7109_FDMA_REQ_UNUSED,			UNUSED, UNUSED,    1,     	  UNUSED,      0,     	     1 },/* NOT CONNECTED */
+! /*1*/	{STB7109_FDMA_DMA_REQ_HDMI_AVI,			READ,   OPCODE_8,  1,             DISABLE_FLG, 0,            1 },  /* Video HDMI */
+! /*2*/	{STB7109_FDMA_REQ_DISEQC_HALF_EMPTY,		WRITE,  OPCODE_4,  2,             DISABLE_FLG, 0,            1 },  /* DiseqC half empty */
+! /*3*/	{STB7109_FDMA_REQ_DISEQC_HALF_FULL,		READ,   OPCODE_4,  2,             DISABLE_FLG, 0,            1 },  /* DiseqC half full */
+! /*4*/	{STB7109_FDMA_REQ_SH4_SCIF_RX,			READ,   OPCODE_4,  2,             DISABLE_FLG, 0,            1 },  /* SH4/SCIF */
+! /*5*/	{STB7109_FDMA_REQ_SH4_SCIF_TX,			WRITE,  OPCODE_4,  2,             DISABLE_FLG, 0,            1 },  /* SH4/SCIF */
+! /*6*/	{STB7109_FDMA_REQ_SSC_0_RX,			READ,   OPCODE_2,  4,             DISABLE_FLG, 0,            1 },  /* SSC 0 rxbuff full */
+! /*7*/	{STB7109_FDMA_REQ_SSC_1_RX,			READ,   OPCODE_2,  4,             DISABLE_FLG, 0,            1 },  /* SSC 1 rxbuff full */
+! /*8*/	{STB7109_FDMA_REQ_SSC_2_RX,			READ,   OPCODE_2,  4,             DISABLE_FLG, 0,            1 },  /* SSC 2 rxbuff full */
+! /*9*/	{STB7109_FDMA_REQ_SSC_0_TX,			WRITE,  OPCODE_2,  4,             DISABLE_FLG, 0,            1 },  /* SSC 0 txbuff empty */
+! /*10*/	{STB7109_FDMA_REQ_SSC_1_TX,			WRITE,  OPCODE_2,  4,             DISABLE_FLG, 0,            1 },  /* SSC 1 txbuff empty */
+! /*11*/	{STB7109_FDMA_REQ_SSC_2_TX,			WRITE,  OPCODE_2,  4,             DISABLE_FLG, 0,            1 },  /* SSC 1 txbuff empty */
+! /*12*/  {STB7109_FDMA_REQ_UART_0_RX,			READ,   OPCODE_1,  4,             DISABLE_FLG, 0,            1 },  /* UART 0 rx half full */
+! /*13*/	{STB7109_FDMA_REQ_UART_1_RX,			READ,   OPCODE_1,  4,             DISABLE_FLG, 0,            1 },  /* UART 1 rx half full */
+! /*14*/	{STB7109_FDMA_REQ_UART_2_RX,			READ,   OPCODE_1,  4,             DISABLE_FLG, 0,            1 },  /* UART 2 rx half full */
+! /*15*/	{STB7109_FDMA_REQ_UART_3_RX,			READ,   OPCODE_1,  4,             DISABLE_FLG, 0,            1 },  /* UART 3 rx half full */
+! /*16*/	{STB7109_FDMA_REQ_UART_0_TX,			WRITE,  OPCODE_1,  1,             DISABLE_FLG, 0,            1 },  /* UART 0 tx half empty */
+! /*17*/	{STB7109_FDMA_REQ_UART_1_TX,			WRITE,  OPCODE_1,  1,             DISABLE_FLG, 0,            1 },  /* UART 1 tx half empty */
+! /*18*/	{STB7109_FDMA_REQ_UART_2_TX,			WRITE,  OPCODE_1,  1,             DISABLE_FLG, 0,            1 },  /* UART 2 tx half emtpy */
+! /*19*/	{STB7109_FDMA_REQ_UART_3_TX,			WRITE,  OPCODE_1,  1,             DISABLE_FLG, 0,            1 },  /* UART 3 tx half empty */
+! /*20*/	{STB7109_FDMA_REQ_REQ_EXT_PIO_0,		READ,   OPCODE_4,  1,             DISABLE_FLG, 0,            1 },  /* External 0 (PIO2bit5) hi priority */
+! /*21*/	{STB7109_FDMA_REQ_REQ_EXT_PIO_1,		READ,   OPCODE_4,  1,             DISABLE_FLG, 0,            1 },  /* External 1 (PIO2bit6) hi priority */
+! /*22*/	{STB7109_FDMA_REQ_CPXM_DECRYPT,  	     	READ,   OPCODE_4,  4,             DISABLE_FLG, 0,            1 },  /* CPxM decrypted data request */
+! /*23*/  {STB7109_FDMA_REQ_CPXM_ENCRYPT,  	     	WRITE,  OPCODE_4,  4,             DISABLE_FLG, 0,            1 },  /* CPxm encrypted data request */
+! /*24*/	{STB7109_FDMA_REQ_PCM_0,			WRITE,  OPCODE_4,  1,             DISABLE_FLG, 0,            0 },  /* Audio PCM Player 0 */
+! /*25*/	{STB7109_FDMA_REQ_PCM_1,			WRITE,  OPCODE_4,  1,             DISABLE_FLG, 0,            0 },  /* Audio PCM Player 1 */
+! /*26*/	{STB7109_FDMA_REQ_PCM_READ,			READ,   OPCODE_4,  1,             DISABLE_FLG, 0,            0 },  /* Audio PCM Reader */
+! /*27*/	{STB7109_FDMA_REQ_SPDIF,			WRITE,  OPCODE_4,  1,             DISABLE_FLG, 0,            0 },  /* Audio SPDIF - 2xST4*/
+! /*29*/	{STB7109_FDMA_REQ_SWTS_0,			WRITE,  OPCODE_32, 1,             DISABLE_FLG, 0,            0 },  /* SWTS 0 */
+! /*29*/	{STB7109_FDMA_REQ_SWTS_1,			WRITE,  OPCODE_32, 1,             DISABLE_FLG, 0,            0 },  /* SWTS 1 */
+! /*30*/	{STB7109_FDMA_REQ_SWTS_2,			WRITE,  OPCODE_32, 1,             DISABLE_FLG, 0,            0 },  /* SWTS 2 */
+! /*31*/  {STB7109_FDMA_REQ_UNUSED,           		UNUSED, UNUSED,    1,             UNUSED,      0,            0 },  /* Reserved */
+! };
+  
+! static fdma_regs_t stb7100_fdma_regs = {
+  	 .fdma_id =     	  FDMA2_ID,
+  	 .fdma_ver = 		  FDAM2_VER,
+  	 .fdma_en= 		  FDMA2_ENABLE_REG,
+--- 532,548 ----
+  	.resource	= &physmap_flash_resource,
+  };
+  
+! #ifdef CONFIG_STM_DMA
+  
+! #include <linux/stm/7100_fdma2_firmware.h>
+! #include <linux/stm/7109_cut2_fdma2_firmware.h>
+! #include <linux/stm/7109_cut3_fdma2_firmware.h>
+  
+  /*
+!  *  FDMA parameters
+!  */
+  
+! static struct fdma_regs stb7100_fdma_regs = {
+  	 .fdma_id =     	  FDMA2_ID,
+  	 .fdma_ver = 		  FDAM2_VER,
+  	 .fdma_en= 		  FDMA2_ENABLE_REG,
+***************
+*** 628,634 ****
+  	 .fdma_imem_region =  	  STB7100_IMEM_OFFSET,
+  };
+  
+! static fdma_regs_t stb7109_fdma_regs = {
+  	.fdma_id= FDMA2_ID,
+  	.fdma_ver = FDAM2_VER,
+  	.fdma_en = FDMA2_ENABLE_REG,
+--- 567,573 ----
+  	 .fdma_imem_region =  	  STB7100_IMEM_OFFSET,
+  };
+  
+! static struct fdma_regs stb7109_fdma_regs = {
+  	.fdma_id= FDMA2_ID,
+  	.fdma_ver = FDAM2_VER,
+  	.fdma_en = FDMA2_ENABLE_REG,
+***************
+*** 653,675 ****
+  	.fdma_imem_region = STB7109_IMEM_OFFSET,
+  };
+  
+- static struct fdma_platform_device_data stb7109_C1_fdma_plat_data ={
+- 	.cpu_subtype = 7109,
+- 	.cpu_rev = 1,
+- };
+- 
+- 
+  static struct fdma_platform_device_data stb7109_C2_fdma_plat_data = {
+! 	.req_line_tbl_adr = (void*)&stb7109_fdma_req_config,
+! 	.registers_ptr =(void*) &stb7109_fdma_regs,
+! 	.cpu_subtype = 7109,
+! 	.cpu_rev = 2,
+  	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
+! 	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
+! 	.fdma_base  = STB7109_FDMA_BASE,
+! 	.irq_vect = LINUX_FDMA_STB7109_IRQ_VECT,
+! 	.fw_device_name = "STB7109_fdma_fw",
+! 	.nr_reqlines = (sizeof(stb7109_fdma_req_config) / sizeof(fdmareq_RequestConfig_t)),
+  	.fw.data_reg = (unsigned long*)&STB7109_C2_DMEM_REGION,
+  	.fw.imem_reg = (unsigned long*)&STB7109_C2_IMEM_REGION,
+  	.fw.imem_fw_sz = STB7109_C2_IMEM_FIRMWARE_SZ,
+--- 592,602 ----
+  	.fdma_imem_region = STB7109_IMEM_OFFSET,
+  };
+  
+  static struct fdma_platform_device_data stb7109_C2_fdma_plat_data = {
+! 	.registers_ptr = &stb7109_fdma_regs,
+  	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
+! 	.max_ch_num = CONFIG_MAX_STM_DMA_CHANNEL_NR,
+! 	.fw_device_name = "stb7109_fdmav2.8.bin",
+  	.fw.data_reg = (unsigned long*)&STB7109_C2_DMEM_REGION,
+  	.fw.imem_reg = (unsigned long*)&STB7109_C2_IMEM_REGION,
+  	.fw.imem_fw_sz = STB7109_C2_IMEM_FIRMWARE_SZ,
+***************
+*** 679,694 ****
+  };
+  
+  static struct fdma_platform_device_data stb7109_C3_fdma_plat_data = {
+- 	.req_line_tbl_adr = (void*)&stb7109_fdma_req_config,
+  	.registers_ptr =(void*) &stb7109_fdma_regs,
+- 	.cpu_subtype = 7109,
+- 	.cpu_rev = 3,
+  	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
+  	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
+! 	.fdma_base  = STB7109_FDMA_BASE,
+! 	.irq_vect = LINUX_FDMA_STB7109_IRQ_VECT,
+! 	.fw_device_name = "STB7109_C3_fdma_fw",
+! 	.nr_reqlines = (sizeof(stb7109_fdma_req_config) / sizeof(fdmareq_RequestConfig_t)),
+  	.fw.data_reg = (unsigned long*)&STB7109_C3_DMEM_REGION,
+  	.fw.imem_reg = (unsigned long*)&STB7109_C3_IMEM_REGION,
+  	.fw.imem_fw_sz = STB7109_C3_IMEM_FIRMWARE_SZ,
+--- 606,615 ----
+  };
+  
+  static struct fdma_platform_device_data stb7109_C3_fdma_plat_data = {
+  	.registers_ptr =(void*) &stb7109_fdma_regs,
+  	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
+  	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
+! 	.fw_device_name = "stb7109_fdmav3.0.bin",
+  	.fw.data_reg = (unsigned long*)&STB7109_C3_DMEM_REGION,
+  	.fw.imem_reg = (unsigned long*)&STB7109_C3_IMEM_REGION,
+  	.fw.imem_fw_sz = STB7109_C3_IMEM_FIRMWARE_SZ,
+***************
+*** 699,714 ****
+  };
+  
+  static struct fdma_platform_device_data stb7100_Cx_fdma_plat_data = {
+- 	.req_line_tbl_adr = (void*)&stb7100_fdma_req_config,
+  	.registers_ptr =(void*) &stb7100_fdma_regs,
+- 	.cpu_subtype = 7100,
+- /*	.cpu_rev = ! defined at runtime */
+  	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
+  	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
+! 	.fdma_base  = STB7100_FDMA_BASE,
+! 	.irq_vect = LINUX_FDMA_STB7100_IRQ_VECT,
+! 	.fw_device_name = "STB7100_Cx_fdma_fw",
+! 	.nr_reqlines = (sizeof(stb7100_fdma_req_config) / sizeof(fdmareq_RequestConfig_t)),
+  	.fw.data_reg = (unsigned long*)&STB7100_DMEM_REGION,
+  	.fw.imem_reg = (unsigned long*)&STB7100_IMEM_REGION,
+  	.fw.imem_fw_sz = STB7100_IMEM_FIRMWARE_SZ,
+--- 620,629 ----
+  };
+  
+  static struct fdma_platform_device_data stb7100_Cx_fdma_plat_data = {
+  	.registers_ptr =(void*) &stb7100_fdma_regs,
+  	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
+  	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
+! 	.fw_device_name = "stb7100_fdmav2.8.bin",
+  	.fw.data_reg = (unsigned long*)&STB7100_DMEM_REGION,
+  	.fw.imem_reg = (unsigned long*)&STB7100_IMEM_REGION,
+  	.fw.imem_fw_sz = STB7100_IMEM_FIRMWARE_SZ,
+***************
+*** 717,728 ****
+  	.fw.imem_len = STB7100_IMEM_REGION_LENGTH
+  };
+  
+  
+  static struct platform_device fdma_710x_device = {
+!         .name           = "710x_FDMA",
+!         .id             = -1,
+  };
+  
+  
+  static struct resource alsa_710x_resource_pcm0[3] = {
+  
+--- 632,682 ----
+  	.fw.imem_len = STB7100_IMEM_REGION_LENGTH
+  };
+  
++ #endif /* CONFIG_STM_DMA */
+  
+  static struct platform_device fdma_710x_device = {
+! 	.name		= "stmfdma",
+! 	.id		= -1,
+! 	.num_resources	= 2,
+! 	.resource = (struct resource[2]) {
+! 		[0] = {
+! 			.start = STB7100_FDMA_BASE,
+! 			.end   = STB7100_FDMA_BASE + 0xffff,
+! 			.flags = IORESOURCE_MEM,
+! 		},
+! 		[1] = {
+! 			.start = LINUX_FDMA_STB7100_IRQ_VECT,
+! 			.end   = LINUX_FDMA_STB7100_IRQ_VECT,
+! 			.flags = IORESOURCE_IRQ,
+! 		},
+! 	},
+  };
+  
++ static void fdma_setup(int chip_7109, int chip_revision)
++ {
++ #ifdef CONFIG_STM_DMA
++ 	if(chip_7109){
++ 		switch (chip_revision) {
++ 		case 1:
++ 			BUG();
++ 			break;
++ 		case 2:
++ 			fdma_710x_device.dev.platform_data =(void*) &stb7109_C2_fdma_plat_data;
++ 			break;
++ 		default:
++ 			fdma_710x_device.dev.platform_data =(void*) &stb7109_C3_fdma_plat_data;
++ 			break;
++ 		}
++ 	} else {
++ 		/* 7100 */
++ 		fdma_710x_device.dev.platform_data =(void*) &stb7100_Cx_fdma_plat_data;
++ 	}
++ #endif
++ }
++ 
++ /*
++  * ALSA
++  */
+  
+  static struct resource alsa_710x_resource_pcm0[3] = {
+  
+***************
+*** 737,749 ****
+  		.flags = IORESOURCE_IRQ
+  	},
+  	[2] = {/*rising or falling edge I2s clocking
+! 		1 == FALLING_EDGE
+! 		0 == RISING EDGE */
+  		 /*.start = runtime dependant*/
+  		 /*.end = runtime dependant*/
+  		.flags = IORESOURCE_IRQ
+! 	}};
+! 
+  
+  static struct resource alsa_710x_resource_pcm1[3] = {
+  
+--- 691,703 ----
+  		.flags = IORESOURCE_IRQ
+  	},
+  	[2] = {/*rising or falling edge I2s clocking
+! 		 1 == FALLING_EDGE
+! 		 0 == RISING EDGE */
+  		 /*.start = runtime dependant*/
+  		 /*.end = runtime dependant*/
+  		.flags = IORESOURCE_IRQ
+! 	}
+! };
+  
+  static struct resource alsa_710x_resource_pcm1[3] = {
+  
+***************
+*** 758,769 ****
+  		.flags = IORESOURCE_IRQ,
+  	},
+  	[2] = {/*rising or falling edge I2s clocking
+! 		1 == FALLING_EDGE
+! 		0 == RISING EDGE */
+  		 /*.start = runtime dependant*/
+  		 /*.end = runtime dependant*/
+  		.flags = IORESOURCE_IRQ
+! 	}};
+  
+  static struct resource alsa_710x_resource_spdif[2] = {
+  
+--- 712,724 ----
+  		.flags = IORESOURCE_IRQ,
+  	},
+  	[2] = {/*rising or falling edge I2s clocking
+! 		 1 == FALLING_EDGE
+! 		 0 == RISING EDGE */
+  		 /*.start = runtime dependant*/
+  		 /*.end = runtime dependant*/
+  		.flags = IORESOURCE_IRQ
+! 	}
+! };
+  
+  static struct resource alsa_710x_resource_spdif[2] = {
+  
+***************
+*** 776,796 ****
+  		/*.start = runtime dependant*/
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ
+! 	}};
+! 
+  
+  static struct resource alsa_710x_resource_cnv[2] = {
+  
+  	[0] = {/*min allocatable channels*/
+! 		/*.start = runtime dependant*/
+! 		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+  	},
+  	[1] = {/*fdma reqline*/
+  		/*.start = runtime dependant*/
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+! 	}};
+  
+  static struct resource alsa_710x_resource_pcmin[3] = {
+  
+--- 731,752 ----
+  		/*.start = runtime dependant*/
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ
+! 	}
+! };
+  
+  static struct resource alsa_710x_resource_cnv[2] = {
+  
+  	[0] = {/*min allocatable channels*/
+! 		.start = 10,
+! 		.end   =10,
+  		.flags = IORESOURCE_IRQ,
+  	},
+  	[1] = {/*fdma reqline*/
+  		/*.start = runtime dependant*/
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+! 	}
+! };
+  
+  static struct resource alsa_710x_resource_pcmin[3] = {
+  
+***************
+*** 804,912 ****
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+  	},
+! 	[2] = {/*fdma reqline*/
+  		/*.start = runtime dependant*/
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+! 	}};
+! 
+  
+  static struct platform_device alsa_710x_device_pcmin = {
+  	.name			= "710x_ALSA_PCMIN",
+! 	.id 			= -1,
+! 	.num_resources	= 	ARRAY_SIZE(alsa_710x_resource_pcmin),
+  	.resource		= alsa_710x_resource_pcmin,
+  };
+  
+- 
+  static struct platform_device alsa_710x_device_pcm0 = {
+  	.name			= "710x_ALSA_PCM0",
+! 	.id 			= -1,
+! 	.num_resources	= 	ARRAY_SIZE(alsa_710x_resource_pcm0),
+  	.resource		= alsa_710x_resource_pcm0,
+  };
+  
+- 
+  static struct platform_device alsa_710x_device_pcm1 = {
+  	.name			= "710x_ALSA_PCM1",
+! 	.id 			= -1,
+! 	.num_resources	= 	ARRAY_SIZE(alsa_710x_resource_pcm1),
+  	.resource		= alsa_710x_resource_pcm1,
+  };
+  
+  static struct platform_device alsa_710x_device_spdif = {
+  	.name			= "710x_ALSA_SPD",
+! 	.id 			= -1,
+! 	.num_resources	= 	ARRAY_SIZE(alsa_710x_resource_spdif),
+  	.resource		= alsa_710x_resource_spdif,
+  };
+  
+  static struct platform_device alsa_710x_device_cnv = {
+  	.name			= "710x_ALSA_CNV",
+! 	.id 			= -1,
+! 	.num_resources	= 	ARRAY_SIZE(alsa_710x_resource_cnv),
+  	.resource		= alsa_710x_resource_cnv,
+  };
+  
+! static struct platform_device *stb7100ref_devices[] __initdata = {
+! 	&smc91x_device,
+! 	&stb7109eth_device,
+! 	&st40_ohci_devices,
+! 	&st40_ehci_devices,
+! 	&lirc_device,
+! 	&sata_device,
+! 	&wdt_device,
+! 	&ssc_device,
+! 	&rtc_device,
+! 	&stm_pwm_device,
+! 	&physmap_flash,
+! 	&fdma_710x_device,
+! 	&alsa_710x_device_pcm0,
+! 	&alsa_710x_device_pcm1,
+!  	&alsa_710x_device_spdif,
+! 	&alsa_710x_device_cnv,
+! 	&alsa_710x_device_pcmin,
+! };
+! 
+! static int __init device_init(void)
+  {
+- 	int ret =0;
+- 	unsigned long devid;
+- 	unsigned long chip_revision, chip_7109;
+- 
+- 	devid = ctrl_inl(SYSCONF_DEVICEID);
+- 	chip_7109 = (((devid >> 12) & 0x3ff) == 0x02c);
+- 	chip_revision = (devid >> 28) + 1;
+- 
+- 	if ((! chip_7109) && (chip_revision == 1)) {
+- 		/* 7100 cut 1.x */
+- 		sata_private_info.phy_init = 0x0013704A;
+- 	} else {
+- 		/* 7100 cut 2.x and cut 3.x and 7109 */
+- 		sata_private_info.phy_init = 0x388fc;
+- 	}
+- 
+- 	if ((! chip_7109) || (chip_7109 && (chip_revision == 1))) {
+- 		sata_private_info.only_32bit = 1;
+- 		sata_private_info.pc_glue_logic_init = 0x1ff;
+- 	} else {
+- 		sata_private_info.only_32bit = 0;
+- 		sata_private_info.pc_glue_logic_init = 0x100ff;
+- 	}
+- 
+- 	/* Configure the ethernet MAC PBL depending on the cut of the chip */
+- 	if (chip_7109){
+- 		if (chip_revision == 1)
+- 			eth7109_private_data.pbl = 1;
+- 		else if (chip_revision == 2)
+- 			eth7109_private_data.pbl = 8;
+- 		else
+- 			eth7109_private_data.pbl = 32;
+- 	}
+  	if(chip_7109){
+  		switch (chip_revision) {
+  		case 1:
+- 			fdma_710x_device.dev.platform_data =(void*) &stb7109_C1_fdma_plat_data;
+  			alsa_710x_resource_pcm0[2].start =0;
+  			alsa_710x_resource_pcm0[2].end = 0;
+  
+--- 760,815 ----
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+  	},
+! 	[2] = {/*rising or falling edge I2s clocking
+! 		 1 == FALLING_EDGE
+! 		 0 == RISING EDGE */
+  		/*.start = runtime dependant*/
+  		/*.end   = runtime dependant*/
+  		.flags = IORESOURCE_IRQ,
+! 	}
+! };
+  
+  static struct platform_device alsa_710x_device_pcmin = {
+  	.name			= "710x_ALSA_PCMIN",
+! 	.id			= -1,
+! 	.num_resources		= ARRAY_SIZE(alsa_710x_resource_pcmin),
+  	.resource		= alsa_710x_resource_pcmin,
+  };
+  
+  static struct platform_device alsa_710x_device_pcm0 = {
+  	.name			= "710x_ALSA_PCM0",
+! 	.id			= -1,
+! 	.num_resources		= ARRAY_SIZE(alsa_710x_resource_pcm0),
+  	.resource		= alsa_710x_resource_pcm0,
+  };
+  
+  static struct platform_device alsa_710x_device_pcm1 = {
+  	.name			= "710x_ALSA_PCM1",
+! 	.id			= -1,
+! 	.num_resources		= ARRAY_SIZE(alsa_710x_resource_pcm1),
+  	.resource		= alsa_710x_resource_pcm1,
+  };
+  
+  static struct platform_device alsa_710x_device_spdif = {
+  	.name			= "710x_ALSA_SPD",
+! 	.id			= -1,
+! 	.num_resources		= ARRAY_SIZE(alsa_710x_resource_spdif),
+  	.resource		= alsa_710x_resource_spdif,
+  };
+  
+  static struct platform_device alsa_710x_device_cnv = {
+  	.name			= "710x_ALSA_CNV",
+! 	.id			= -1,
+! 	.num_resources		= ARRAY_SIZE(alsa_710x_resource_cnv),
+  	.resource		= alsa_710x_resource_cnv,
+  };
+  
+! static void alsa_setup(int chip_7109, int chip_revision)
+  {
+  	if(chip_7109){
++ 
+  		switch (chip_revision) {
+  		case 1:
+  			alsa_710x_resource_pcm0[2].start =0;
+  			alsa_710x_resource_pcm0[2].end = 0;
+  
+***************
+*** 925,936 ****
+  
+  			alsa_710x_resource_pcmin[2].start = 0;
+  			alsa_710x_resource_pcmin[2].end =   0;
+- 
+- 			fdma_710x_device.dev.platform_data =(void*) &stb7109_C2_fdma_plat_data;
+  			break;
+  		default:
+  			/* 7109 cut >= 3.0 */
+- 			BUG_ON(chip_revision < 2);
+  			alsa_710x_resource_pcm0[2].start =1;
+  			alsa_710x_resource_pcm0[2].end = 1;
+  
+--- 828,836 ----
+***************
+*** 939,946 ****
+  
+  			alsa_710x_resource_pcmin[2].start = 0;
+  			alsa_710x_resource_pcmin[2].end =   0;
+- 
+- 			fdma_710x_device.dev.platform_data =(void*) &stb7109_C3_fdma_plat_data;
+  			break;
+  		}
+  
+--- 839,844 ----
+***************
+*** 966,980 ****
+  
+  		alsa_710x_resource_pcmin[1].start = STB7109_FDMA_REQ_PCM_READ;
+  		alsa_710x_resource_pcmin[1].end =   STB7109_FDMA_REQ_PCM_READ;
+! 	}
+! 	else {
+! 		stb7100_Cx_fdma_plat_data.cpu_rev = chip_revision;
+! 		fdma_710x_device.dev.platform_data =(void*) &stb7100_Cx_fdma_plat_data;
+! 
+  		if(chip_revision >=3){
+  			alsa_710x_resource_pcm0[0].start = 2;
+  			alsa_710x_resource_pcm0[0].end = 10;
+! 			alsa_710x_resource_pcm1[0].start = 2;
+  			alsa_710x_resource_pcm1[0].end 	= 2;
+  			alsa_710x_resource_cnv[0].start =2;
+  			alsa_710x_resource_cnv[0].end = 10;
+--- 864,875 ----
+  
+  		alsa_710x_resource_pcmin[1].start = STB7109_FDMA_REQ_PCM_READ;
+  		alsa_710x_resource_pcmin[1].end =   STB7109_FDMA_REQ_PCM_READ;
+! 	} else {
+! 		/* 7100 */
+  		if(chip_revision >=3){
+  			alsa_710x_resource_pcm0[0].start = 2;
+  			alsa_710x_resource_pcm0[0].end = 10;
+! 			alsa_710x_resource_pcm1[0].start =2;
+  			alsa_710x_resource_pcm1[0].end 	= 2;
+  			alsa_710x_resource_cnv[0].start =2;
+  			alsa_710x_resource_cnv[0].end = 10;
+***************
+*** 987,993 ****
+  			alsa_710x_resource_cnv[0].start =10;
+  			alsa_710x_resource_cnv[0].end = 10;
+  		}
+- 
+  		alsa_710x_resource_pcm0[1].start = STB7100_FDMA_REQ_PCM_0;
+  		alsa_710x_resource_pcm0[1].end = STB7100_FDMA_REQ_PCM_0;
+  
+--- 882,887 ----
+***************
+*** 1000,1018 ****
+  		alsa_710x_resource_cnv[1].start = STB7100_FDMA_REQ_PCM_0;
+  		alsa_710x_resource_cnv[1].end = STB7100_FDMA_REQ_PCM_0;
+  
+  		alsa_710x_resource_pcm0[2].start =0;
+  		alsa_710x_resource_pcm0[2].end = 0;
+  
+  		alsa_710x_resource_pcm1[2].start =0;
+  		alsa_710x_resource_pcm1[2].end = 0;
+  
+- 		alsa_710x_resource_pcmin[1].start = STB7100_FDMA_REQ_PCM_READ;
+- 		alsa_710x_resource_pcmin[1].end =   STB7100_FDMA_REQ_PCM_READ;
+  		alsa_710x_resource_pcmin[2].start = 0;
+  		alsa_710x_resource_pcmin[2].end =   0;
+  
+  	}
+  
+  	ret = platform_add_devices(stb7100ref_devices, ARRAY_SIZE(stb7100ref_devices));
+  	return ret;
+  }
+--- 894,971 ----
+  		alsa_710x_resource_cnv[1].start = STB7100_FDMA_REQ_PCM_0;
+  		alsa_710x_resource_cnv[1].end = STB7100_FDMA_REQ_PCM_0;
+  
++ 		alsa_710x_resource_pcmin[1].start = STB7100_FDMA_REQ_PCM_READ;
++ 		alsa_710x_resource_pcmin[1].end =   STB7100_FDMA_REQ_PCM_READ;
++ 
+  		alsa_710x_resource_pcm0[2].start =0;
+  		alsa_710x_resource_pcm0[2].end = 0;
+  
+  		alsa_710x_resource_pcm1[2].start =0;
+  		alsa_710x_resource_pcm1[2].end = 0;
+  
+  		alsa_710x_resource_pcmin[2].start = 0;
+  		alsa_710x_resource_pcmin[2].end =   0;
++ 	}
++ }
+  
++ static struct platform_device *stb7100ref_devices[] __initdata = {
++ 	&stb7109eth_device,
++ 	&st40_ohci_devices,
++ 	&st40_ehci_devices,
++ 	&sata_device,
++ 	&wdt_device,
++ 	&ssc_device,
++ 	&rtc_device,
++ 	&physmap_flash,
++ 	&fdma_710x_device,
++ 	&alsa_710x_device_pcm0,
++ 	&alsa_710x_device_pcm1,
++  	&alsa_710x_device_spdif,
++ 	&alsa_710x_device_cnv,
++ 	&alsa_710x_device_pcmin,
++ };
++ 
++ 
++ 
++ static int __init device_init(void)
++ {
++ 	int ret =0;
++ 	unsigned long devid;
++ 	unsigned long chip_revision, chip_7109;
++ 
++ 	devid = ctrl_inl(SYSCONF_DEVICEID);
++ 	chip_7109 = (((devid >> 12) & 0x3ff) == 0x02c);
++ 	chip_revision = (devid >> 28) + 1;
++ 
++ 	if ((! chip_7109) && (chip_revision == 1)) {
++ 		/* 7100 cut 1.x */
++ 		sata_private_info.phy_init = 0x0013704A;
++ 	} else {
++ 		/* 7100 cut 2.x and cut 3.x and 7109 */
++ 		sata_private_info.phy_init = 0x388fc;
++ 	}
++ 
++ 	if ((! chip_7109) || (chip_7109 && (chip_revision == 1))) {
++ 		sata_private_info.only_32bit = 1;
++ 		sata_private_info.pc_glue_logic_init = 0x1ff;
++ 	} else {
++ 		sata_private_info.only_32bit = 0;
++ 		sata_private_info.pc_glue_logic_init = 0x100ff;
++ 	}
++ 
++ 	/* Configure the ethernet MAC PBL depending on the cut of the chip */
++ 	if (chip_7109){
++ 		if (chip_revision == 1)
++ 			eth7109_private_data.pbl = 1;
++ 		else if (chip_revision == 2)
++ 			eth7109_private_data.pbl = 8;
++ 		else
++ 			eth7109_private_data.pbl = 32;
+  	}
+  
++ 	fdma_setup(chip_7109, chip_revision);
++ 	alsa_setup(chip_7109, chip_revision);
++ 
+  	ret = platform_add_devices(stb7100ref_devices, ARRAY_SIZE(stb7100ref_devices));
+  	return ret;
+  }
+*** linux/drivers/i2c/busses/i2c-st40-pio.c	2009-09-28 11:17:26.000000000 +0200
+--- PatchedFiles/i2c-st40-pio.c	2009-09-28 11:15:46.000000000 +0200
+***************
+*** 75,83 ****
+  
+  #if defined(CONFIG_SH_STB7100_REF) || defined(CONFIG_SH_STB5202_REF)
+  
+! #define NR_I2C_BUSSES 2
+  static pio_address i2c_address[NR_I2C_BUSSES] = {
+  	{2,0,2,1},
+  	{4,0,4,1}
+  };
+  
+--- 75,84 ----
+  
+  #if defined(CONFIG_SH_STB7100_REF) || defined(CONFIG_SH_STB5202_REF)
+  
+! #define NR_I2C_BUSSES 3
+  static pio_address i2c_address[NR_I2C_BUSSES] = {
+  	{2,0,2,1},
++ 	{3,0,3,1},
+  	{4,0,4,1}
+  };
+  
+*** linux/drivers/serial/stasc.c	2010-01-08 12:43:32.000000000 +0100
+--- Patchit/stasc.c	2010-01-21 18:53:15.640294076 +0100
+***************
+*** 140,145 ****
+--- 140,153 ----
+  {
+  	unsigned long status;
+  
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	status = asc_in(port, STA);
+  	if (status & ASC_STA_TE)
+  		return TIOCSER_TEMT;
+***************
+*** 169,174 ****
+--- 177,190 ----
+   */
+  static void asc_start_tx(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	if (asc_dma_enabled(port))
+  		asc_fdma_start_tx(port);
+  	else
+***************
+*** 180,185 ****
+--- 196,209 ----
+   */
+  static void asc_stop_tx(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	if (asc_dma_enabled(port))
+  		asc_fdma_stop_tx(port);
+  	else
+***************
+*** 191,196 ****
+--- 215,228 ----
+   */
+  static void asc_stop_rx(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	if (asc_dma_enabled(port))
+  		asc_fdma_stop_rx(port);
+  	else
+***************
+*** 219,224 ****
+--- 251,264 ----
+   */
+  static int asc_startup(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	asc_request_irq(port);
+  	asc_transmit_chars(port);
+  	asc_enable_rx_interrupts(port);
+***************
+*** 228,233 ****
+--- 268,281 ----
+  
+  static void asc_shutdown(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return;
++ 
+  	if (asc_dma_enabled(port))
+  		asc_disable_fdma(port);
+  	asc_disable_tx_interrupts(port);
+***************
+*** 241,246 ****
+--- 289,302 ----
+  	struct asc_port *ascport = &asc_ports[port->line];
+  	unsigned int baud;
+  
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	baud = uart_get_baud_rate(port, termios, old, 0,
+  				  port->uartclk/16);
+  
+***************
+*** 266,271 ****
+--- 322,335 ----
+  /* Set type field if successful */
+  static void asc_config_port(struct uart_port *port, int flags)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	if (!port->membase)
+  		port->membase = ioremap_nocache(port->mapbase,4096);
+  	if (!port->membase)
+***************
+*** 437,442 ****
+--- 501,514 ----
+  	struct clk *clk;
+  	unsigned long rate;
+  
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	rate = port->uartclk;
+  
+  	if (baud < 19200) {
+***************
+*** 457,462 ****
+--- 529,542 ----
+  	unsigned int ctrl_val;
+  	unsigned long flags;
+  
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return;
++ 
+  	/* wait for end of current transmission */
+  	while (!asc_tx_empty(port)){};
+  
+***************
+*** 541,546 ****
+--- 621,634 ----
+  {
+  	unsigned long status;
+  
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	status = asc_in(port, STA);
+  	if (status & ASC_STA_THE) {
+  		return FIFO_SIZE/2;
+***************
+*** 563,568 ****
+--- 651,664 ----
+  	unsigned long intenable;
+  	unsigned char c;
+  
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return;
++ 
+  	txroom = asc_hw_txroom(port);
+  
+  	if ((txroom != 0) && port->x_char) {
+***************
+*** 730,735 ****
+--- 826,839 ----
+  
+  static int asc_request_irq(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return 0;
++ 
+  	if (request_irq(port->irq, asc_interrupt, SA_INTERRUPT,
+  			"asc", port)) {
+  		printk(KERN_ERR "asc: cannot allocate irq.\n");
+***************
+*** 740,745 ****
+--- 844,857 ----
+  
+  static void asc_free_irq(struct uart_port *port)
+  {
++ /* TDT: Dont know how to do this correct. We need ASC2 (ttyAS0) for
++  * the frontpanel but dont want to use ttyAS0 as communication device.
++  * we have our own devices. removing ttyAS0 complete does not work
++  * so I try to disable it.
++  */
++ 	if (port->line == 0)
++ 	   return;
++ 
+  	free_irq(port->irq, port);
+  }
+   

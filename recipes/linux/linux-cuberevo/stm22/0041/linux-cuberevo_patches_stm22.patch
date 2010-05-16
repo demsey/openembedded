@@ -1,0 +1,357 @@
+diff -u --recursive --new-file oldlinux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c linux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c
+--- oldlinux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c	2006-06-18 03:49:35.000000000 +0200
++++ linux-2.6.17.14_stm22_0040/drivers/media/dvb/dvb-core/dvb_ca_en50221.c	2007-03-16 19:37:06.000000000 +0100
+@@ -1136,7 +1147,11 @@
+ 			// CAM state machine
+ 			switch (ca->slot_info[slot].slot_state) {
+ 			case DVB_CA_SLOTSTATE_NONE:
++				break;
+ 			case DVB_CA_SLOTSTATE_INVALID:
++#if !defined(CONFIG_SH_CUBEREVO_250HD) && !defined(CONFIG_SH_CUBEREVO_MINI_FTA) && !defined(CONFIG_SH_CUBEREVO_2000HD)
++				dvb_ca_en50221_slot_shutdown(ca,slot);
++#endif
+ 				// no action needed
+ 				break;
+ 
+diff -urN linux-2.6.17.14/sound/stm/stb7100_pcm.c linux-dgs/sound/stm/stb7100_pcm.c
+--- linux-2.6.17.14/sound/stm/stb7100_pcm.c	2009-02-27 09:45:12.000000000 +0100
++++ linux-dgs/sound/stm/stb7100_pcm.c	2009-03-03 09:18:44.000000000 +0100
+@@ -376,7 +380,11 @@
+ int set_audio_clock_adjustment(pcm_hw_t *chip, int adjust)
+ {
+ 	int offset = (int)(((long long)chip->fsynth_rate_target * adjust)/1000000);
+-	unsigned int Fpll = 8*30*1000*1000;
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA) 
++	unsigned int Fpll = 8*27*1000*1000;
++#else
++	unsigned int Fpll = 8*30*1000*1000;
++#endif
+ 	unsigned int Fout = (chip->fsynth_rate_target + offset);
+ 	unsigned int sdiv;
+ 	int md;
+@@ -715,7 +719,11 @@
+ 		goto exit;
+ 	}
+ 	else {
+-		unsigned int Fpll = 8*30*1000*1000;
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA) 
++		unsigned int Fpll = 8*27*1000*1000;
++#else
++		unsigned int Fpll = 8*30*1000*1000;
++#endif
+ 		unsigned int Fout = (runtime->rate * chip->oversampling_frequency);
+                 unsigned int sdiv;
+ 		int md;
+@@ -886,7 +890,11 @@
+  * cannot be explained at this time.
+  */
+ 
+-	unsigned int Fpll = 8*30*1000*1000;
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA) 
++	unsigned int Fpll = 8*27*1000*1000;
++#else
++	unsigned int Fpll = 8*30*1000*1000;
++#endif
+ 	unsigned int Fout = 32000*chip->oversampling_frequency;
+ 	unsigned int sdiv;
+ 	int md;
+@@ -923,7 +927,11 @@
+ 	 *
+ 	 * First put the audio FSynth block into reset
+ 	 */
+-	reg =	AUD_FSYNTH_SATA_PHY_30MHZ_REF	|
++#if defined(CONFIG_SH_CUBEREVO_250HD) || defined(CONFIG_SH_CUBEREVO_MINI_FTA) 
++	reg =	AUD_FSYNTH_SYSBCLKINALT_REF	|
++#else
++	reg =	AUD_FSYNTH_SATA_PHY_30MHZ_REF	|
++#endif
+ 		AUD_FSYNTH_VGOOD_REF_SOURCE	|
+ 		AUD_FSYNTH_FS_REF_CLK_27_30MHZ	|
+ 		AUD_FSYNTH_NPDA_POWER_UP	|
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Kconfig linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Kconfig
+--- linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Kconfig	2008-10-10 22:39:55.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Kconfig	2008-06-25 21:12:05.000000000 +0200
+@@ -211,6 +211,36 @@
+ 	  More information at:
+ 	  <http://www.linuxsh.st.com/boards/stb7100ref/>
+ 
++config SH_RELOOK511
++	bool "cuberevo board"
++	select CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo.
++
++config SH_CUBEREVO_MINI
++	bool "cuberevo-mini board"
++	select CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-mini.
++
++config SH_CUBEREVO_MINI_FTA
++	bool "cuberevo-mini-fta board"
++	select CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-mini-fta.
++
++config SH_CUBEREVO_250HD
++	bool "cuberevo-250hd board"
++	select CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-250hd.
++
++config SH_CUBEREVO_2000HD
++	bool "cuberevo-2000hd board"
++	select CPU_SUBTYPE_STB7100
++	help
++	  DGStation cuberevo-2000hd.
++
+ config SH_STB7109E_REF
+ 	bool "STB7109E Reference board"
+ 	select CPU_SUBTYPE_STB7100
+@@ -635,7 +647,7 @@
+ 	int "External clock"
+ 	depends on CPU_SUBTYPE_STB7100 || CPU_SUBTYPE_STX7200
+ 	default "30000000" if SH_STB7100_REF
+-	default "27000000"
++	default "27000000" if SH_RELOOK511 || SH_CUBEREVO_MINI || SH_CUBEREVO_MINI_FTA || SH_CUBEREVO_250HD || SH_CUBEREVO_2000HD
+ 	help
+ 	  The kernel needs to know what the frequency of chip's external
+ 	  clock is, so that it can calculate what frequency the internal
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Makefile linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Makefile
+--- linux-2.6.17.14_stm22_0040_allpatch/arch/sh/Makefile	2008-10-10 22:30:25.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/Makefile	2008-06-25 21:12:05.000000000 +0200
+@@ -51,7 +51,8 @@
+ cflags-$(CONFIG_MORE_COMPILE_OPTIONS)	+= \
+ 	$(shell echo $(CONFIG_COMPILE_OPTIONS) | sed -e 's/"//g')
+ 
+-OBJCOPYFLAGS	:= -O binary -R .note -R .comment -R .stab -R .stabstr -S
++OBJCOPYFLAGS	:= -O binary -R .note -R .comment -R .stab -R .stabstr -S -R .empty_zero_page
++#OBJCOPYFLAGS	:= -O binary -R .note -R .comment -R .stab -R .stabstr -S
+ 
+ #
+ # arch/sh/defconfig doesn't reflect any real hardware, and as such should
+@@ -96,6 +97,11 @@
+ machdir-$(CONFIG_SH_STB1_OVERDRIVE)		:= st/stb1overdrive st/harp-common
+ machdir-$(CONFIG_SH_STB7100_MBOARD)		:= st/stb7100mboard st/harp-common
+ machdir-$(CONFIG_SH_STB7100_REF)		:= st/stb7100ref
++machdir-$(CONFIG_SH_RELOOK511)			:= dgstation/relook511
++machdir-$(CONFIG_SH_CUBEREVO_MINI)		:= dgstation/cuberevo-mini
++machdir-$(CONFIG_SH_CUBEREVO_MINI_FTA)		:= dgstation/cuberevo-mini-fta
++machdir-$(CONFIG_SH_CUBEREVO_250HD)		:= dgstation/cuberevo-250hd
++machdir-$(CONFIG_SH_CUBEREVO_2000HD)		:= dgstation/cuberevo-2000hd
+ machdir-$(CONFIG_SH_STB7109E_REF)		:= st/stb7109eref
+ machdir-$(CONFIG_SH_STB5202_REF)		:= st/stb5202ref
+ machdir-$(CONFIG_SH_MEDIAREF)			:= st/mediaref
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/drivers/mtd/maps/Makefile linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/mtd/maps/Makefile
+--- linux-2.6.17.14_stm22_0040_allpatch/drivers/mtd/maps/Makefile	2008-10-10 22:30:19.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/mtd/maps/Makefile	2008-06-25 21:12:17.000000000 +0200
+@@ -74,3 +74,8 @@
+ obj-$(CONFIG_MTD_MTX1)		+= mtx-1_flash.o
+ obj-$(CONFIG_MTD_TQM834x)	+= tqm834x.o
+ obj-$(CONFIG_MTD_STBOARDS)	+= stboards.o
++obj-$(CONFIG_MTD_RELOOK511)	+= relook511.o
++obj-$(CONFIG_MTD_CUBEREVO_MINI)	+= cuberevo-mini.o
++obj-$(CONFIG_MTD_CUBEREVO_MINI_FTA)	+= cuberevo-mini-fta.o
++obj-$(CONFIG_MTD_CUBEREVO_250HD)	+= cuberevo-250hd.o
++obj-$(CONFIG_MTD_CUBEREVO_2000HD)	+= cuberevo-2000hd.o
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/drivers/mtd/maps/Kconfig linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/mtd/maps/Kconfig
+--- linux-2.6.17.14_stm22_0040_allpatch/drivers/mtd/maps/Kconfig	2008-10-10 22:30:26.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/mtd/maps/Kconfig	2008-06-25 21:12:17.000000000 +0200
+@@ -25,20 +25,19 @@
+ config MTD_PHYSMAP_START
+ 	hex "Physical start address of flash mapping"
+ 	depends on MTD_PHYSMAP
+-	default "0x0000000"
++	default "0x8000000"
+ 	help
+ 	  This is the physical memory location at which the flash chips
+ 	  are mapped on your particular target board. Refer to the
+ 	  memory map which should hopefully be in the documentation for
+ 	  your board.
+ 	  Ignore this option if you use run-time physmap configuration
+-	  (i.e., run-time calling physmap_configure()) or use platform
+-	  bus support configuration.
++	  (i.e., run-time calling physmap_configure()).
+ 
+ config MTD_PHYSMAP_LEN
+ 	hex "Physical length of flash mapping"
+ 	depends on MTD_PHYSMAP
+-	default "0x0000000"
++	default "0x4000000"
+ 	help
+ 	  This is the total length of the mapping of the flash chips on
+ 	  your particular board. If there is space, or aliases, in the
+@@ -673,5 +673,37 @@
+         hex "STEM module size" if MTD_STBOARDS_STEM
+         default "0x02000000"
+ 
++config MTD_RELOOK511
++        tristate "CFI Flash device mapped on DGStation cuberevo"
++        depends on SUPERH && MTD_CFI
++        help
++          Support for CFI Flash device mapped on DGStation cuberevo.
++
++config MTD_CUBEREVO_MINI
++        tristate "CFI Flash device mapped on DGStation cuberevo-mini"
++        depends on SUPERH && MTD_CFI
++        help
++          Support for CFI Flash device mapped on DGStation cuberevo.
++
++config MTD_CUBEREVO_MINI_FTA
++        tristate "CFI Flash device mapped on DGStation cuberevo-mini-fta"
++        depends on SUPERH && MTD_CFI
++        help
++          Support for CFI Flash device mapped on DGStation cuberevo-200hd.
++
++config MTD_CUBEREVO_250HD
++        tristate "CFI Flash device mapped on DGStation cuberevo-250hd"
++        depends on SUPERH && MTD_CFI
++        help
++          Support for CFI Flash device mapped on DGStation cuberevo-250hd.
++
++config MTD_CUBEREVO_2000HD
++        tristate "CFI Flash device mapped on DGStation cuberevo-2000hd"
++        depends on SUPERH && MTD_CFI
++        help
++          Support for CFI Flash device mapped on DGStation cuberevo-2000hd.
++
++
++
+ endmenu
+ 
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/drivers/net/Kconfig linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/net/Kconfig
+--- linux-2.6.17.14_stm22_0040_allpatch/drivers/net/Kconfig	2008-10-10 22:39:56.000000000 +0200
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/drivers/net/Kconfig	2008-06-25 21:12:51.000000000 +0200
+@@ -1894,7 +1894,7 @@
+         tristate "STM MAC Ethernet driver"
+         select MII
+         select PHYLIB
+-        depends on NET_ETHERNET && (SH_STB7100_MBOARD || SH_STB7109E_REF || SH_STB7100_REF || SH_STB5202_REF)
++        depends on NET_ETHERNET && (SH_STB7100_MBOARD || SH_STB7109E_REF || SH_STB7100_REF || SH_STB5202_REF || SH_RELOOK511 || SH_CUBEREVO_MINI || SH_CUBEREVO_MINI_FTA || SH_CUBEREVO_250HD || SH_CUBEREVO_2000HD)
+         ---help---
+           This is the driver for the STMMAC on-chip Ethernet controller.
+           The STb7109 ETH subsystem is composed of three main layers:
+@@ -1939,6 +1939,12 @@
+         prompt "MDIO communication mode"
+ 	default PHY_MII if SH_STB7100_REF
+ 	default PHY_MII if SH_STB7100_MBOARD
++	default PHY_MII if SH_RELOOK511
++	default PHY_MII if SH_CUBEREVO_MINI
++	default PHY_MII if SH_CUBEREVO_MINI_FTA
++	default PHY_MII if SH_CUBEREVO_250HD
++	default PHY_MII if SH_CUBEREVO_2000HD
++	default PHY_RMII if LAN8700
+ 
+ config  PHY_MII
+         bool "MII mode"
+@@ -1945,6 +1948,7 @@
+ 	  between the MAC and PHY
+ 
+ config  PHY_RMII
++	depends on STE101P
+         bool "RMII mode"
+         help
+ 	  Use the Reduced Media Independent Interface (RMII).
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/include/asm-sh/setup.h linux-2.6.17.14/include/asm-sh/setup.h
+--- linux-2.6.17.14_stm22_0041/include/asm-sh/setup.h	2009-04-07 16:40:49.000000000 +0200
++++ linux-2.6.17.14/include/asm-sh/setup.h	2009-01-30 09:38:49.000000000 +0100
+@@ -4,5 +4,39 @@
+ 
+ #define COMMAND_LINE_SIZE 512
+ 
++typedef struct bd_info
++{
++	int bi_baudrate;        /* serial console baudrate */
++	unsigned long bi_ip_addr;       /* IP Address */
++	unsigned char bi_enetaddr[6];   /* Ethernet adress */
++	unsigned long bi_arch_number;   /* unique id for this board */
++	unsigned long bi_boot_params;   /* where this board expects params */
++	unsigned long bi_memstart;      /* start of DRAM memory */
++	unsigned long bi_memsize;       /* size  of DRAM memory in bytes */
++	unsigned long bi_flashstart;    /* start of FLASH memory */
++	unsigned long bi_flashsize;     /* size  of FLASH memory */
++	unsigned long bi_flashoffset;   /* reserved area for startup monitor */
++#if defined(CONFIG_CPU_SUBTYPE_STB7100)
++	unsigned long bi_devid;
++	unsigned long bi_pll0frq;
++	unsigned long bi_pll1frq;
++	unsigned long bi_st40cpufrq;
++	unsigned long bi_st40busfrq;
++	unsigned long bi_st40perfrq;
++	unsigned long bi_st231frq;
++	unsigned long bi_stbusfrq;
++	unsigned long bi_emifrq;
++	unsigned long bi_lmifrq;
++#elif defined(CONFIG_CPU_SUBTYPE_STI5528)
++	unsigned long bi_pll1frq;
++	unsigned long bi_st40cpufrq;
++	unsigned long bi_st40busfrq;
++	unsigned long bi_st40perfrq;
++	unsigned long bi_emifrq;
++#endif
++}__attribute__ ((packed)) bd_t;
++
++extern bd_t bd; 
++
+ #endif /* _SH_SETUP_H */
+ #endif /* __KERNEL__ */
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/arch/sh/kernel/setup.c linux-2.6.17.14/arch/sh/kernel/setup.c
+--- linux-2.6.17.14_stm22_0041/arch/sh/kernel/setup.c	2009-04-07 16:40:51.000000000 +0200
++++ linux-2.6.17.14/arch/sh/kernel/setup.c	2009-01-30 09:38:47.000000000 +0100
+@@ -77,6 +77,7 @@
+ #define LOADER_TYPE (*(unsigned long *) (PARAM+0x00c))
+ #define INITRD_START (*(unsigned long *) (PARAM+0x010))
+ #define INITRD_SIZE (*(unsigned long *) (PARAM+0x014))
++#define BDINFO                  ((char*)PARAM+0x018)
+ /* ... */
+ #ifdef CONFIG_CMDLINE_BOOL
+ #define COMMAND_LINE CONFIG_CMDLINE
+@@ -113,6 +114,8 @@
+ 
+ unsigned long memory_start, memory_end;
+ 
++bd_t bd;
++
+ static char mv_name[MV_NAME_SIZE] __initdata = "";
+ static unsigned long mv_io_base __initdata = 0;
+ static int mv_mmio_enable __initdata = 0;
+@@ -157,6 +160,9 @@
+ #endif
+ 	struct sh_machine_vector *mv = NULL;
+ 
++	/* copy bdinfo */
++	memcpy((char*)&bd, BDINFO, sizeof(bd));
++
+ 	mv = get_mv_byname(mv_name);
+ 
+ #ifdef CONFIG_SH_UNKNOWN
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0041/drivers/net/stmmac.c linux-2.6.17.14/drivers/net/stmmac.c
+--- linux-2.6.17.14_stm22_0041/drivers/net/stmmac.c	2009-04-07 16:40:52.000000000 +0200
++++ linux-2.6.17.14/drivers/net/stmmac.c	2009-01-30 09:38:48.000000000 +0100
+@@ -34,6 +152,7 @@
+ #include <linux/mii.h>
+ #include <linux/phy.h>
+ #include <linux/st_soc.h>
++#include <asm/setup.h>	/* board info structure */
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+ #include <linux/if_vlan.h>
+ #endif
+@@ -2604,7 +2723,17 @@
+ 	lp->pause = pause;
+ 
+ 	/* Get the MAC address */
+-	get_mac_address(ioaddr, dev->dev_addr);
++	//get_mac_address(ioaddr, dev->dev_addr);
++	printk(KERN_INFO "\tHW MAC address: ");
++	/* copy mac address from u-boot */
++	dev->dev_addr[0] = bd.bi_enetaddr[0];
++	dev->dev_addr[1] = bd.bi_enetaddr[1];
++	dev->dev_addr[2] = bd.bi_enetaddr[2];
++	dev->dev_addr[3] = bd.bi_enetaddr[3];
++	dev->dev_addr[4] = bd.bi_enetaddr[4];
++	dev->dev_addr[5] = bd.bi_enetaddr[5];
++
++	print_mac_addr(dev->dev_addr);
+ 
+ 	if (!is_valid_ether_addr(dev->dev_addr)) {
+ 		printk(KERN_WARNING "\tno valid MAC address; "

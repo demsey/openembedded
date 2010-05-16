@@ -1,0 +1,91 @@
+Index: linux/include/linux/kernel.h
+===================================================================
+--- linux.orig/include/linux/kernel.h	2006-07-13 16:41:52.000000000 -0700
++++ linux/include/linux/kernel.h	2006-07-13 16:42:09.000000000 -0700
+@@ -131,7 +131,7 @@
+ 
+ extern void dump_thread(struct pt_regs *regs, struct user *dump);
+ 
+-#ifdef CONFIG_PRINTK
++#if defined(CONFIG_PRINTK) || (defined(CONFIG_PRINTK_FUNC) && defined(DO_PRINTK))
+ asmlinkage int vprintk(const char *fmt, va_list args)
+ 	__attribute__ ((format (printf, 1, 0)));
+ asmlinkage int printk(const char * fmt, ...)
+Index: linux/init/Kconfig
+===================================================================
+--- linux.orig/init/Kconfig	2006-07-13 16:41:52.000000000 -0700
++++ linux/init/Kconfig	2006-07-13 16:42:09.000000000 -0700
+@@ -305,15 +305,33 @@
+ 	  disabling this option for embedded systems that do not use modules, a
+ 	  dynamic /dev tree, or dynamic device discovery.  Just say Y.
+ 
++config PRINTK_FUNC
++	default y
++	bool "Enable printk function in the kernel" if EMBEDDED
++	help
++	  This option controls whether the printk function is compiled
++	  into the kernel or not. Removing it eliminates a small amount of
++	  code size from the kernel, which is OK if it is not being used.
++	  See CONFIG_PRINTK to disable the function calls to printk(),
++	  which is where the big win comes in reducing kernel size.
++
+ config PRINTK
+ 	default y
+-	bool "Enable support for printk" if EMBEDDED
++	bool "Enable support for printk messages" if EMBEDDED
++	depends on PRINTK_FUNC
+ 	help
+ 	  This option enables normal printk support. Removing it
+ 	  eliminates most of the message strings from the kernel image
+ 	  and makes the kernel more or less silent. As this makes it
+-	  very difficult to diagnose system problems, saying N here is
+-	  strongly discouraged.
++	  very difficult to diagnose system problems, saying N here on
++	  non-embedded systems is strongly discouraged.
++
++	  With this set to 'N', if the printk function is still enabled,
++	  (see CONFIG_PRINTK_FUNC) you can enable printk messages from
++	  a single file, by putting "#define DO_PRINTK 1" at the top of
++	  the file.  This must appear before any #include lines.
++ 	  This makes it possible to have fine-grained control over
++	  which printk messages to include in the kernel.
+ 
+ config BUG
+ 	bool "BUG() support" if EMBEDDED
+Index: linux/kernel/printk.c
+===================================================================
+--- linux.orig/kernel/printk.c	2006-07-13 16:41:52.000000000 -0700
++++ linux/kernel/printk.c	2006-07-13 16:42:46.000000000 -0700
+@@ -16,6 +16,11 @@
+  *	01Mar01 Andrew Morton <andrewm@uow.edu.au>
+  */
+ 
++/*
++ * have kernel.h produce real declarations, depending on configuration
++ */
++#define DO_PRINTK 1
++
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/tty.h>
+@@ -115,7 +120,7 @@
+ /* Flag: console code may call schedule() */
+ static int console_may_schedule;
+ 
+-#ifdef CONFIG_PRINTK
++#ifdef CONFIG_PRINTK_FUNC
+ 
+ static char __log_buf[__LOG_BUF_LEN];
+ static char *log_buf = __log_buf;
+Index: linux/scripts/mod/sumversion.c
+===================================================================
+--- linux.orig/scripts/mod/sumversion.c	2008-10-10 22:39:55.000000000 +0200
++++ linux/scripts/mod/sumversion.c	2008-06-25 21:12:05.000000000 +0200
+@@ -7,6 +7,7 @@
+ #include <ctype.h>
+ #include <errno.h>
+ #include <string.h>
++#include <limits.h>
+ #include "modpost.h"
+ 
+ /*

@@ -1,0 +1,12 @@
+*** linux/kernel/timer.c	2009-11-01 12:26:17.000000000 +0100
+--- TIME/timer.c	2009-11-01 12:26:09.000000000 +0100
+***************
+*** 588,593 ****
+--- 588,594 ----
+  struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+  
+  EXPORT_SYMBOL(xtime);
++ EXPORT_SYMBOL_GPL(wall_to_monotonic);
+  
+  /* Don't completely fail for HZ > 500.  */
+  int tickadj = 500/HZ ? : 1;		/* microsecs */

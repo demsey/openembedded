@@ -1,0 +1,483 @@
+*** linux/drivers/stm/stm-coprocessor.c	2009-02-10 00:22:56.000000000 +0100
+--- UFS922_Orig/copro/stm-coprocessor.c	2009-02-11 18:11:48.000000000 +0100
+***************
+*** 18,23 ****
+--- 18,26 ----
+  #include <linux/device.h>
+  #include <linux/vmalloc.h>
+  
++ #ifdef CONFIG_DEVFS_FS
++ #include <linux/devfs_fs_kernel.h>
++ #endif
+  
+  #include <linux/delay.h>
+  #include <linux/mm.h>
+***************
+*** 269,279 ****
+  			/* Not yet supported! */
+  			printk(KERN_INFO
+  			       "%s: setting properties not yet available\n",
+! 			       cop->dev.bus_id);
+  			res = -ENOSYS;
+  			break;
+  		}
+  
+  	default:
+  		res = -EINVAL;
+  	}
+--- 272,292 ----
+  			/* Not yet supported! */
+  			printk(KERN_INFO
+  			       "%s: setting properties not yet available\n",
+! 			       __FUNCTION__,cop->dev.bus_id);
+  			res = -ENOSYS;
+  			break;
+  		}
+  
++ 	case STCOP_SET_DEBUG:
++ 	{
++ 			printk(KERN_INFO
++ 			       "%s: setting debug section to 0x%08x\n",
++ 			       __FUNCTION__,arg);
++ 
++ 			cop->printf_p = ioremap(arg,65536);
++ 			       break;
++ 	}
++ 
+  	default:
+  		res = -EINVAL;
+  	}
+***************
+*** 371,377 ****
+  	default:
+  		return -EINVAL;
+  	}
+! 
+  	if (file->f_pos >= cop->ram_size)
+  		file->f_pos = cop->ram_size - 1;
+  
+--- 384,397 ----
+  	default:
+  		return -EINVAL;
+  	}
+! /*
+!  * A little problem with the current (0.6) stslave
+!  * The current stslave assumes a zero offset
+!  */
+! 	file->f_pos -= cop->ram_offset;
+! /*
+!  * End stslave problem
+!  */
+  	if (file->f_pos >= cop->ram_size)
+  		file->f_pos = cop->ram_size - 1;
+  
+***************
+*** 468,480 ****
+  	.probe = st_coproc_driver_probe,
+  };
+  
+- static struct class *coproc_dev_class;
+  static int __init st_coproc_init(void)
+  {
+  	int i;
+  	coproc_t *cop;
+  	struct device *dev;
+- 	dev_t ch_device;
+  
+  	printk("STMicroelectronics - Coprocessors %s Init\n", coproc_info.name);
+  
+--- 488,498 ----
+***************
+*** 490,497 ****
+  		return (-EAGAIN);
+  	}
+  
+- 	coproc_dev_class = class_create(THIS_MODULE, "coproc-dev");
+- 
+  	for (cop = &coproc[0], i = 0; i < coproc_info.max_coprs; i++, cop++) {
+  		cop->id = i;
+  
+--- 508,513 ----
+***************
+*** 505,510 ****
+--- 521,529 ----
+  		}
+  		/*
+  		 ** Nodes:
++ 		 **    STm8000/ST220Eval: /dev/st220-0    c   63   0
++ 		 **                       /dev/st220-1    c   63   1
++ 		 **                       /dev/st220-2    c   63   2
+  		 **    STb7100          : /dev/st231-0    c   63   0
+  		 **                    : /dev/st231-1    c   63   1
+  		 ** if the device file system support is configured the above
+***************
+*** 526,535 ****
+  			device_create_file(dev, &dev_attr_mem_base);
+  			device_create_file(dev, &dev_attr_mem_size);
+  			device_create_file(dev, &dev_attr_running);
+- 			/* Create the device file via Discovery System */
+- 			cop->class_dev = class_device_create(coproc_dev_class, NULL,
+- 						MKDEV(COPROCESSOR_MAJOR,cop->id),
+- 						NULL,"st231-%d", cop->id);
+  		}
+  
+  		/* Now complete with the platform dependent init stage */
+--- 545,550 ----
+***************
+*** 639,644 ****
+--- 654,661 ----
+  	return 1;
+  }
+  
++ static int *mailbox;
++ 
+  __setup("coprocessor_mem=", parse_coproc_mem);
+  
+  MODULE_DESCRIPTION("Co-processor manager for multi-core devices");
+***************
+*** 651,660 ****
+  
+  #ifdef CONFIG_PROC_FS
+  
+  static int show_st_coproc(struct seq_file *m, void *v)
+  {
+! 	int i;
+  	coproc_t *cop;
+  	seq_printf(m, "Coprocessors: %d  %s\n",
+  		   coproc_info.max_coprs, coproc_info.name);
+  	seq_printf(m,
+--- 668,686 ----
+  
+  #ifdef CONFIG_PROC_FS
+  
++ struct write_buf {
++ 	unsigned int  size;
++ 	unsigned int  head;
++ 	unsigned int  tail;
++ 	unsigned int  full;
++ 	unsigned char buffer[];
++ };
++ 
+  static int show_st_coproc(struct seq_file *m, void *v)
+  {
+! 	int i,j;
+  	coproc_t *cop;
++ 
+  	seq_printf(m, "Coprocessors: %d  %s\n",
+  		   coproc_info.max_coprs, coproc_info.name);
+  	seq_printf(m,
+***************
+*** 662,667 ****
+--- 688,695 ----
+  	seq_printf(m,
+  		   "  -------------------------------------------------------------------\n");
+  	for (i = 0, cop = &coproc[0]; i < coproc_info.max_coprs; i++, cop++) {
++ 		struct write_buf *buf = cop->printf_p;
++ 
+  		seq_printf(m, "  /dev/%-8s    ", cop->dev.bus_id);
+  		if (cop->ram_size == 0)
+  			seq_printf(m, "not allocated!\n");
+***************
+*** 670,684 ****
+--- 698,747 ----
+  				   "0x%08lx     0x%08lx      0x%08x (%2d Mb)\n",
+  				   HOST_ADDR(cop, 0), COPR_ADDR(cop, 0),
+  				   cop->ram_size, (cop->ram_size / MEGA));
++ 	
++ 		if (buf) {
++ 			if (buf->head != cop->head)
++ 			{
++ 				seq_printf(m,"printf buffer corruption %d %d\n",buf->head,cop->head);
++ 				//buf->head = cop->head;
++ 			}
++ 
++ 			seq_printf(m,"printf buffer @0x%x %d bytes tail = %d head = %d\n",buf,buf->size,buf->tail,buf->head);
++ 
++ 			if (!buf->full) seq_printf(m, "---- Printf output ----\n");
++ 			else seq_printf(m, "---- Printf output ---- lost (%d bytes)\n",buf->full);
++ 
++ 			for (;buf->head != buf->tail;buf->head = (buf->head + 1) % buf->size)
++ 				seq_printf(m, "%c", buf->buffer[buf->head]);
++ 
++ 			buf->full = 0;
++ 			udelay(10); // Try and avoid a race condition
++ 			buf->full = 0;
++ 
++ 			seq_printf(m,"---- Printf output ----\n");
++ 
++ 			cop->head = buf->head;
++ 		}
++ 
+  	}
+  	seq_printf(m, "\n");
+  
++ 	for (i=0;i<(0x4000/4);i+=(0x1000/4)) {
++ 		seq_printf(m, "Mailbox (%d):\n",i/(0x1000/4));
++ 		seq_printf(m, "   Version : 0x%08x\n",mailbox[0+i]);
++ 		seq_printf(m, "    Status : 0x%08x 0x%08x 0x%08x 0x%08x\n",mailbox[i+1],mailbox[i+2],mailbox[i+3],mailbox[i+4]);
++ 		seq_printf(m, "    Status : 0x%08x 0x%08x 0x%08x 0x%08x\n",mailbox[i+65],mailbox[i+66],mailbox[i+67],mailbox[i+68]);
++ 	}
+  	coproc_proc_other_info(cop, m);
+  	return (0);
+  }
+  
+  static void *st_coproc_seq_start(struct seq_file *m, loff_t * pos)
+  {
++ 	// Little cludge here to allow our sequential prints to be big
++ 	kfree(m->buf);
++ 	m->buf = kmalloc(128*1024,GFP_KERNEL);
++ 	m->size = 1024*128;
+  	return (void *)(*pos == 0);
+  }
+  
+***************
+*** 718,723 ****
+--- 781,788 ----
+  		entry->proc_fops = &proc_st_coproc_operations;
+  	}
+  
++ 	mailbox = ioremap(0xFD800000,0x4000);
++ 
+  	return 0;
+  }
+  
+*** linux/drivers/stm/stm-coprocessor_frmw.c	2009-02-10 00:22:56.000000000 +0100
+--- UFS922_Orig/copro/stm-coprocessor_frmw.c	2009-02-11 18:11:48.000000000 +0100
+***************
+*** 194,206 ****
+  	.probe = st_coproc_driver_probe,
+  };
+  
+- static struct class *coproc_dev_class;
+  static int __init st_coproc_init(void)
+  {
+  	int i;
+  	coproc_t *cop;
+  	struct device *dev;
+- 	int frmw_idx;
+  
+  	printk("STMicroelectronics - Coprocessors %s Init\n", coproc_info.name);
+  
+--- 194,204 ----
+***************
+*** 217,224 ****
+  		return (-EAGAIN);
+  	}
+  
+- 	coproc_dev_class = class_create(THIS_MODULE, "coproc-dev");
+- 
+  	for (cop = &coproc[0], i = 0; i < coproc_info.max_coprs; i++, cop++) {
+         /**
+          ** Nodes:
+--- 215,220 ----
+***************
+*** 254,269 ****
+  			device_create_file(dev, &dev_attr_mem_base);
+  			device_create_file(dev, &dev_attr_mem_size);
+  			device_create_file(dev, &dev_attr_running);
+- 			/*
+- 			 * Create the six device file [firmware]
+- 			 * for each coprocessor via Discovery System
+- 			 */
+- 			for(frmw_idx=0; frmw_idx < 10; ++frmw_idx)
+- 			/* Be carefull the '6' used in MKDEV(..) depends on
+- 			 * minor number device file translation */
+- 			cop->class_dev = class_device_create(coproc_dev_class, NULL,
+- 				MKDEV(COPROCESSOR_MAJOR,cop->id<<6 | frmw_idx),
+- 				NULL,"st231-%d-%d", cop->id, frmw_idx);
+  		}
+  
+  		/* Now complete with the platform dependent init stage */
+--- 250,255 ----
+*** linux/drivers/stm/copro-stb7100.c	2009-02-10 00:22:56.000000000 +0100
+--- UFS922_Orig/copro/copro-stb7100.c	2009-02-11 18:11:39.000000000 +0100
+***************
+*** 10,15 ****
+--- 10,19 ----
+  #include <asm/sections.h>
+  #include <asm/addrspace.h>
+  
++ //Dagobert: from stlinux23
++ static DEFINE_SPINLOCK(sysconf_lock);
++ 
++ 
+  struct coproc_board_info coproc_info = {
+  	.name = "st231",
+  	.max_coprs = N_COPROC,
+***************
+*** 32,37 ****
+--- 36,88 ----
+  	return (0);
+  }
+  
++ 
++ /* Dagobert: from stlinux23 ->sysconf.c */
++ void sysconf_write(void* reg, int lsb, int msb, u64 value)
++ {
++ 	int field_bits;	/* Number of bits */
++ 
++ 	field_bits = msb - lsb + 1;
++ 
++ 	if (field_bits == 32) {
++ 		/* Operating on the whole register, nice and easy */
++ 		writel(value, reg);
++ 
++ 		printk("%s: reg = 0x%.8x, value = 0x%.8x\n", __func__, reg, value);
++ 	} else {
++ 		u32 reg_mask;
++ 		u32 tmp;
++ 
++ 		reg_mask = ~(((1 << field_bits) -1) << lsb);
++ 		spin_lock(&sysconf_lock);
++ 		tmp = readl(reg);
++ 		tmp &= reg_mask;
++ 		tmp |= value << lsb;
++ 		writel(tmp, reg);
++ 		printk("%s: reg = 0x%.8x, value = 0x%.8x\n", __func__, reg, value);
++ 		spin_unlock(&sysconf_lock);
++ 	}
++ }
++ 
++ u64 sysconf_read(void* reg, int lsb, int msb)
++ {
++ 	int field_bits;	/* Number of bits -1 */
++ 	u32 tmp;
++ 
++ 	tmp = readl(reg);
++ 	field_bits = msb - lsb + 1;
++ 
++ 	if (field_bits != 32) {
++ 		tmp >>= lsb;
++ 		tmp &= (1 << field_bits) -1;
++ 	}
++ 
++ 	printk("%s: reg = 0x%.8x, value = 0x%.8x\n", __func__, reg, tmp);
++ 	return (u64)tmp;
++ }
++ 
++ 
++ 
+  int coproc_cpu_grant(coproc_t * cop, unsigned long arg)
+  {
+  	u_long bootAddr;
+***************
+*** 49,54 ****
+--- 100,106 ----
+  	DPRINTK(">>> %s: ST231-%ld start from 0x%lx...\n",
+  		xstring(PLATFORM), cpu, bootAddr);
+  
++ #ifdef alt
+  	/* stick it into the System configuration and... good luck! */
+  	writel((readl(SYSCFG_09) | 0x08000000), SYSCFG_09);
+  	writel(bootAddr, SYSCFG_BOOT_REG(cpu));
+***************
+*** 58,64 ****
+--- 110,140 ----
+  	msleep(10);
+  
+  	writel((readl(SYSCFG_09) & ~0x18000000), SYSCFG_09);
++ #else
++ 	/* bypass the st40 to reset only the coprocessor */
++ 	sysconf_write(SYSCFG_09, 27 /* lsb */, 28 /* msb */, 3 /* value */);
++ 	msleep(5);
++ 
++ 	sysconf_write(SYSCFG_BOOT_REG(cpu), 0, 31, bootAddr);
++ 	msleep(5);
++ 
++ 	sysconf_write(SYSCFG_RESET_REG(cpu), 0, 31, sysconf_read(SYSCFG_RESET_REG(cpu), 0, 31) | 1) ;
++ 	msleep(5);
++ 
++ 	/* Now set the least significant bit to trigger the ST231 start */
++    	bootAddr |= 1;
++ 	sysconf_write(SYSCFG_BOOT_REG(cpu), 0, 31, bootAddr);
++ 	msleep(5);
+  
++       	bootAddr |= 0;
++ 	sysconf_write(SYSCFG_BOOT_REG(cpu), 0, 31, bootAddr);
++ 
++ 	sysconf_write(SYSCFG_RESET_REG(cpu), 0, 31, sysconf_read(SYSCFG_RESET_REG(cpu), 0, 31) & ~1);
++ 	msleep(10);
++ 
++ 	/* remove the st40 bypass */
++ 	sysconf_write(SYSCFG_09, 27, 28, 0);
++ #endif
+  	cop->control |= COPROC_RUNNING;
+  	return (0);
+  }
+***************
+*** 72,78 ****
+  int coproc_cpu_reset(coproc_t * cop)
+  {
+  	u_long cpu = cop->id;
+! 
+  	/* Enable the ST231 CPUs to be resetted */
+  	writel((readl(SYSCFG_09) | 0x08000000), SYSCFG_09);
+  
+--- 148,154 ----
+  int coproc_cpu_reset(coproc_t * cop)
+  {
+  	u_long cpu = cop->id;
+! #ifdef alt
+  	/* Enable the ST231 CPUs to be resetted */
+  	writel((readl(SYSCFG_09) | 0x08000000), SYSCFG_09);
+  
+***************
+*** 83,89 ****
+  
+  	/* Disable the ST231 CPUs to be resetted */
+  	writel((readl(SYSCFG_09) & ~0x18000000), SYSCFG_09);
+! 
+  	return 0;
+  }
+  
+--- 159,176 ----
+  
+  	/* Disable the ST231 CPUs to be resetted */
+  	writel((readl(SYSCFG_09) & ~0x18000000), SYSCFG_09);
+! #else
+!  	/* bypass the st40 to reset only the coprocessor */
+!  	sysconf_write(SYSCFG_09, 27, 28,  1);
+!  	msleep(5);
+!  	sysconf_write(SYSCFG_RESET_REG(cpu), 0, 31, sysconf_read(SYSCFG_RESET_REG(cpu), 0, 31) | 1);
+!  	msleep(5);
+!  	sysconf_write(SYSCFG_RESET_REG(cpu),0, 31, sysconf_read(SYSCFG_RESET_REG(cpu), 0, 31) & ~1);
+!  	msleep(10);
+! 
+!  	/* remove the st40 bypass */
+!  	sysconf_write(SYSCFG_09, 27, 28, 0);
+! #endif
+  	return 0;
+  }
+  
+*** linux/include/linux/st-coprocessor.h	2009-02-10 00:22:56.000000000 +0100
+--- UFS922_Orig/copro/st-coprocessor.h	2009-02-11 18:20:33.000000000 +0100
+***************
+*** 32,37 ****
+--- 32,38 ----
+  #define STCOP_POKE		_IOW(ST_IOCTL_BASE, 3, void*)
+  #define STCOP_GET_PROPERTIES	_IOR(ST_IOCTL_BASE, 4, cop_properties_t*)
+  #define STCOP_SET_PROPERTIES	_IOW(ST_IOCTL_BASE, 5, cop_properties_t*)
++ #define STCOP_SET_DEBUG		_IOW(ST_IOCTL_BASE, 6, u_int)
+  
+  #define NO_DATA		0xdeadbeef
+  #define UNDEFINED_DATA	NO_DATA
+***************
+*** 91,98 ****
+  	u_long	    mbox_wait;		/* CPU signature (waiting for boot) */
+  	u_long	    mbox_entryp;	/* where to put the entry point...  */
+  	u_long	    mbox_enable;	/* ... to trigger the CPU start     */
+  	struct device dev;
+- 	struct class_device *class_dev;
+  } coproc_t;
+  
+  struct coproc_board_info {
+--- 92,100 ----
+  	u_long	    mbox_wait;		/* CPU signature (waiting for boot) */
+  	u_long	    mbox_entryp;	/* where to put the entry point...  */
+  	u_long	    mbox_enable;	/* ... to trigger the CPU start     */
++ 	void*       printf_p;           /* where the printf sections lives  */
++ 	int         head;
+  	struct device dev;
+  } coproc_t;
+  
+  struct coproc_board_info {

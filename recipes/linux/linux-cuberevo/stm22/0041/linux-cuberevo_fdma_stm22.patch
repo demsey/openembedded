@@ -1,0 +1,500 @@
+diff -u --recursive --new-file linux-2.6.17.14_stm22_0040_allpatch/arch/sh/boards/st/stx710x-common-setup.h linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/boards/st/stx710x-common-setup.h
+--- linux-2.6.17.14_stm22_0040_allpatch/arch/sh/boards/st/stx710x-common-setup.h	1970-01-01 01:00:00.000000000 +0100
++++ linux-2.6.17.14_stm22_0040_cuberevo_ok/arch/sh/boards/st/stx710x-common-setup.h	2008-06-25 21:12:03.000000000 +0200
+@@ -0,0 +1,496 @@
++/*
++ * Copyright (C) 2007 STMicroelectronics Limited
++ * Author: Stuart Menefy <stuart.menefy@st.com>
++ *
++ * May be copied or modified under the terms of the GNU General Public
++ * License.  See linux/COPYING for more information.
++ */
++
++#include <linux/ethtool.h>
++
++#define SYSCONF_BASE 0xb9001000
++#define SYSCONF_DEVICEID	(SYSCONF_BASE + 0x000)
++#define SYSCONF_SYS_STA(n)	(SYSCONF_BASE + 0x008 + ((n) * 4))
++#define SYSCONF_SYS_CFG(n)	(SYSCONF_BASE + 0x100 + ((n) * 4))
++
++#ifdef CONFIG_STMMAC_ETH
++#define MAC_SPEED_SEL	    0x00100000 /* MAC is running at 100 Mbps speed */
++#define PHY_CLK_EXT	    0x00080000 /* PHY clock is external (RMII mode)*/
++#define MII_MODE	    0x00040000 /* RMII interface activated */
++#define	ETH_IF_ON	    0x00010000 /* ETH interface on */
++#define DVO_ETH_PAD_DISABLE 0x00020000 /* DVO eth pad disable */
++#define STB7109ETH_RESOURCE_NAME	"stb7109eth"
++
++/* ETH MAC pad configuration */
++static void stb7109eth_hw_setup(void)
++{
++	unsigned long sysconf;
++
++	sysconf = ctrl_inl(SYSCONF_SYS_CFG(7));
++	sysconf |= (DVO_ETH_PAD_DISABLE | ETH_IF_ON /*| MAC_SPEED_SEL*/);
++
++#ifdef CONFIG_PHY_RMII
++	sysconf |= MII_MODE; /* RMII selected*/
++#else
++	sysconf &= ~MII_MODE; /* MII selected */
++#endif
++#ifdef CONFIG_STMMAC_EXT_CLK
++        sysconf |= PHY_CLK_EXT;
++#endif
++	ctrl_outl(sysconf, SYSCONF_SYS_CFG(7));
++
++#if !defined(CONFIG_SH_RELOOK511) && !defined(CONFIG_SH_CUBEREVO_MINI)
++	/* STe101P: enable the external interrupts */
++	sysconf = ctrl_inl(SYSCONF_SYS_CFG(10));
++	sysconf |= 0x0000000f;
++	ctrl_outl(sysconf, SYSCONF_SYS_CFG(10));
++
++       /* Configure e/net PHY clock */
++#ifndef CONFIG_STMMAC_EXT_CLK
++	stpio_request_pin(3, 7, STB7109ETH_RESOURCE_NAME, STPIO_ALT_OUT);
++#else
++	stpio_request_pin(3, 7, STB7109ETH_RESOURCE_NAME, STPIO_IN);
++#endif
++
++#endif
++	return;
++}
++
++/**
++ * fix_mac_speed
++ * @speed: link speed
++ * Description: it is used for changing the MAC speed field in
++ * 		the SYS_CFG7 register (required when we are using
++ *		the RMII interface).
++ */
++static void fix_mac_speed(unsigned int speed)
++{
++#ifdef CONFIG_PHY_RMII
++	unsigned long sysconf = ctrl_inl(SYSCONF_SYS_CFG(7));
++
++	if (speed == SPEED_100)
++		sysconf |= MAC_SPEED_SEL;
++	else if (speed == SPEED_10)
++		sysconf &= ~MAC_SPEED_SEL;
++
++	ctrl_outl(sysconf, SYSCONF_SYS_CFG(7));
++#endif
++	return;
++}
++#else
++static void stb7109eth_hw_setup(void) { }
++static void fix_mac_speed(unsigned int speed) { }
++#endif
++
++
++/*
++ * Defines for the controller register offsets
++ */
++#define UHOST2C_BASE			0xb9100000
++#define AHB2STBUS_WRAPPER_GLUE_BASE	(UHOST2C_BASE)
++#define AHB2STBUS_RESERVED1_BASE	(UHOST2C_BASE + 0x000e0000)
++#define AHB2STBUS_RESERVED2_BASE	(UHOST2C_BASE + 0x000f0000)
++#define AHB2STBUS_OHCI_BASE		(UHOST2C_BASE + 0x000ffc00)
++#define AHB2STBUS_EHCI_BASE		(UHOST2C_BASE + 0x000ffe00)
++#define AHB2STBUS_PROTOCOL_BASE		(UHOST2C_BASE + 0x000fff00)
++
++#define SYS_CFG2_PLL_POWER_DOWN_BIT	1
++
++static void usb_power_up(void* dev)
++{
++	unsigned long reg;
++
++	/* Make sure PLL is on */
++	reg = readl(SYSCONF_SYS_CFG(2));
++	if (reg & SYS_CFG2_PLL_POWER_DOWN_BIT) {
++		writel(reg & (~SYS_CFG2_PLL_POWER_DOWN_BIT), SYSCONF_SYS_CFG(2));
++		mdelay(100);
++	}
++}
++
++/*static struct plat_usb_data usb_wrapper = {
++	.ahb2stbus_wrapper_glue_base = AHB2STBUS_WRAPPER_GLUE_BASE,
++	.ahb2stbus_protocol_base = AHB2STBUS_PROTOCOL_BASE,
++	.power_up = usb_power_up,
++	.initialised = 0,
++	.port_number = 0,
++};*/
++
++#include <linux/stm/fdma-plat.h>
++#include <linux/stm/fdma-reqs.h>
++
++#ifdef CONFIG_STM_DMA
++
++#include <linux/stm/7100_fdma2_firmware.h>
++#include <linux/stm/7109_cut2_fdma2_firmware.h>
++#include <linux/stm/7109_cut3_fdma2_firmware.h>
++
++/*
++ *  FDMA parameters
++ */
++
++static struct fdma_regs stb7100_fdma_regs = {
++	 .fdma_id =     	  FDMA2_ID,
++	 .fdma_ver = 		  FDAM2_VER,
++	 .fdma_en= 		  FDMA2_ENABLE_REG,
++	 .fdma_clk_gate = 	  FDMA2_CLOCKGATE,
++	 .fdma_rev_id = 	  FDMA2_REV_ID,
++	 .fdma_cmd_statn = 	  STB7100_FDMA_CMD_STATn_REG,
++	 .fdma_ptrn = 		  STB7100_FDMA_PTR_REG,
++	 .fdma_cntn = 		  STB7100_FDMA_COUNT_REG,
++	 .fdma_saddrn = 	  STB7100_FDMA_SADDR_REG,
++	 .fdma_daddrn = 	  STB7100_FDMA_DADDR_REG,
++	 .fdma_req_ctln = 	  STB7100_FDMA_REQ_CTLn_REG,
++	 .fdma_cmd_sta =	  FDMA2_CMD_MBOX_STAT_REG,
++	 .fdma_cmd_set =	  FDMA2_CMD_MBOX_SET_REG,
++	 .fdma_cmd_clr = 	  FDMA2_CMD_MBOX_CLR_REG,
++	 .fdma_cmd_mask =	  FDMA2_CMD_MBOX_MASK_REG,
++	 .fdma_int_sta = 	  FDMA2_INT_STAT_REG,
++	 .fdma_int_set = 	  FDMA2_INT_SET_REG,
++	 .fdma_int_clr= 	  FDMA2_INT_CLR_REG,
++	 .fdma_int_mask= 	  FDMA2_INT_MASK_REG,
++	 .fdma_sync_reg= 	  FDMA2_SYNCREG,
++	 .fdma_dmem_region =  	  STB7100_DMEM_OFFSET,
++	 .fdma_imem_region =  	  STB7100_IMEM_OFFSET,
++};
++
++static struct fdma_regs stb7109_fdma_regs = {
++	.fdma_id= FDMA2_ID,
++	.fdma_ver = FDAM2_VER,
++	.fdma_en = FDMA2_ENABLE_REG,
++	.fdma_clk_gate = FDMA2_CLOCKGATE,
++	.fdma_rev_id = FDMA2_REV_ID,
++	.fdma_cmd_statn = STB7109_FDMA_CMD_STATn_REG,
++	.fdma_ptrn = STB7109_FDMA_PTR_REG,
++	.fdma_cntn = STB7109_FDMA_COUNT_REG,
++	.fdma_saddrn = STB7109_FDMA_SADDR_REG,
++	.fdma_daddrn = STB7109_FDMA_DADDR_REG,
++	.fdma_req_ctln = STB7109_FDMA_REQ_CTLn_REG,
++	.fdma_cmd_sta = FDMA2_CMD_MBOX_STAT_REG,
++	.fdma_cmd_set = FDMA2_CMD_MBOX_SET_REG,
++	.fdma_cmd_clr = FDMA2_CMD_MBOX_CLR_REG,
++	.fdma_cmd_mask = FDMA2_CMD_MBOX_MASK_REG,
++	.fdma_int_sta = FDMA2_INT_STAT_REG,
++	.fdma_int_set = FDMA2_INT_SET_REG,
++	.fdma_int_clr= FDMA2_INT_CLR_REG,
++	.fdma_int_mask= FDMA2_INT_MASK_REG,
++	.fdma_sync_reg= FDMA2_SYNCREG,
++	.fdma_dmem_region = STB7109_DMEM_OFFSET,
++	.fdma_imem_region = STB7109_IMEM_OFFSET,
++};
++
++static struct fdma_platform_device_data stb7109_C2_fdma_plat_data = {
++	.registers_ptr = &stb7109_fdma_regs,
++	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
++	.max_ch_num = CONFIG_MAX_STM_DMA_CHANNEL_NR,
++	.fw_device_name = "stb7109_fdmav2.8.bin",
++	.fw.data_reg = (unsigned long*)&STB7109_C2_DMEM_REGION,
++	.fw.imem_reg = (unsigned long*)&STB7109_C2_IMEM_REGION,
++	.fw.imem_fw_sz = STB7109_C2_IMEM_FIRMWARE_SZ,
++	.fw.dmem_fw_sz = STB7109_C2_DMEM_FIRMWARE_SZ,
++	.fw.dmem_len = STB7109_C2_DMEM_REGION_LENGTH,
++	.fw.imem_len = STB7109_C2_IMEM_REGION_LENGTH
++};
++
++static struct fdma_platform_device_data stb7109_C3_fdma_plat_data = {
++	.registers_ptr =(void*) &stb7109_fdma_regs,
++	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
++	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
++	.fw_device_name = "stb7109_fdmav3.0.bin",
++	.fw.data_reg = (unsigned long*)&STB7109_C3_DMEM_REGION,
++	.fw.imem_reg = (unsigned long*)&STB7109_C3_IMEM_REGION,
++	.fw.imem_fw_sz = STB7109_C3_IMEM_FIRMWARE_SZ,
++	.fw.dmem_fw_sz = STB7109_C3_DMEM_FIRMWARE_SZ,
++	.fw.dmem_len = STB7109_C3_DMEM_REGION_LENGTH,
++	.fw.imem_len = STB7109_C3_IMEM_REGION_LENGTH
++
++};
++
++static struct fdma_platform_device_data stb7100_Cx_fdma_plat_data = {
++	.registers_ptr =(void*) &stb7100_fdma_regs,
++	.min_ch_num = CONFIG_MIN_STM_DMA_CHANNEL_NR,
++	.max_ch_num  =CONFIG_MAX_STM_DMA_CHANNEL_NR,
++	.fw_device_name = "stb7100_fdmav2.8.bin",
++	.fw.data_reg = (unsigned long*)&STB7100_DMEM_REGION,
++	.fw.imem_reg = (unsigned long*)&STB7100_IMEM_REGION,
++	.fw.imem_fw_sz = STB7100_IMEM_FIRMWARE_SZ,
++	.fw.dmem_fw_sz = STB7100_DMEM_FIRMWARE_SZ,
++	.fw.dmem_len = STB7100_DMEM_REGION_LENGTH,
++	.fw.imem_len = STB7100_IMEM_REGION_LENGTH
++};
++
++#endif /* CONFIG_STM_DMA */
++
++static struct platform_device fdma_710x_device = {
++	.name		= "stmfdma",
++	.id		= -1,
++	.num_resources	= 2,
++	.resource = (struct resource[2]) {
++		[0] = {
++			.start = STB7100_FDMA_BASE,
++			.end   = STB7100_FDMA_BASE + 0xffff,
++			.flags = IORESOURCE_MEM,
++		},
++		[1] = {
++			.start = LINUX_FDMA_STB7100_IRQ_VECT,
++			.end   = LINUX_FDMA_STB7100_IRQ_VECT,
++			.flags = IORESOURCE_IRQ,
++		},
++	},
++};
++
++static void fdma_setup(int chip_7109, int chip_revision)
++{
++#ifdef CONFIG_STM_DMA
++	if(chip_7109){
++		switch (chip_revision) {
++		case 1:
++			BUG();
++			break;
++		case 2:
++			fdma_710x_device.dev.platform_data =(void*) &stb7109_C2_fdma_plat_data;
++			break;
++		default:
++			fdma_710x_device.dev.platform_data =(void*) &stb7109_C3_fdma_plat_data;
++			break;
++		}
++	} else {
++		/* 7100 */
++		fdma_710x_device.dev.platform_data =(void*) &stb7100_Cx_fdma_plat_data;
++	}
++#endif
++}
++
++/*
++ * ALSA
++ */
++
++static struct resource alsa_710x_resource_pcm0[3] = {
++
++	[0] = {/* allocatable channels*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags 	= IORESOURCE_IRQ
++	},
++	[1]= {/*fdma reqline*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags = IORESOURCE_IRQ
++	},
++	[2] = {/*rising or falling edge I2s clocking
++		 1 == FALLING_EDGE
++		 0 == RISING EDGE */
++		 /*.start = runtime dependant*/
++		 /*.end = runtime dependant*/
++		.flags = IORESOURCE_IRQ
++	}
++};
++
++static struct resource alsa_710x_resource_pcm1[3] = {
++
++	[0] = {/* allocatable channels*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags 	= IORESOURCE_IRQ,
++	},
++	[1]= {/*fdma reqline*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags = IORESOURCE_IRQ,
++	},
++	[2] = {/*rising or falling edge I2s clocking
++		 1 == FALLING_EDGE
++		 0 == RISING EDGE */
++		 /*.start = runtime dependant*/
++		 /*.end = runtime dependant*/
++		.flags = IORESOURCE_IRQ
++	}
++};
++
++static struct resource alsa_710x_resource_spdif[2] = {
++
++	[0] = {/*min allocatable channels*/
++		.start = 2,
++		.end   =2,
++		.flags = IORESOURCE_IRQ
++	},
++	[1] = {/*fdma reqline*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags = IORESOURCE_IRQ
++	}
++};
++
++static struct resource alsa_710x_resource_cnv[2] = {
++
++	[0] = {/*min allocatable channels*/
++		.start = 10,
++		.end   =10,
++		.flags = IORESOURCE_IRQ,
++	},
++	[1] = {/*fdma reqline*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags = IORESOURCE_IRQ,
++	}
++};
++
++static struct resource alsa_710x_resource_pcmin[3] = {
++
++	[0] = {/*min allocatable channels*/
++		.start = 0,
++		.end   = 0,
++		.flags = IORESOURCE_IRQ,
++	},
++	[1] = {/*fdma reqline*/
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags = IORESOURCE_IRQ,
++	},
++	[2] = {/*rising or falling edge I2s clocking
++		 1 == FALLING_EDGE
++		 0 == RISING EDGE */
++		/*.start = runtime dependant*/
++		/*.end   = runtime dependant*/
++		.flags = IORESOURCE_IRQ,
++	}
++};
++
++static struct platform_device alsa_710x_device_pcmin = {
++	.name			= "710x_ALSA_PCMIN",
++	.id			= -1,
++	.num_resources		= ARRAY_SIZE(alsa_710x_resource_pcmin),
++	.resource		= alsa_710x_resource_pcmin,
++};
++
++static struct platform_device alsa_710x_device_pcm0 = {
++	.name			= "710x_ALSA_PCM0",
++	.id			= -1,
++	.num_resources		= ARRAY_SIZE(alsa_710x_resource_pcm0),
++	.resource		= alsa_710x_resource_pcm0,
++};
++
++static struct platform_device alsa_710x_device_pcm1 = {
++	.name			= "710x_ALSA_PCM1",
++	.id			= -1,
++	.num_resources		= ARRAY_SIZE(alsa_710x_resource_pcm1),
++	.resource		= alsa_710x_resource_pcm1,
++};
++
++static struct platform_device alsa_710x_device_spdif = {
++	.name			= "710x_ALSA_SPD",
++	.id			= -1,
++	.num_resources		= ARRAY_SIZE(alsa_710x_resource_spdif),
++	.resource		= alsa_710x_resource_spdif,
++};
++
++static struct platform_device alsa_710x_device_cnv = {
++	.name			= "710x_ALSA_CNV",
++	.id			= -1,
++	.num_resources		= ARRAY_SIZE(alsa_710x_resource_cnv),
++	.resource		= alsa_710x_resource_cnv,
++};
++
++static void alsa_setup(int chip_7109, int chip_revision)
++{
++	if(chip_7109){
++
++		switch (chip_revision) {
++		case 1:
++			alsa_710x_resource_pcm0[2].start =0;
++			alsa_710x_resource_pcm0[2].end = 0;
++
++			alsa_710x_resource_pcm1[2].start =0;
++			alsa_710x_resource_pcm1[2].end = 0;
++
++			alsa_710x_resource_pcmin[2].start = 1;
++			alsa_710x_resource_pcmin[2].end =   1;
++			break;
++		case 2:
++			alsa_710x_resource_pcm0[2].start =0;
++			alsa_710x_resource_pcm0[2].end = 0;
++
++			alsa_710x_resource_pcm1[2].start =0;
++			alsa_710x_resource_pcm1[2].end = 0;
++
++			alsa_710x_resource_pcmin[2].start = 0;
++			alsa_710x_resource_pcmin[2].end =   0;
++			break;
++		default:
++			/* 7109 cut >= 3.0 */
++			alsa_710x_resource_pcm0[2].start =1;
++			alsa_710x_resource_pcm0[2].end = 1;
++
++			alsa_710x_resource_pcm1[2].start =1;
++			alsa_710x_resource_pcm1[2].end = 1;
++
++			alsa_710x_resource_pcmin[2].start = 0;
++			alsa_710x_resource_pcmin[2].end =   0;
++			break;
++		}
++
++		alsa_710x_resource_pcm0[0].start = 2;
++		alsa_710x_resource_pcm0[0].end = 10;
++
++		alsa_710x_resource_pcm1[0].start = 2;
++		alsa_710x_resource_pcm1[0].end 	= 2;
++
++		alsa_710x_resource_pcm0[1].start = STB7109_FDMA_REQ_PCM_0;
++		alsa_710x_resource_pcm0[1].end = STB7109_FDMA_REQ_PCM_0;
++
++		alsa_710x_resource_pcm1[1].start = STB7109_FDMA_REQ_PCM_1;
++		alsa_710x_resource_pcm1[1].end = STB7109_FDMA_REQ_PCM_1;
++
++		alsa_710x_resource_spdif[1].start = STB7109_FDMA_REQ_SPDIF;
++		alsa_710x_resource_spdif[1].end =   STB7109_FDMA_REQ_SPDIF;
++
++		alsa_710x_resource_cnv[0].start =2;
++		alsa_710x_resource_cnv[0].end = 10;
++		alsa_710x_resource_cnv[1].start = STB7109_FDMA_REQ_PCM_0;
++		alsa_710x_resource_cnv[1].end = STB7109_FDMA_REQ_PCM_0;
++
++		alsa_710x_resource_pcmin[1].start = STB7109_FDMA_REQ_PCM_READ;
++		alsa_710x_resource_pcmin[1].end =   STB7109_FDMA_REQ_PCM_READ;
++	} else {
++		/* 7100 */
++		if(chip_revision >=3){
++			alsa_710x_resource_pcm0[0].start = 2;
++			alsa_710x_resource_pcm0[0].end = 10;
++			alsa_710x_resource_pcm1[0].start =2;
++			alsa_710x_resource_pcm1[0].end 	= 2;
++			alsa_710x_resource_cnv[0].start =2;
++			alsa_710x_resource_cnv[0].end = 10;
++		}
++		else {
++			alsa_710x_resource_pcm0[0].start = 10;
++			alsa_710x_resource_pcm0[0].end = 10;
++			alsa_710x_resource_pcm1[0].start = 10;
++			alsa_710x_resource_pcm1[0].end 	= 10;
++			alsa_710x_resource_cnv[0].start =10;
++			alsa_710x_resource_cnv[0].end = 10;
++		}
++		alsa_710x_resource_pcm0[1].start = STB7100_FDMA_REQ_PCM_0;
++		alsa_710x_resource_pcm0[1].end = STB7100_FDMA_REQ_PCM_0;
++
++		alsa_710x_resource_pcm1[1].start = STB7100_FDMA_REQ_PCM_1;
++		alsa_710x_resource_pcm1[1].end = STB7100_FDMA_REQ_PCM_1;
++
++		alsa_710x_resource_spdif[1].start =  STB7100_FDMA_REQ_SPDIF;
++		alsa_710x_resource_spdif[1].end =  STB7100_FDMA_REQ_SPDIF;
++
++		alsa_710x_resource_cnv[1].start = STB7100_FDMA_REQ_PCM_0;
++		alsa_710x_resource_cnv[1].end = STB7100_FDMA_REQ_PCM_0;
++
++		alsa_710x_resource_pcmin[1].start = STB7100_FDMA_REQ_PCM_READ;
++		alsa_710x_resource_pcmin[1].end =   STB7100_FDMA_REQ_PCM_READ;
++
++		alsa_710x_resource_pcm0[2].start =0;
++		alsa_710x_resource_pcm0[2].end = 0;
++
++		alsa_710x_resource_pcm1[2].start =0;
++		alsa_710x_resource_pcm1[2].end = 0;
++
++		alsa_710x_resource_pcmin[2].start = 0;
++		alsa_710x_resource_pcmin[2].end =   0;
++	}
++}

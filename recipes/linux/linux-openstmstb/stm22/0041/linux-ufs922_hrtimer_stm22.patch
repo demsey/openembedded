@@ -1,0 +1,63 @@
+*** linux/include/linux/hrtimer.h       2006-06-18 03:49:35.000000000 +0200
+--- UFS922_Orig/hrtimer/hrtimer.h       2009-02-10 19:27:46.000000000 +0100
+***************
+*** 103,108 ****
+--- 103,111 ----
+   */
+  #define clock_was_set()               do { } while (0)
+
++ extern ktime_t ktime_get(void);
++ extern ktime_t ktime_get_real(void);
++
+  /* Exported timer functions: */
+
+  /* Initialize timers: */
+*** linux/kernel/hrtimer.c      2006-06-18 03:49:35.000000000 +0200
+--- UFS922_Orig/hrtimer/hrtimer.c       2009-02-10 19:28:30.000000000 +0100
+***************
+*** 45,51 ****
+   *
+   * returns the time in ktime_t format
+   */
+! static ktime_t ktime_get(void)
+  {
+        struct timespec now;
+
+--- 45,51 ----
+   *
+   * returns the time in ktime_t format
+   */
+! ktime_t ktime_get(void)
+  {
+        struct timespec now;
+
+***************
+*** 53,65 ****
+
+        return timespec_to_ktime(now);
+  }
+
+  /**
+   * ktime_get_real - get the real (wall-) time in ktime_t format
+   *
+   * returns the time in ktime_t format
+   */
+! static ktime_t ktime_get_real(void)
+  {
+        struct timespec now;
+
+--- 53,66 ----
+
+        return timespec_to_ktime(now);
+  }
++ EXPORT_SYMBOL_GPL(ktime_get);
+
+  /**
+   * ktime_get_real - get the real (wall-) time in ktime_t format
+   *
+   * returns the time in ktime_t format
+   */
+! ktime_t ktime_get_real(void)
+  {
+        struct timespec now;
+

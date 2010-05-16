@@ -1,0 +1,72 @@
+--- linux/drivers/mtd/maps/stboards.c	2010-01-16 04:00:54.000000000 -0500
++++ linux/drivers/mtd/maps/stboards.c	2010-01-16 04:06:54.000000000 -0500
+@@ -54,7 +54,7 @@
+ #define ONBOARD_SIZE (8*1024*1024)
+ #define ONBOARD_BANKWIDTH 2
+ #elif defined(CONFIG_SH_STB7100_REF)
+-#define ONBOARD_SIZE (8*1024*1024)
++#define ONBOARD_SIZE (16*1024*1024)
+ #define ONBOARD_BANKWIDTH 2
+ #elif defined(CONFIG_SH_STB5202_REF)
+ #define ONBOARD_SIZE (32*1024*1024)
+@@ -127,24 +127,42 @@
+ };
+ #endif
+ 
+-static struct mtd_partition onboard_partitions[3] = {
+-	{
+-	 .name = "Boot firmware",
+-	 .size = 0x00040000,
+-	 .offset = 0x00000000,
+-	 /* mask_flags: MTD_WRITEABLE *//* force read-only */
+-	 },
+-	{
+-	 .name = "Kernel",
+-	 .size = 0x00100000,
+-	 .offset = 0x00040000,
+-
+-	 },
+-	{
+-	 .name = "Root FS",
+-	 .size = MTDPART_SIZ_FULL,	/* will expand to the end of the flash */
+-	 .offset = 0x00140000,
+-	 }
++static struct mtd_partition onboard_partitions[7] = {
++ {
++  .name = "Boot firmware :        0xA000.0000-0xA001.FFFF", 
++  .size = 0x00020000, 
++  .offset = 0x00000000,
++  },
++ {
++  .name = "Kernel - RAW           0xA004.0000-0xA019.FFFF",  
++  .size = 0x00160000,  
++  .offset = 0x00040000,  
++  },
++ {
++  .name = "ROOT - SQUASHFS        0xA01A.0000-0xA0B7.FFFF",  
++  .size = 0x009e0000,  
++  .offset = 0x001a0000,  
++  },
++ {
++  .name = "Var - JFFS2            0xA0B8.0000-0xA0FF.FFFF",  
++  .size = 0x00480000,  
++  .offset = 0x00b80000,  
++  },
++ {
++  .name = "BootConfiguration      0xA002.0000-0xA002.FFFF",  
++  .size = 0x00010000,  
++  .offset = 0x00020000,  
++  },
++ {
++  .name = "Flash w/o BL           0xA004.0000-0xA0FF.FFFF",  
++  .size = 0x00fc0000,  
++  .offset = 0x00040000,  
++  },
++ {
++  .name = "MiniUboot - RAW        0xA003.0000-0xA003.FFFF",  
++  .size = 0x00010000,  
++  .offset = 0x00030000,  
++  }
+ };
+ static struct mtd_partition *parsed_parts;
+ static const char *probes[] = { "cmdlinepart", NULL };
