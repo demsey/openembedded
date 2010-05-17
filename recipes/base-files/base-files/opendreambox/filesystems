@@ -3,5 +3,6 @@ ext2
 vfat
 fat
 udf
+iso9660
 cdfs
 *
