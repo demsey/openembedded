@@ -20,15 +20,11 @@ hdparm -S120 /dev/sda
 
 echo 17 > /proc/progress
 
-# set UDMA66, enable dma
-hdparm -d1 /dev/sda
-hdparm -X66 /dev/sda
-
 # accustic management
 hdparm -M128 /dev/sda
 
 echo 18 > /proc/progress
-for mod in dreambox_keyboard fp bcm7400; do
+for mod in dreambox_keyboard bcm7400; do
 	modprobe $mod
 done
 
