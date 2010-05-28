@@ -20,16 +20,16 @@ KV_dm7025 = "2.6.32-dm7025"
 PV_dm7025 = "${KV}-20100303"
 
 KV_dm500hd = "${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', '2.6.18-7.3-dm500hd', '2.6.30-dm500hd', d)}"
-PV_dm500hd = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', '20100413', '20090727', d)}"
+PV_dm500hd = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', '20100528', '20090727', d)}"
 
 KV_dm800 = "${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '2.6.18-7.3-dm800', '2.6.30-dm800', d)}"
-PV_dm800 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '20100414', '20090723', d)}"
+PV_dm800 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '20100528', '20090723', d)}"
 
 KV_dm8000 = "${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '2.6.18-7.3-dm8000', '2.6.30-dm8000', d)}"
-PV_dm8000 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '20100413', '20090820', d)}"
+PV_dm8000 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', '20100528', '20090820', d)}"
 
 RDEPENDS = "kernel (${KV})"
-PR = "r1"
+PR = "r0"
 
 SRC_URI = "http://sources.dreamboxupdate.com/snapshots/dreambox-dvb-modules-${MACHINE}-${PV}.tar.bz2 "
 SRC_URI_append_dm7025 = "http://sources.dreamboxupdate.com/download/7020/fpupgrade-${MACHINE}-v7"
@@ -59,6 +59,21 @@ do_install_mipsel_append_dm7025() {
 do_install_mipsel_append_dm8000() {
 	install -d ${D}${sbindir}
 	install -m 0755 ${WORKDIR}/fpupgrade-${MACHINE}-v7 ${D}${sbindir}/fpupgrade
+}
+
+pkg_postinst_dreambox-dvb-modules () {
+	if [ -d /proc/stb ]; then
+		depmod -ae
+		update-modules
+	fi
+	true
+}
+
+pkg_postrm_dreambox-dvb-modules () {
+	if [ -d /proc/stb ]; then
+		update-modules
+	fi
+	true
 }
 
 PACKAGE_ARCH := "${MACHINE_ARCH}"
