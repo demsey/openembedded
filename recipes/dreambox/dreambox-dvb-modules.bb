@@ -3,7 +3,7 @@ SECTION = "base"
 PRIORITY = "required"
 LICENSE = "proprietary"
 MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
-RDEPENDS_dm8000 = "dreambox-secondstage"
+#RDEPENDS_dm8000 = "dreambox-secondstage"
 RDEPENDS_dm800 = "dreambox-secondstage"
 RDEPENDS_dm500hd = "dreambox-secondstage"
 
@@ -30,6 +30,7 @@ PV_dm8000 = "${KV}-${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', 
 
 RDEPENDS = "kernel (${KV})"
 PR = "r0"
+PR_dm8000 = "r1"
 
 SRC_URI = "http://sources.dreamboxupdate.com/snapshots/dreambox-dvb-modules-${MACHINE}-${PV}.tar.bz2 "
 SRC_URI_append_dm7025 = "http://sources.dreamboxupdate.com/download/7020/fpupgrade-${MACHINE}-v7"
