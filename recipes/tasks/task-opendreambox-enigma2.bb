@@ -63,6 +63,12 @@ RDEPENDS_task-opendreambox-enigma2_append_dm800 = "\
   enigma2-plugin-systemplugins-videomode \
 "
 
+RDEPENDS_task-opendreambox-enigma2_append_dm800se = "\
+  enigma2-plugin-extensions-genuinedreambox \
+  enigma2-plugin-systemplugins-videomode \
+  enigma2-plugin-systemplugins-tempfancontrol \
+"
+
 RDEPENDS_task-opendreambox-enigma2_append_dm8000 = "\
   enigma2-plugin-extensions-genuinedreambox \
   enigma2-plugin-systemplugins-commoninterfaceassignment \

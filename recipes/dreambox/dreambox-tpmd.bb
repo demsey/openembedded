@@ -9,6 +9,7 @@ RDEPENDS = "dreambox-wdog"
 PV = "1"
 PV_dm500hd = "4"
 PV_dm800 = "4"
+PV_dm800se = "4"
 PV_dm8000 = "4"
 PR = "r2"
 

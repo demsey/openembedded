@@ -47,6 +47,10 @@ RDEPENDS_${PN}_append_dm800 = "\
   ${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', '${WLAN_USB_MODULES_2_6_18}', '${WLAN_CRYPTO_MODULES} ${WLAN_USB_MODULES}', d)} \
 "
 
+RDEPENDS_${PN}_append_dm800se = "\
+  ${@base_contains('PREFERRED_VERSION_linux-dm800se', '2.6.18', '${WLAN_USB_MODULES_2_6_18}', '${WLAN_CRYPTO_MODULES} ${WLAN_USB_MODULES}', d)} \
+"
+
 RDEPENDS_${PN}_append_dm8000 = "\
   ${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', 'task-opendreambox-madwifi', '${WLAN_CRYPTO_MODULES} ${WLAN_PCI_MODULES}', d)} \
 "
