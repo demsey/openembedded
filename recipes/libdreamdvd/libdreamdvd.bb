@@ -4,7 +4,7 @@ LICENSE = "GPL"
 DEPENDS = "libdvdnav"
 RDEPENDS = "libdvdnav"
 
-PR = "r0"
+PR = "r1"
 PV = "0.9+cvs${SRCDATE}"
 
 SRCDATE = "20100330"
