@@ -1,4 +1,4 @@
-# cuberevo-sh4.inc
+# st-sh4.inc
 
 MACHINE_FEATURES += "alsa pci wifi"
 
@@ -11,4 +11,4 @@ TARGET_ARCH = "sh4"
 PACKAGE_ARCH = ${TARGET_ARCH}
 MACHINE_ARCH = "sh4"
 
-require conf/machine/include/cuberevo.inc
+require conf/machine/include/st.inc

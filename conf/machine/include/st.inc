@@ -1,4 +1,4 @@
-# cuberevo.inc
+# st.inc
 
 EXTRA_IMAGEDEPENDS += "dreambox-secondstage dreambox-buildimage-native"
 
