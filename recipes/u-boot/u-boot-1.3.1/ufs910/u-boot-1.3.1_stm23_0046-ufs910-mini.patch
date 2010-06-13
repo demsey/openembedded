@@ -1,0 +1,3346 @@
+diff -Naur u-boot-1.3.1.org/common/cmd_autoscript.c u-boot-1.3.1/common/cmd_autoscript.c
+--- u-boot-1.3.1.org/common/cmd_autoscript.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_autoscript.c	2010-05-09 00:49:58.665401054 +0200
+@@ -58,11 +58,12 @@
+ 	ulong *len_ptr;
+ 	char *cmd;
+ 	int rcode = 0;
++#if !defined(CONFIG_UFS910_MINI)
+ 	int verify;
+ 
+ 	cmd = getenv ("verify");
+ 	verify = (cmd && (*cmd == 'n')) ? 0 : 1;
+-
++#endif
+ 
+ 	memmove (hdr, (char *)addr, sizeof(image_header_t));
+ 
+@@ -83,12 +84,14 @@
+ 	data = addr + sizeof(image_header_t);
+ 	len = ntohl(hdr->ih_size);
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (verify) {
+ 		if (crc32(0, (uchar *)data, len) != ntohl(hdr->ih_dcrc)) {
+ 			puts ("Bad data crc\n");
+ 			return 1;
+ 		}
+ 	}
++#endif
+ 
+ 	if (hdr->ih_type != IH_TYPE_SCRIPT) {
+ 		puts ("Bad image type\n");
+@@ -99,7 +102,9 @@
+ 	len_ptr = (ulong *)data;
+ 
+ 	if ((len = ntohl(*len_ptr)) == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Empty Script\n");
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -165,7 +170,9 @@
+ 		addr = simple_strtoul (argv[1],0,16);
+ 	}
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("## Executing script at %08lx\n",addr);
++#endif
+ 	rcode = autoscript (addr);
+ 	return rcode;
+ }
+diff -Naur u-boot-1.3.1.org/common/cmd_boot.c u-boot-1.3.1/common/cmd_boot.c
+--- u-boot-1.3.1.org/common/cmd_boot.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_boot.c	2010-05-09 00:41:52.475401914 +0200
+@@ -38,13 +38,17 @@
+ 	int     rcode = 0;
+ 
+ 	if (argc < 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+ 	addr = simple_strtoul(argv[1], NULL, 16);
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("## Starting application at 0x%08lX ...\n", addr);
++#endif
+ 
+ 	/*
+ 	 * pass address parameter as argv[0] (aka command name),
+@@ -67,7 +71,9 @@
+ #endif
+ 	if (rc != 0) rcode = 1;
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("## Application terminated, rc = 0x%lX\n", rc);
++#endif
+ 	return rcode;
+ }
+ 
+diff -Naur u-boot-1.3.1.org/common/cmd_bootm.c u-boot-1.3.1/common/cmd_bootm.c
+--- u-boot-1.3.1.org/common/cmd_bootm.c	2010-05-09 00:36:16.699666839 +0200
++++ u-boot-1.3.1/common/cmd_bootm.c	2010-05-09 00:45:22.284652377 +0200
+@@ -169,8 +169,10 @@
+ 	int	(*appl)(int, char *[]);
+ 	image_header_t *hdr = &header;
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	s = getenv ("verify");
+ 	verify = (s && (*s == 'n')) ? 0 : 1;
++#endif
+ 
+ 	if (argc < 2) {
+ 		addr = load_addr;
+@@ -179,7 +181,9 @@
+ 	}
+ 
+ 	show_boot_progress (1);
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("## Booting image at %08lx ...\n", addr);
++#endif
+ 
+ 	/* Copy header so we can blank CRC field for re-calculation */
+ #ifdef CONFIG_HAS_DATAFLASH
+@@ -201,7 +205,9 @@
+ 		} else
+ #endif	/* __I386__ */
+ 	    {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Bad Magic Number\n");
++#endif
+ 		show_boot_progress (-1);
+ 		return 1;
+ 	    }
+@@ -215,7 +221,9 @@
+ 	hdr->ih_hcrc = 0;
+ 
+ 	if (crc32 (0, (uchar *)data, len) != checksum) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Bad Header Checksum\n");
++#endif
+ 		show_boot_progress (-2);
+ 		return 1;
+ 	}
+@@ -236,6 +244,7 @@
+ 	data = addr + sizeof(image_header_t);
+ 	len  = ntohl(hdr->ih_size);
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (verify) {
+ 		puts ("   Verifying Checksum ... ");
+ 		if (crc32 (0, (uchar *)data, len) != ntohl(hdr->ih_dcrc)) {
+@@ -245,6 +254,7 @@
+ 		}
+ 		puts ("OK\n");
+ 	}
++#endif
+ 	show_boot_progress (4);
+ 
+ 	len_ptr = (ulong *)data;
+@@ -277,7 +287,9 @@
+ # error Unknown CPU type
+ #endif
+ 	{
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Unsupported Architecture 0x%x\n", hdr->ih_arch);
++#endif
+ 		show_boot_progress (-4);
+ 		return 1;
+ 	}
+@@ -294,6 +306,7 @@
+ 	case IH_TYPE_KERNEL:
+ 		name = "Kernel Image";
+ 		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_TYPE_MULTI:
+ 		name = "Multi-File Image";
+ 		len  = ntohl(len_ptr[0]);
+@@ -302,7 +315,11 @@
+ 		for (i=1; len_ptr[i]; ++i)
+ 			data += 4;
+ 		break;
+-	default: printf ("Wrong Image Type for %s command\n", cmdtp->name);
++#endif
++	default:
++#if !defined(CONFIG_UFS910_MINI)
++		printf ("Wrong Image Type for %s command\n", cmdtp->name);
++#endif
+ 		show_boot_progress (-5);
+ 		return 1;
+ 	}
+@@ -330,7 +347,9 @@
+ 	switch (hdr->ih_comp) {
+ 	case IH_COMP_NONE:
+ 		if(ntohl(hdr->ih_load) == addr) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("   XIP %s ... ", name);
++#endif
+ 		} else {
+ #if defined(CONFIG_HW_WATCHDOG) || defined(CONFIG_WATCHDOG)
+ 			size_t l = len;
+@@ -370,7 +389,7 @@
+ 		const ulong Usize = isize;		/* un-compressed size */
+ 		const ulong Uend  = Uload + Usize - 1;	/* un-compressed end address */
+ 
+-#if !defined(CONFIG_SH_SE_MODE)
++#if !defined(CONFIG_SH_SE_MODE) && !defined(CONFIG_UFS910_MINI)
+ 		/* assert ( IS_IN_P1_REGION(Uload) ); */
+ 		if ( (Uload < P1SEG) || (Uend >= P2SEG) )
+ 		{
+@@ -383,27 +402,33 @@
+ 		/* assert (Uload >= CFG_SDRAM_BASE); */
+ 		if ( PHYSADDR(Uload) < PHYSADDR(CFG_SDRAM_BASE) )
+ 		{
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("\nERROR: Uncompressed image (0x%08x) is below RAM (0x%08x)\n",
+ 				Uload,
+ 				CFG_SDRAM_BASE);
++#endif
+ 			return 1;	/* unable to proceed */
+ 		}
+ 
+ 		/* assert (Uend < CFG_MEMTEST_END); */
+ 		if ( PHYSADDR(Uend) >= PHYSADDR(CFG_MEMTEST_END) )
+ 		{
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("\nERROR: Uncompressed image (0x%08x) is beyond safe RAM (0x%08x)\n",
+ 				Uend,
+ 				CFG_MEMTEST_END);
++#endif
+ 			return 1;	/* unable to proceed */
+ 		}
+ 
+ 		/* assert ( (Cload > Uend) || (Uload > Cend) ); */
+ 		if ( !((PHYSADDR(Cload) > PHYSADDR(Uend)) || (PHYSADDR(Uload) > PHYSADDR(Cend))) )
+ 		{
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("\nERROR: Overlapping images (0x%08x..0x%08x) and (0x%08x..0x%08x)\n",
+ 				Cload, Cend,
+ 				Uload, Uend);
++#endif
+ 			return 1;	/* unable to proceed */
+ 		}
+ 		unc_len = Usize;	/* we now know that it will fit okay */
+@@ -411,7 +436,9 @@
+ #endif	/* CONFIG_SH4 */
+ 		if (gunzip ((void *)ntohl(hdr->ih_load), unc_len,
+ 			    (uchar *)data, &len) != 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			puts ("GUNZIP ERROR - must RESET board to recover\n");
++#endif
+ 			show_boot_progress (-6);
+ 			do_reset (cmdtp, flag, argc, argv);
+ 		}
+@@ -442,8 +469,10 @@
+ 			(unsigned char *)ntohl(hdr->ih_load), &unc_len,
+ 			(unsigned char *)data, len);
+ 		if (ret != SZ_OK) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("LZMA: uncompress or overwrite error %d "
+ 				"- must RESET board to recover\n", ret);
++#endif
+ 			show_boot_progress (-6);
+ 			do_reset (cmdtp, flag, argc, argv);
+ 		}
+@@ -467,23 +494,29 @@
+ 		/* load (and uncompress), but don't start if "autostart"
+ 		 * is set to "no"
+ 		 */
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (((s = getenv("autostart")) != NULL) && (strcmp(s,"no") == 0)) {
+ 			char buf[32];
+ 			sprintf(buf, "%lX", len);
+ 			setenv("filesize", buf);
+ 			return 0;
+ 		}
++#endif
+ 		appl = (int (*)(int, char *[]))ntohl(hdr->ih_ep);
+ 		(*appl)(argc-1, &argv[1]);
+ 		return 0;
+ 	case IH_TYPE_KERNEL:
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_TYPE_MULTI:
++#endif
+ 		/* handled below */
+ 		break;
+ 	default:
+ 		if (iflag)
+ 			enable_interrupts();
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Can't boot image type %d\n", hdr->ih_type);
++#endif
+ 		show_boot_progress (-8);
+ 		return 1;
+ 	}
+@@ -498,10 +531,12 @@
+ 	    do_bootm_linux  (cmdtp, flag, argc, argv,
+ 			     addr, len_ptr, verify);
+ 	    break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_OS_NETBSD:
+ 	    do_bootm_netbsd (cmdtp, flag, argc, argv,
+ 			     addr, len_ptr, verify);
+ 	    break;
++#endif
+ 
+ #ifdef CONFIG_LYNXKDI
+ 	case IH_OS_LYNXOS:
+@@ -510,10 +545,12 @@
+ 	    break;
+ #endif
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_OS_RTEMS:
+ 	    do_bootm_rtems (cmdtp, flag, argc, argv,
+ 			     addr, len_ptr, verify);
+ 	    break;
++#endif
+ 
+ #if defined(CONFIG_CMD_ELF)
+ 	case IH_OS_VXWORKS:
+@@ -1151,6 +1188,7 @@
+ }
+ #endif /* CONFIG_PPC */
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ static void
+ do_bootm_netbsd (cmd_tbl_t *cmdtp, int flag,
+ 		int	argc, char *argv[],
+@@ -1228,6 +1266,7 @@
+ 	 */
+ 	(*loader) (gd->bd, img_addr, consdev, cmdline);
+ }
++#endif
+ 
+ #if defined(CONFIG_ARTOS) && defined(CONFIG_PPC)
+ 
+@@ -1498,7 +1537,7 @@
+ 	printf ("   Load Address: %08x\n"
+ 		"   Entry Point:  %08x\n",
+ 		 ntohl(hdr->ih_load), ntohl(hdr->ih_ep));
+-
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (hdr->ih_type == IH_TYPE_MULTI) {
+ 		int i;
+ 		ulong len;
+@@ -1510,6 +1549,7 @@
+ 			print_size (len, "\n");
+ 		}
+ 	}
++#endif
+ }
+ 
+ 
+@@ -1519,12 +1559,17 @@
+ 	char *os, *arch, *type, *comp;
+ 
+ 	switch (hdr->ih_os) {
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_OS_INVALID:	os = "Invalid OS";		break;
+ 	case IH_OS_NETBSD:	os = "NetBSD";			break;
++#endif
+ 	case IH_OS_LINUX:	os = "Linux";			break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_OS_VXWORKS:	os = "VxWorks";			break;
+ 	case IH_OS_QNX:		os = "QNX";			break;
++#endif
+ 	case IH_OS_U_BOOT:	os = "U-Boot";			break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_OS_RTEMS:	os = "RTEMS";			break;
+ #ifdef CONFIG_ARTOS
+ 	case IH_OS_ARTOS:	os = "ARTOS";			break;
+@@ -1532,10 +1577,12 @@
+ #ifdef CONFIG_LYNXKDI
+ 	case IH_OS_LYNXOS:	os = "LynxOS";			break;
+ #endif
++#endif
+ 	default:		os = "Unknown OS";		break;
+ 	}
+ 
+ 	switch (hdr->ih_arch) {
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_CPU_INVALID:	arch = "Invalid CPU";		break;
+ 	case IH_CPU_ALPHA:	arch = "Alpha";			break;
+ 	case IH_CPU_ARM:	arch = "ARM";			break;
+@@ -1551,29 +1598,40 @@
+ 	case IH_CPU_NIOS:	arch = "Nios";			break;
+ 	case IH_CPU_PPC:	arch = "PowerPC";		break;
+ 	case IH_CPU_S390:	arch = "IBM S390";		break;
++#endif
+ 	case IH_CPU_SH:		arch = "SuperH";		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_CPU_SPARC64:	arch = "SPARC 64 Bit";		break;
+ 	case IH_CPU_SPARC:	arch = "SPARC";			break;
+ 	case IH_CPU_ST200:	arch = "ST200";			break;
++#endif
+ 	default:		arch = "Unknown Architecture";	break;
+ 	}
+ 
+ 	switch (hdr->ih_type) {
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_TYPE_INVALID:	type = "Invalid Image";		break;
++#endif
+ 	case IH_TYPE_STANDALONE:type = "Standalone Program";	break;
+ 	case IH_TYPE_KERNEL:	type = "Kernel Image";		break;
+ 	case IH_TYPE_RAMDISK:	type = "RAMDisk Image";		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_TYPE_MULTI:	type = "Multi-File Image";	break;
+ 	case IH_TYPE_FIRMWARE:	type = "Firmware";		break;
++#endif
+ 	case IH_TYPE_SCRIPT:	type = "Script";		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_TYPE_FLATDT:	type = "Flat Device Tree";	break;
++#endif
+ 	default:		type = "Unknown Image";		break;
+ 	}
+ 
+ 	switch (hdr->ih_comp) {
+ 	case IH_COMP_NONE:	comp = "uncompressed";		break;
+ 	case IH_COMP_GZIP:	comp = "gzip compressed";	break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case IH_COMP_BZIP2:	comp = "bzip2 compressed";	break;
++#endif
+ 	case IH_COMP_LZMA:	comp = "lzma compressed";	break;
+ 	default:		comp = "unknown compression";	break;
+ 	}
+@@ -1617,7 +1675,9 @@
+ 	i = 10;
+ 	flags = src[3];
+ 	if (src[2] != DEFLATED || (flags & RESERVED) != 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Error: Bad gzipped data\n");
++#endif
+ 		return (-1);
+ 	}
+ 	if ((flags & EXTRA_FIELD) != 0)
+@@ -1631,7 +1691,9 @@
+ 	if ((flags & HEAD_CRC) != 0)
+ 		i += 2;
+ 	if (i >= *lenp) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Error: gunzip out of data in header\n");
++#endif
+ 		return (-1);
+ 	}
+ 
+@@ -1645,7 +1707,9 @@
+ 
+ 	r = inflateInit2(&s, -MAX_WBITS);
+ 	if (r != Z_OK) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Error: inflateInit2() returned %d\n", r);
++#endif
+ 		return (-1);
+ 	}
+ 	s.next_in = src + i;
+@@ -1654,7 +1718,9 @@
+ 	s.avail_out = dstlen;
+ 	r = inflate(&s, Z_FINISH);
+ 	if (r != Z_OK && r != Z_STREAM_END) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Error: inflate() returned %d\n", r);
++#endif
+ 		return (-1);
+ 	}
+ 	*lenp = s.next_out - (unsigned char *) dst;
+@@ -1670,6 +1736,7 @@
+ }
+ #endif /* CONFIG_BZIP2 */
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ static void
+ do_bootm_rtems (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[],
+ 		ulong addr, ulong *len_ptr, int verify)
+@@ -1691,6 +1758,7 @@
+ 
+ 	(*entry_point ) ( gd->bd );
+ }
++#endif
+ 
+ #if defined(CONFIG_CMD_ELF)
+ static void
+diff -Naur u-boot-1.3.1.org/common/cmd_ext2.c u-boot-1.3.1/common/cmd_ext2.c
+--- u-boot-1.3.1.org/common/cmd_ext2.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_ext2.c	2010-05-09 00:41:55.019403220 +0200
+@@ -56,6 +56,7 @@
+ #define PRINTF(fmt,args...)
+ #endif
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ int do_ext2ls (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	char *filename = "/";
+@@ -66,7 +67,9 @@
+ 	int part_length;
+ 
+ 	if (argc < 3) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return(1);
+ 	}
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
+@@ -120,6 +123,7 @@
+ 	"<interface> <dev[:part]> [directory]\n"
+ 	"    - list files from 'dev' on 'interface' in a 'directory'\n"
+ );
++#endif
+ 
+ /******************************************************************************
+  * Ext2fs boot command intepreter. Derived from diskboot
+@@ -137,6 +141,7 @@
+ 	char *addr_str;
+ 
+ 	switch (argc) {
++#if !defined(CONFIG_UFS910_MINI)
+ 	case 3:
+ 		addr_str = getenv("loadaddr");
+ 		if (addr_str != NULL) {
+@@ -152,6 +157,7 @@
+ 		filename = getenv ("bootfile");
+ 		count = 0;
+ 		break;
++#endif
+ 	case 5:
+ 		addr = simple_strtoul (argv[3], NULL, 16);
+ 		filename = argv[4];
+@@ -164,26 +170,34 @@
+ 		break;
+ 
+ 	default:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return(1);
+ 	}
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (!filename) {
+ 		puts ("\n** No boot file defined **\n");
+ 		return(1);
+ 	}
++#endif
+ 
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
+ 	dev_desc = get_dev(argv[1],dev);
+ 	if (dev_desc==NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("\n** Block device %s %d not supported\n", argv[1], dev);
++#endif
+ 		return(1);
+ 	}
+ 	if (*ep) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (*ep != ':') {
+ 			puts ("\n** Invalid boot device, use `dev[:part]' **\n");
+ 			return(1);
+ 		}
++#endif
+ 		part = (int)simple_strtoul(++ep, NULL, 16);
+ 	}
+ 
+@@ -191,14 +205,18 @@
+ 
+ 	if (part != 0) {
+ 		if (get_partition_info (dev_desc, part, &info)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("** Bad partition %d **\n", part);
++#endif
+ 			return(1);
+ 		}
+ 
+ 		if (strncmp((char *)info.type, BOOT_PART_TYPE, sizeof(info.type)) != 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("\n** Invalid partition type \"%.32s\""
+ 				" (expect \"" BOOT_PART_TYPE "\")\n",
+ 				info.type);
++#endif
+ 			return(1);
+ 		}
+ 		PRINTF ("\nLoading from block device %s device %d, partition %d: "
+@@ -211,20 +229,26 @@
+ 
+ 
+ 	if ((part_length = ext2fs_set_blk_dev(dev_desc, part)) == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Bad partition - %s %d:%d **\n",  argv[1], dev, part);
++#endif
+ 		ext2fs_close();
+ 		return(1);
+ 	}
+ 
+ 	if (!ext2fs_mount(part_length)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Bad ext2 partition or disk - %s %d:%d **\n",  argv[1], dev, part);
++#endif
+ 		ext2fs_close();
+ 		return(1);
+ 	}
+ 
+ 	filelen = ext2fs_open(filename);
+ 	if (filelen < 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("** File not found %s\n", filename);
++#endif
+ 		ext2fs_close();
+ 		return(1);
+ 	}
+@@ -233,7 +257,9 @@
+ 	}
+ 
+ 	if (ext2fs_read((char *)addr, filelen) != filelen) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("\n** Unable to read \"%s\" from %s %d:%d **\n", filename, argv[1], dev, part);
++#endif
+ 		ext2fs_close();
+ 		return(1);
+ 	}
+diff -Naur u-boot-1.3.1.org/common/cmd_fat.c u-boot-1.3.1/common/cmd_fat.c
+--- u-boot-1.3.1.org/common/cmd_fat.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_fat.c	2010-05-09 00:41:55.264655578 +0200
+@@ -45,24 +45,32 @@
+ 	char *ep;
+ 
+ 	if (argc < 5) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("usage: fatload <interface> <dev[:part]> <addr> <filename> [bytes]\n");
++#endif
+ 		return 1;
+ 	}
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
+ 	dev_desc=get_dev(argv[1],dev);
+ 	if (dev_desc==NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("\n** Invalid boot device **\n");
++#endif
+ 		return 1;
+ 	}
+ 	if (*ep) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (*ep != ':') {
+ 			puts ("\n** Invalid boot device, use `dev[:part]' **\n");
+ 			return 1;
+ 		}
++#endif
+ 		part = (int)simple_strtoul(++ep, NULL, 16);
+ 	}
+ 	if (fat_register_device(dev_desc,part)!=0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("\n** Unable to use %s %d:%d for fatload **\n",argv[1],dev,part);
++#endif
+ 		return 1;
+ 	}
+ 	offset = simple_strtoul (argv[3], NULL, 16);
+@@ -73,7 +81,9 @@
+ 	size = file_fat_read (argv[4], (unsigned char *) offset, count);
+ 
+ 	if(size==-1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("\n** Unable to read \"%s\" from %s %d:%d **\n",argv[4],argv[1],dev,part);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -94,6 +104,7 @@
+ 	"      to address 'addr' from dos filesystem\n"
+ );
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ int do_fat_ls (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	char *filename = "/";
+@@ -104,7 +115,9 @@
+ 	block_dev_desc_t *dev_desc=NULL;
+ 
+ 	if (argc < 3) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("usage: fatls <interface> <dev[:part]> [directory]\n");
++#endif
+ 		return (0);
+ 	}
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
+@@ -149,7 +162,9 @@
+ 	block_dev_desc_t *dev_desc=NULL;
+ 
+ 	if (argc < 2) {
++#if !defined (CONFIG_UFS910_MINI)
+ 		printf ("usage: fatinfo <interface> <dev[:part]>\n");
++#endif
+ 		return (0);
+ 	}
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
+@@ -178,6 +193,7 @@
+ 	"<interface> <dev[:part]>\n"
+ 	"    - print information about filesystem from 'dev' on 'interface'\n"
+ );
++#endif
+ 
+ #ifdef NOT_IMPLEMENTED_YET
+ /* find first device whose first partition is a DOS filesystem */
+diff -Naur u-boot-1.3.1.org/common/cmd_flash.c u-boot-1.3.1/common/cmd_flash.c
+--- u-boot-1.3.1.org/common/cmd_flash.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_flash.c	2010-05-09 01:37:42.692651194 +0200
+@@ -184,8 +184,10 @@
+ 		} /* bank */
+ 		if (!found){
+ 			/* error, addres not in flash */
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf("Error: end address (0x%08lx) not in flash!\n",
+ 								*addr_last);
++#endif
+ 			return -1;
+ 		}
+ 	} /* "start +length" from used */
+@@ -246,15 +248,19 @@
+ 				if (addr_last > b_end) {
+ 					s_last[bank] = s_end;
+ 				} else {
++#if !defined(CONFIG_UFS910_MINI)
+ 					puts ("Error: end address"
+ 						" not on sector boundary\n");
++#endif
+ 					rcode = 1;
+ 					break;
+ 				}
+ 			}
+ 			if (s_last[bank] < s_first[bank]) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				puts ("Error: end sector"
+ 					" precedes start sector\n");
++#endif
+ 				rcode = 1;
+ 				break;
+ 			}
+@@ -262,12 +268,16 @@
+ 			addr_first = (sect == s_end) ? b_end + 1: info->start[sect + 1];
+ 			(*s_count) += s_last[bank] - s_first[bank] + 1;
+ 		} else if (addr_first >= info->start[0] && addr_first < b_end) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			puts ("Error: start address not on sector boundary\n");
++#endif
+ 			rcode = 1;
+ 			break;
+ 		} else if (s_last[bank] >= 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			puts ("Error: cannot span across banks when they are"
+ 			       " mapped in reverse order\n");
++#endif
+ 			rcode = 1;
+ 			break;
+ 		}
+@@ -276,6 +286,7 @@
+ 	return rcode;
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ int do_flinfo ( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	ulong bank;
+@@ -295,14 +306,17 @@
+ 
+ 	bank = simple_strtoul(argv[1], NULL, 16);
+ 	if ((bank < 1) || (bank > CFG_MAX_FLASH_BANKS)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Only FLASH Banks # 1 ... # %d supported\n",
+ 			CFG_MAX_FLASH_BANKS);
++#endif
+ 		return 1;
+ 	}
+ 	printf ("\nBank # %ld: ", bank);
+ 	flash_print_info (&flash_info[bank-1]);
+ 	return 0;
+ }
++#endif
+ 
+ int do_flerase (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+@@ -317,7 +331,9 @@
+ 	int rcode = 0;
+ 
+ 	if (argc < 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -332,7 +348,9 @@
+ 
+ 	if ((n = abbrev_spec(argv[1], &info, &sect_first, &sect_last)) != 0) {
+ 		if (n < 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			puts ("Bad sector specification\n");
++#endif
+ 			return 1;
+ 		}
+ 		printf ("Erase Flash Sectors %d-%d in Bank # %d ",
+@@ -368,15 +386,19 @@
+ #endif
+ 
+ 	if (argc != 3) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+ 	if (strcmp(argv[1], "bank") == 0) {
+ 		bank = simple_strtoul(argv[2], NULL, 16);
+ 		if ((bank < 1) || (bank > CFG_MAX_FLASH_BANKS)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("Only FLASH Banks # 1 ... # %d supported\n",
+ 				CFG_MAX_FLASH_BANKS);
++#endif
+ 			return 1;
+ 		}
+ 		printf ("Erase Flash Bank # %ld ", bank);
+@@ -386,12 +408,16 @@
+ 	}
+ 
+ 	if (addr_spec(argv[1], argv[2], &addr_first, &addr_last) < 0){
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Bad address format\n");
++#endif
+ 		return 1;
+ 	}
+ 
+ 	if (addr_first >= addr_last) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -433,8 +459,10 @@
+ 		}
+ 		printf ("Erased %d sectors\n", erased);
+ 	} else if (rcode == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Error: start and/or end address"
+ 			" not on sector boundary\n");
++#endif
+ 		rcode = 1;
+ 	}
+ 	return rcode;
+@@ -456,7 +484,9 @@
+ #endif
+ 
+ 	if (argc < 3) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -465,7 +495,9 @@
+ 	} else if (strcmp(argv[1], "on") == 0) {
+ 		p = 1;
+ 	} else {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -514,7 +546,9 @@
+ 
+ 	if ((n = abbrev_spec(argv[2], &info, &sect_first, &sect_last)) != 0) {
+ 		if (n < 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			puts ("Bad sector specification\n");
++#endif
+ 			return 1;
+ 		}
+ 		printf("%sProtect Flash Sectors %d-%d in Bank # %d\n",
+@@ -565,15 +599,19 @@
+ #endif
+ 
+ 	if (argc != 4) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+ 	if (strcmp(argv[2], "bank") == 0) {
+ 		bank = simple_strtoul(argv[3], NULL, 16);
+ 		if ((bank < 1) || (bank > CFG_MAX_FLASH_BANKS)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("Only FLASH Banks # 1 ... # %d supported\n",
+ 				CFG_MAX_FLASH_BANKS);
++#endif
+ 			return 1;
+ 		}
+ 		printf ("%sProtect Flash Bank # %ld\n",
+@@ -581,7 +619,9 @@
+ 		info = &flash_info[bank-1];
+ 
+ 		if (info->flash_id == FLASH_UNKNOWN) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			puts ("missing or unknown FLASH type\n");
++#endif
+ 			return 1;
+ 		}
+ 		for (i=0; i<info->sector_count; ++i) {
+@@ -602,12 +642,16 @@
+ 	}
+ 
+ 	if (addr_spec(argv[2], argv[3], &addr_first, &addr_last) < 0){
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("Bad address format\n");
++#endif
+ 		return 1;
+ 	}
+ 
+ 	if (addr_first >= addr_last) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 	rcode = flash_sect_protect (p, addr_first, addr_last);
+@@ -661,8 +705,10 @@
+ 		printf ("%sProtected %d sectors\n",
+ 			p ? "" : "Un-", protected);
+ 	} else if (rcode == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Error: start and/or end address"
+ 			" not on sector boundary\n");
++#endif
+ 		rcode = 1;
+ 	}
+ 	return rcode;
+@@ -680,6 +726,7 @@
+ # define TMP_PROT_OFF	/* empty */
+ #endif
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ U_BOOT_CMD(
+ 	flinfo,    2,    1,    do_flinfo,
+ 	"flinfo  - print FLASH memory information\n",
+@@ -687,6 +734,7 @@
+ 	"flinfo N\n    - print information for FLASH memory bank # N\n"
+ );
+ 
++
+ U_BOOT_CMD(
+ 	erase,   3,   0,  do_flerase,
+ 	"erase   - erase FLASH memory\n",
+@@ -725,6 +773,7 @@
+ 	TMP_PROT_OFF
+ 	"protect off all\n    - make all FLASH banks writable\n"
+ );
++#endif
+ 
+ #undef	TMP_ERASE
+ #undef	TMP_PROT_ON
+diff -Naur u-boot-1.3.1.org/common/cmd_ide.c u-boot-1.3.1/common/cmd_ide.c
+--- u-boot-1.3.1.org/common/cmd_ide.c	2010-05-09 00:36:13.272405401 +0200
++++ u-boot-1.3.1/common/cmd_ide.c	2010-05-09 01:34:15.914651256 +0200
+@@ -204,18 +204,23 @@
+     switch (argc) {
+     case 0:
+     case 1:
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 	return 1;
+     case 2:
+ 	if (strncmp(argv[1],"res",3) == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("\nReset IDE"
+ #ifdef CONFIG_IDE_8xx_DIRECT
+ 			" on PCMCIA " PCMCIA_SLOT_MSG
+ #endif
+ 			": ");
++#endif
+ 
+ 		ide_init ();
+ 		return 0;
++#if !defined(CONFIG_UFS910_MINI)
+ 	} else if (strncmp(argv[1],"inf",3) == 0) {
+ 		int i;
+ 
+@@ -253,9 +256,13 @@
+ 			rcode ++;
+ 		}
+ 		return rcode;
++#endif
+ 	}
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 	return 1;
++#if !defined(CONFIG_UFS910_MINI)
+     case 3:
+ 	if (strncmp(argv[1],"dev",3) == 0) {
+ 		int dev = (int)simple_strtoul(argv[2], NULL, 10);
+@@ -303,11 +310,14 @@
+ #endif
+ 	}
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 	return 1;
++#endif
+     default:
+ 	/* at least 4 args */
+-
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (strcmp(argv[1],"read") == 0) {
+ 		ulong addr = simple_strtoul(argv[2], NULL, 16);
+ 		ulong cnt  = simple_strtoul(argv[4], NULL, 16);
+@@ -363,14 +373,18 @@
+ 			return 1;
+ 		}
+ 	} else {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		rcode = 1;
+ 	}
++#endif
+ 
+ 	return rcode;
+     }
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ int do_diskboot (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	char *boot_device = NULL;
+@@ -396,7 +410,9 @@
+ 		boot_device = argv[2];
+ 		break;
+ 	default:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		show_boot_progress (-42);
+ 		return 1;
+ 	}
+@@ -511,6 +527,7 @@
+ 	}
+ 	return rcode;
+ }
++#endif
+ 
+ /* ------------------------------------------------------------------------- */
+ 
+@@ -699,7 +716,9 @@
+ 		ide_led (led, 1);		/* LED on	*/
+ 		ide_ident(&ide_dev_desc[i]);
+ 		ide_led (led, 0);		/* LED off	*/
++#if !defined(CONFIG_UFS910_MINI)
+ 		dev_print(&ide_dev_desc[i]);
++#endif
+ /*		ide_print (i); */
+ 		if ((ide_dev_desc[i].lba > 0) && (ide_dev_desc[i].blksz > 0)) {
+ 			init_part (&ide_dev_desc[i]);			/* initialize partition type */
+@@ -1302,7 +1327,9 @@
+ 	c = ide_wait (device, IDE_TIME_OUT);
+ 
+ 	if (c & ATA_STAT_BUSY) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("IDE read: device %d not ready\n", device);
++#endif
+ 		goto IDE_READ_E;
+ 	}
+ 
+@@ -1314,11 +1341,15 @@
+ 	c = ide_wait (device, IDE_TIME_OUT);	/* can't take over 500 ms */
+ 
+ 	if (c & ATA_STAT_BUSY) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("IDE read: device %d not ready\n", device);
++#endif
+ 		goto IDE_READ_E;
+ 	}
+ 	if ((c & ATA_STAT_ERR) == ATA_STAT_ERR) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("No Powersaving mode %X\n", c);
++#endif
+ 	} else {
+ 		c = ide_inb(device,ATA_SECT_CNT);
+ 		debug ("Powersaving %02X\n",c);
+@@ -1332,7 +1363,9 @@
+ 		c = ide_wait (device, IDE_TIME_OUT);
+ 
+ 		if (c & ATA_STAT_BUSY) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("IDE read: device %d not ready\n", device);
++#endif
+ 			break;
+ 		}
+ #ifdef CONFIG_LBA48
+@@ -1373,6 +1406,7 @@
+ 		}
+ 
+ 		if ((c&(ATA_STAT_DRQ|ATA_STAT_BUSY|ATA_STAT_ERR)) != ATA_STAT_DRQ) {
++#if !defined(CONFIG_UFS910_MINI)
+ #if defined(CFG_64BIT_LBA) && defined(CFG_64BIT_VSPRINTF)
+ 			printf ("Error (no IRQ) dev %d blk %qd: status 0x%02x\n",
+ 				device, blknr, c);
+@@ -1380,6 +1414,7 @@
+ 			printf ("Error (no IRQ) dev %d blk %ld: status 0x%02x\n",
+ 				device, (ulong)blknr, c);
+ #endif
++#endif
+ 			break;
+ 		}
+ 
+@@ -1422,7 +1457,9 @@
+ 		c = ide_wait (device, IDE_TIME_OUT);
+ 
+ 		if (c & ATA_STAT_BUSY) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("IDE read: device %d not ready\n", device);
++#endif
+ 			goto WR_OUT;
+ 		}
+ #ifdef CONFIG_LBA48
+@@ -1458,6 +1495,7 @@
+ 		c = ide_wait (device, IDE_TIME_OUT);	/* can't take over 500 ms */
+ 
+ 		if ((c&(ATA_STAT_DRQ|ATA_STAT_BUSY|ATA_STAT_ERR)) != ATA_STAT_DRQ) {
++#if !defined(CONFIG_UFS910_MINI)
+ #if defined(CFG_64BIT_LBA) && defined(CFG_64BIT_VSPRINTF)
+ 			printf ("Error (no IRQ) dev %d blk %qd: status 0x%02x\n",
+ 				device, blknr, c);
+@@ -1465,6 +1503,7 @@
+ 			printf ("Error (no IRQ) dev %d blk %ld: status 0x%02x\n",
+ 				device, (ulong)blknr, c);
+ #endif
++#endif
+ 			goto WR_OUT;
+ 		}
+ 
+@@ -2118,8 +2137,10 @@
+ 	"    to/from memory address `addr'\n"
+ );
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ U_BOOT_CMD(
+ 	diskboot,	3,	1,	do_diskboot,
+ 	"diskboot- boot from IDE device\n",
+ 	"loadAddr dev:part\n"
+ );
++#endif
+diff -Naur u-boot-1.3.1.org/common/cmd_itest.c u-boot-1.3.1/common/cmd_itest.c
+--- u-boot-1.3.1.org/common/cmd_itest.c	2010-05-09 00:36:13.273415096 +0200
++++ u-boot-1.3.1/common/cmd_itest.c	2010-05-09 00:41:56.800655353 +0200
+@@ -169,7 +169,9 @@
+ 
+ 	/* Validate arguments */
+ 	if ((argc != 4)){
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+diff -Naur u-boot-1.3.1.org/common/cmd_jffs2.c u-boot-1.3.1/common/cmd_jffs2.c
+--- u-boot-1.3.1.org/common/cmd_jffs2.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_jffs2.c	2010-05-09 00:41:56.812649826 +0200
+@@ -2117,7 +2117,9 @@
+ 		return delete_partition(argv[2]);
+ 	}
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 	return 1;
+ }
+ #endif /* #ifdef CONFIG_JFFS2_CMDLINE */
+diff -Naur u-boot-1.3.1.org/common/cmd_mem.c u-boot-1.3.1/common/cmd_mem.c
+--- u-boot-1.3.1.org/common/cmd_mem.c	2010-05-09 00:36:14.674437712 +0200
++++ u-boot-1.3.1/common/cmd_mem.c	2010-05-09 00:41:56.841406344 +0200
+@@ -107,7 +107,9 @@
+ 	length = dp_last_length;
+ 
+ 	if (argc < 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -180,7 +182,9 @@
+ 	int	size;
+ 
+ 	if ((argc < 3) || (argc > 4)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -224,7 +228,9 @@
+ 	ulong count;
+ 
+ 	if (argc < 4) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -253,7 +259,9 @@
+ 	ulong count;
+ 
+ 	if (argc < 4) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -284,7 +292,9 @@
+ 	int     rcode = 0;
+ 
+ 	if (argc != 4) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -361,7 +371,9 @@
+ 	int	size;
+ 
+ 	if (argc != 4) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -513,7 +525,9 @@
+ 	volatile u_char	*cp;
+ 
+ 	if (argc < 3) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -584,7 +598,9 @@
+ 	volatile u_char	*cp;
+ 
+ 	if (argc < 4) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -974,7 +990,9 @@
+ 	extern char console_buffer[];
+ 
+ 	if (argc != 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -1072,7 +1090,9 @@
+ 	ulong *ptr;
+ 
+ 	if (argc < 3) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -1108,7 +1128,9 @@
+ 
+ 	if (argc < 3) {
+   usage:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+diff -Naur u-boot-1.3.1.org/common/cmd_misc.c u-boot-1.3.1/common/cmd_misc.c
+--- u-boot-1.3.1.org/common/cmd_misc.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_misc.c	2010-05-09 00:41:57.098403405 +0200
+@@ -33,7 +33,9 @@
+ 	ulong delay;
+ 
+ 	if (argc != 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+diff -Naur u-boot-1.3.1.org/common/cmd_net.c u-boot-1.3.1/common/cmd_net.c
+--- u-boot-1.3.1.org/common/cmd_net.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_net.c	2010-05-09 00:41:57.235405468 +0200
+@@ -182,7 +182,10 @@
+ 
+ 		break;
+ 
+-	default: printf ("Usage:\n%s\n", cmdtp->usage);
++	default:
++#if !defined(CONFIG_UFS910_MINI)
++		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		show_boot_progress (-80);
+ 		return 1;
+ 	}
+@@ -240,7 +243,9 @@
+ 
+ 	NetPingIP = string_to_ip(argv[1]);
+ 	if (NetPingIP == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return -1;
+ 	}
+ 
+diff -Naur u-boot-1.3.1.org/common/cmd_nvedit.c u-boot-1.3.1/common/cmd_nvedit.c
+--- u-boot-1.3.1.org/common/cmd_nvedit.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_nvedit.c	2010-05-09 01:06:13.259401209 +0200
+@@ -108,7 +108,9 @@
+ 			putc  ('\n');
+ 
+ 			if (ctrlc()) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				puts ("\n ** Abort\n");
++#endif
+ 				return 1;
+ 			}
+ 		}
+@@ -139,7 +139,9 @@
+ 			break;
+ 		}
+ 		if (k < 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("## Error: \"%s\" not defined\n", name);
++#endif
+ 			rcode ++;
+ 		}
+ 	}
+@@ -169,7 +171,9 @@
+ 	name = argv[1];
+ 
+ 	if (strchr(name, '=')) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("## Error: illegal character '=' in variable name \"%s\"\n", name);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -221,7 +228,9 @@
+ 
+ 		if (console != -1) {
+ 			if (argc < 3) {		/* Cannot delete it! */
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf("Can't delete \"%s\"\n", name);
++#endif
+ 				return 1;
+ 			}
+ 
+@@ -238,6 +243,7 @@
+ 		/*
+ 		 * Switch to new baudrate if new baudrate is supported
+ 		 */
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (strcmp(argv[1],"baudrate") == 0) {
+ 			int baudrate = simple_strtoul(argv[2], NULL, 10);
+ 			int i;
+@@ -265,6 +271,7 @@
+ 				      break;
+ 			}
+ 		}
++#endif
+ 
+ 		if (*++nxt == '\0') {
+ 			if (env > env_data) {
+@@ -318,7 +325,9 @@
+ 		len += strlen(argv[i]) + 1;
+ 	}
+ 	if (len > (&env_data[ENV_SIZE]-env)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("## Error: environment overflow, \"%s\" deleted\n", name);
++#endif
+ 		return 1;
+ 	}
+ 	while ((*env = *name++) != '\0')
+@@ -342,6 +351,7 @@
+ 	 * entry in the enviornment is changed
+ 	 */
+ 
++#if defined(CONFIG_CMD_NET)
+ 	if (strcmp(argv[1],"ethaddr") == 0) {
+ 		char *s = argv[2];	/* always use only one arg */
+ 		char *e;
+@@ -369,6 +379,8 @@
+ 		bd->bi_ip_addr = htonl(addr);
+ 		return 0;
+ 	}
++#endif
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (strcmp(argv[1],"loadaddr") == 0) {
+ 		load_addr = simple_strtoul(argv[2], NULL, 16);
+ 		return 0;
+@@ -379,6 +391,7 @@
+ 		return 0;
+ 	}
+ #endif
++#endif
+ 
+ #ifdef CONFIG_AMIGAONEG3SE
+ 	if (strcmp(argv[1], "vga_fg_color") == 0 ||
+@@ -414,7 +427,9 @@
+ int do_setenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	if (argc < 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -440,13 +455,17 @@
+ 	local_args[3] = NULL;
+ 
+ 	if (argc < 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 	/* Check the syntax */
+ 	switch (argc) {
+ 	case 1:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 
+ 	case 2:		/* askenv envname */
+diff -Naur u-boot-1.3.1.org/common/cmd_usb.c u-boot-1.3.1/common/cmd_usb.c
+--- u-boot-1.3.1.org/common/cmd_usb.c	2010-05-09 00:36:13.274416271 +0200
++++ u-boot-1.3.1/common/cmd_usb.c	2010-05-09 00:41:57.520402022 +0200
+@@ -43,6 +43,7 @@
+ char * usb_get_class_desc(unsigned char dclass)
+ {
+ 	switch(dclass) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		case USB_CLASS_PER_INTERFACE:
+ 			return("See Interface");
+ 		case USB_CLASS_AUDIO:
+@@ -53,14 +54,17 @@
+ 			return("Human Interface");
+ 		case USB_CLASS_PRINTER:
+ 			return("Printer");
++#endif
+ 		case USB_CLASS_MASS_STORAGE:
+ 			return("Mass Storage");
+ 		case USB_CLASS_HUB:
+ 			return("Hub");
++#if !defined(CONFIG_UFS910_MINI)
+ 		case USB_CLASS_DATA:
+ 			return("CDC Data");
+ 		case USB_CLASS_VENDOR_SPEC:
+ 			return("Vendor specific");
++#endif
+ 		default :
+ 			return("");
+ 	}
+@@ -69,6 +73,7 @@
+ void usb_display_class_sub(unsigned char dclass,unsigned char subclass,unsigned char proto)
+ {
+ 	switch(dclass) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		case USB_CLASS_PER_INTERFACE:
+ 			printf("See Interface");
+ 			break;
+@@ -138,11 +143,13 @@
+ 					printf("reserved");
+ 			}
+ 			break;
++#endif
+ 		default:
+ 			printf("%s",usb_get_class_desc(dclass));
+ 	}
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ void usb_display_string(struct usb_device *dev,int index)
+ {
+ 	char buffer[256];
+@@ -215,6 +222,7 @@
+ 	printf("\n");
+ }
+ 
++
+ /* main routine to diasplay the configs, interfaces and endpoints */
+ void usb_display_config(struct usb_device *dev)
+ {
+@@ -304,12 +312,13 @@
+ 	memset(preamble,0,32);
+ 	usb_show_tree_graph(dev,&preamble[0]);
+ }
++#endif
+ 
+ 
+ /******************************************************************************
+  * usb boot command intepreter. Derived from diskboot
+  */
+-#ifdef CONFIG_USB_STORAGE
++#if defined(CONFIG_USB_STORAGE) && !defined(CONFIG_UFS910_MINI)
+ int do_usbboot (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	char *boot_device = NULL;
+@@ -335,7 +344,9 @@
+ 		boot_device = argv[2];
+ 		break;
+ 	default:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -465,6 +476,7 @@
+ 		sh_enable_data_caches();
+ 		return 0;
+ 	}
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (strncmp(argv[1],"stop",4) == 0) {
+ #ifdef CONFIG_USB_KEYBOARD
+ 		if (argc==2) {
+@@ -482,10 +494,14 @@
+ 		usb_stop();
+ 		return 0;
+ 	}
++#endif
+ 	if (!usb_started) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("USB is stopped. Please issue 'usb start' first.\n");
++#endif
+ 		return 1;
+ 	}
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (strncmp(argv[1],"tree",4) == 0) {
+ 		printf("\nDevice Tree:\n");
+ 		usb_show_tree(usb_get_dev_index(0));
+@@ -612,8 +628,11 @@
+ 		}
+ 		return 0;
+ 	}
++#endif
+ #endif /* CONFIG_USB_STORAGE */
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 	return 1;
+ }
+ 
+@@ -633,11 +652,13 @@
+ );
+ 
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ U_BOOT_CMD(
+ 	usbboot,	3,	1,	do_usbboot,
+ 	"usbboot - boot from USB device\n",
+ 	"loadAddr dev:part\n"
+ );
++#endif
+ 
+ #else
+ U_BOOT_CMD(
+diff -Naur u-boot-1.3.1.org/common/command.c u-boot-1.3.1/common/command.c
+--- u-boot-1.3.1.org/common/command.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/command.c	2010-05-09 00:41:57.598650800 +0200
+@@ -235,6 +235,7 @@
+  * Use puts() instead of printf() to avoid printf buffer overflow
+  * for long help messages
+  */
++#if !defined(CONFIG_UFS910_MINI)
+ int do_help (cmd_tbl_t * cmdtp, int flag, int argc, char *argv[])
+ {
+ 	int i;
+@@ -326,6 +327,7 @@
+   "'help' with one or more command names as arguments.\n"
+ );
+ 
++
+ /* This do not ust the U_BOOT_CMD macro as ? can't be used in symbol names */
+ #ifdef  CFG_LONGHELP
+ cmd_tbl_t __u_boot_cmd_question_mark Struct_Section = {
+@@ -339,6 +341,7 @@
+  	"?       - alias for 'help'\n"
+ };
+ #endif /* CFG_LONGHELP */
++#endif
+ 
+ /***************************************************************************
+  * find command table entry for a command
+diff -Naur u-boot-1.3.1.org/common/console.c u-boot-1.3.1/common/console.c
+--- u-boot-1.3.1.org/common/console.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/console.c	2010-05-09 01:21:18.424650986 +0200
+@@ -409,6 +409,7 @@
+ 	gd->jt[XF_puts] = serial_puts;
+ 	gd->jt[XF_printf] = serial_printf;
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	/* stdin stdout and stderr are in environment */
+ 	/* scan for it */
+ 	stdinname  = getenv ("stdin");
+@@ -430,6 +431,11 @@
+ 	if (errdev == NULL) {
+ 		errdev    = search_device (DEV_FLAGS_OUTPUT, "serial");
+ 	}
++#else
++	inputdev  = search_device (DEV_FLAGS_INPUT,  "serial");
++	outputdev = search_device (DEV_FLAGS_OUTPUT, "serial");
++	errdev    = search_device (DEV_FLAGS_OUTPUT, "serial");
++#endif
+ 	/* Initializes output console first */
+ 	if (outputdev != NULL) {
+ 		console_setfile (stdout, outputdev);
+diff -Naur u-boot-1.3.1.org/common/env_common.c u-boot-1.3.1/common/env_common.c
+--- u-boot-1.3.1.org/common/env_common.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/env_common.c	2010-05-09 01:22:31.666406266 +0200
+@@ -221,6 +221,7 @@
+ 	env_get_char = env_get_char_memory;
+ 
+ 	if (gd->env_valid == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ #if defined(CONFIG_GTH)	|| defined(CFG_ENV_IS_NOWHERE)	/* Environment not changable */
+ 		puts ("Using default environment\n\n");
+ #else
+@@ -243,6 +244,7 @@
+ #endif
+ 		env_crc_update ();
+ 		gd->env_valid = 1;
++#endif
+ 	}
+ 	else {
+ 		env_relocate_spec ();
+diff -Naur u-boot-1.3.1.org/common/flash.c u-boot-1.3.1/common/flash.c
+--- u-boot-1.3.1.org/common/flash.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/flash.c	2010-05-09 00:41:58.241406080 +0200
+@@ -193,6 +193,7 @@
+ 	switch (err) {
+ 	case ERR_OK:
+ 		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case ERR_TIMOUT:
+ 		puts ("Timeout writing to Flash\n");
+ 		break;
+@@ -217,8 +218,13 @@
+ 	case ERR_PROG_ERROR:
+ 		puts ("General Flash Programming Error\n");
+ 		break;
++#endif
+ 	default:
++#if defined(CONFIG_UFS910_MINI)
++		printf ("Flash Error %d\n", err);
++#else
+ 		printf ("%s[%d] FIXME: rc=%d\n", __FILE__, __LINE__, err);
++#endif
+ 		break;
+ 	}
+ }
+diff -Naur u-boot-1.3.1.org/common/hush.c u-boot-1.3.1/common/hush.c
+--- u-boot-1.3.1.org/common/hush.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/hush.c	2010-05-09 00:41:58.276406199 +0200
+@@ -381,7 +381,9 @@
+ 
+ #ifdef __U_BOOT__
+ static void syntax_err(void) {
++#if !defined(CONFIG_UFS910_MINI)
+ 	 printf("syntax error\n");
++#endif
+ }
+ #else
+ static void __syntax(char *file, int line) {
+@@ -1019,7 +1021,7 @@
+ #endif
+ 	fflush(stdout);
+ 	i->p = the_command;
+-#else
++#elif defined(CONFIG_FEATURE_COMMAND_EDITING)
+ 	extern char console_buffer[CFG_CBSIZE];
+ 	int n;
+ 	static char the_command[CFG_CBSIZE];
+@@ -1670,15 +1672,19 @@
+ 			 * "help;flinfo" must not execute
+ 			 */
+ 			if (strchr(child->argv[i], ';')) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("Unknown command '%s' - try 'help' or use 'run' command\n",
+ 					child->argv[i]);
++#endif
+ 				return -1;
+ 			}
+ 			/* Look up command in command table */
+ 
+ 
+ 			if ((cmdtp = find_cmd(child->argv[i])) == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("Unknown command '%s' - try 'help'\n", child->argv[i]);
++#endif
+ 				return -1;	/* give up after bad command */
+ 			} else {
+ 				int rcode;
+@@ -1688,7 +1694,9 @@
+ 				/* avoid "bootd" recursion */
+ 				if (cmdtp->cmd == do_bootd) {
+ 					if (flag & CMD_FLAG_BOOTD) {
++#if !defined(CONFIG_UFS910_MINI)
+ 						printf ("'bootd' recursion detected\n");
++#endif
+ 						return -1;
+ 					}
+ 				else
+@@ -1697,7 +1705,9 @@
+ #endif
+ 				/* found - check max args */
+ 				if ((child->argc - i) > cmdtp->maxargs) {
++#if !defined(CONFIG_UFS910_MINI)
+ 					printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 					return -1;
+ 				}
+ #endif
+@@ -2217,8 +2227,10 @@
+ 
+ #ifdef __U_BOOT__
+ 	if (getenv(name) != NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("ERROR: "
+ 				"There is a global environment variable with the same name.\n");
++#endif
+ 		free(name);
+ 		return -1;
+ 	}
+@@ -2246,7 +2258,9 @@
+ 				result++;
+ 		} else {
+ 			if(cur->flg_read_only) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				error_msg("%s: readonly variable", name);
++#endif
+ 				result = -1;
+ 			} else {
+ 				if(flg_export>0 || cur->flg_export>1)
+@@ -2305,7 +2319,9 @@
+ 		if(cur!=0) {
+ 			struct variables *next = top_vars;
+ 			if(cur->flg_read_only) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				error_msg("%s: readonly variable", name);
++#endif
+ 				return;
+ 			} else {
+ 				if(cur->flg_export)
+@@ -3136,8 +3152,12 @@
+ void update_ifs_map(void)
+ {
+ 	/* char *ifs and char map[256] are both globals. */
++#if defined(CONFIG_UFS910_MINI)
++	ifs=(uchar *)" \t\n";
++#else
+ 	ifs = (uchar *)getenv("IFS");
+ 	if (ifs == NULL) ifs=(uchar *)" \t\n";
++#endif
+ 	/* Precompute a list of 'flow through' behavior so it can be treated
+ 	 * quickly up front.  Computation is necessary because of IFS.
+ 	 * Special case handling of IFS == " \t\n" is not implemented.
+@@ -3194,7 +3214,9 @@
+ 				code = 0;
+ 				/* XXX hackish way to not allow exit from main loop */
+ 				if (inp->peek == file_peek) {
++#if !defined(CONFIG_UFS910_MINI)
+ 					printf("exit not allowed from main input shell.\n");
++#endif
+ 					continue;
+ 				}
+ 				break;
+diff -Naur u-boot-1.3.1.org/common/main.c u-boot-1.3.1/common/main.c
+--- u-boot-1.3.1.org/common/main.c	2010-05-09 00:36:15.966404736 +0200
++++ u-boot-1.3.1/common/main.c	2010-05-09 02:54:02.464405489 +0200
+@@ -424,6 +424,15 @@
+ 	/*
+ 	 * Main Loop for Monitor Command Processing
+ 	 */
++#if defined(CONFIG_UFS910_MINI)
++	char *cmd;
++	cmd = getenv("minibootcmd");
++	if (!cmd)
++		cmd = "bootmenu";
++	run_command (cmd, 0);
++	do_reset (NULL, 0, 0, NULL);
++	for (;;);
++#else
+ #ifdef CFG_HUSH_PARSER
+ 	parse_file_outer();
+ 	/* This point is never reached */
+@@ -470,6 +479,7 @@
+ 		}
+ 	}
+ #endif /*CFG_HUSH_PARSER*/
++#endif /*CONFIG_UFS910_MINI*/
+ }
+ 
+ #ifdef CONFIG_BOOT_RETRY_TIME
+@@ -1108,7 +1118,9 @@
+ 		*line++ = '\0';		/* terminate current arg	 */
+ 	}
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("** Too many args (max. %d) **\n", CFG_MAXARGS);
++#endif
+ 
+ #ifdef DEBUG_PARSER
+ 	printf ("parse_line: nargs=%d\n", nargs);
+@@ -1271,7 +1283,9 @@
+ 	}
+ 
+ 	if (strlen(cmd) >= CFG_CBSIZE) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("## Command too long!\n");
++#endif
+ 		return -1;
+ 	}
+ 
+@@ -1327,14 +1341,18 @@
+ 
+ 		/* Look up command in command table */
+ 		if ((cmdtp = find_cmd(argv[0])) == NULL) {
++#if !defined (CONFIG_UFS910_MINI)
+ 			printf ("Unknown command '%s' - try 'help'\n", argv[0]);
++#endif
+ 			rc = -1;	/* give up after bad command */
+ 			continue;
+ 		}
+ 
+ 		/* found - check max args */
+ 		if (argc > cmdtp->maxargs) {
++#if !defined (CONFIG_UFS910_MINI)
+ 			printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 			rc = -1;
+ 			continue;
+ 		}
+@@ -1346,7 +1364,9 @@
+ 			printf ("[%s]\n", finaltoken);
+ #endif
+ 			if (flag & CMD_FLAG_BOOTD) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				puts ("'bootd' recursion detected\n");
++#endif
+ 				rc = -1;
+ 				continue;
+ 			} else {
+@@ -1378,7 +1398,9 @@
+ 	int i;
+ 
+ 	if (argc < 2) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("Usage:\n%s\n", cmdtp->usage);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -1386,7 +1408,9 @@
+ 		char *arg;
+ 
+ 		if ((arg = getenv (argv[i])) == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("## Error: \"%s\" not defined\n", argv[i]);
++#endif
+ 			return 1;
+ 		}
+ #ifndef CFG_HUSH_PARSER
+diff -Naur u-boot-1.3.1.org/common/usb.c u-boot-1.3.1/common/usb.c
+--- u-boot-1.3.1.org/common/usb.c	2010-05-09 00:36:13.276402907 +0200
++++ u-boot-1.3.1/common/usb.c	2010-05-09 00:41:58.536406028 +0200
+@@ -116,7 +116,9 @@
+ 		return 0;
+ 	}
+ 	else {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("Error, couldn't init Lowlevel part\n");
++#endif
+ 		usb_started = 0;
+ 		return -1;
+ 	}
+@@ -313,7 +315,9 @@
+ 	dev->configno = cfgno;
+ 	head = (struct usb_descriptor_header *) &buffer[0];
+ 	if(head->bDescriptorType != USB_DT_CONFIG) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf(" ERROR: NOT USB_CONFIG_DESC %x\n", head->bDescriptorType);
++#endif
+ 		return -1;
+ 	}
+ 	memcpy(&dev->config, buffer, buffer[0]);
+@@ -424,10 +428,12 @@
+ 	config=(struct usb_config_descriptor *)&buffer[0];
+ 	result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno, buffer, 8);
+ 	if (result < 8) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (result < 0)
+ 			printf("unable to get descriptor, error %lX\n",dev->status);
+ 		else
+ 			printf("config descriptor too short (expected %i, got %i)\n",8,result);
++#endif
+ 		return -1;
+ 	}
+ 	tmp=swap_16(config->wTotalLength);
+@@ -474,7 +480,9 @@
+ 		}
+ 	}
+ 	if (!if_face) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("selecting invalid interface %d", interface);
++#endif
+ 		return -1;
+ 	}
+ 	/*
+@@ -709,7 +717,9 @@
+ 	int i;
+ 	USB_PRINTF("New Device %d\n",dev_index);
+ 	if(dev_index==USB_MAX_DEVICE) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("ERROR, too many USB Devices, max=%d\n",USB_MAX_DEVICE);
++#endif
+ 		return NULL;
+ 	}
+ 	usb_dev[dev_index].devnum=dev_index+1; /* default Address is 0, real addresses start with 1 */
+@@ -798,7 +808,9 @@
+ 	/* and this is the old and known way of initializing devices */
+ 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, &dev->descriptor, 8);
+ 	if (err < 8) {
++#if !defined (CONFIG_UFS910_MINI)
+ 		printf("\n      USB device not responding, giving up (status=%lX)\n",dev->status);
++#endif
+ 		return 1;
+ 	}
+ #endif
+@@ -816,7 +828,9 @@
+ 	err = usb_set_address(dev); /* set address */
+ 
+ 	if (err < 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("\n      USB device not accepting new address (error=%lX)\n", dev->status);
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -826,10 +840,12 @@
+ 
+ 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, &dev->descriptor, sizeof(dev->descriptor));
+ 	if (err < tmp) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (err < 0)
+ 			printf("unable to get device descriptor (error=%d)\n",err);
+ 		else
+ 			printf("USB device descriptor short read (expected %i, got %i)\n",tmp,err);
++#endif
+ 		return 1;
+ 	}
+ 	/* correct le values */
+@@ -843,7 +859,9 @@
+ 	usb_set_maxpacket(dev);
+ 	/* we set the default configuration here */
+ 	if (usb_set_configuration(dev, dev->config.bConfigurationValue)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("failed to set default configuration len %d, status %lX\n",dev->act_len,dev->status);
++#endif
+ 		return -1;
+ 	}
+ 	USB_PRINTF("new device strings: Mfr=%d, Product=%d, SerialNumber=%d\n",
+@@ -972,7 +990,9 @@
+ 	if(usb_hub_index<USB_MAX_HUB) {
+ 		return &hub_dev[usb_hub_index++];
+ 	}
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf("ERROR: USB_MAX_HUB (%d) reached\n",USB_MAX_HUB);
++#endif
+ 	return NULL;
+ }
+ 
+@@ -1061,7 +1081,9 @@
+ 
+ 	/* Reset the port */
+ 	if (hub_port_reset(dev, port, &portstatus) < 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("cannot reset port %i!?\n", port + 1);
++#endif
+ 		return;
+ 	}
+ 
+diff -Naur u-boot-1.3.1.org/common/usb_storage.c u-boot-1.3.1/common/usb_storage.c
+--- u-boot-1.3.1.org/common/usb_storage.c	2010-05-09 00:36:13.278405047 +0200
++++ u-boot-1.3.1/common/usb_storage.c	2010-05-09 00:41:58.552406807 +0200
+@@ -189,6 +189,7 @@
+ 	printf(".");
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ /*********************************************************************************
+  * show info on storage devices; 'usb start/init' must be invoked earlier
+  * as we only retrieve structures populated during devices initialization
+@@ -205,6 +206,7 @@
+ 	else
+ 		printf("No storage devices, perhaps not 'usb start'ed..?\n");
+ }
++#endif
+ 
+ /*********************************************************************************
+  * scan the usb and reports device info
+@@ -246,7 +248,9 @@
+ 				usb_max_devs++;
+ 		} /* if storage device */
+ 		if(usb_max_devs==USB_MAX_STOR_DEV) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf("max USB Storage Device reached: %d stopping\n",usb_max_devs);
++#endif
+ 			break;
+ 		}
+ 	} /* for */
+@@ -562,7 +566,9 @@
+ 		wait_ms (10);
+ 	}
+ 	if (us->ip_wanted) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("	Did not get interrupt on CBI\n");
++#endif
+ 		us->ip_wanted = 0;
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+@@ -803,8 +809,10 @@
+ 		break;
+ 	case 0x02: /* Not Ready */
+ 		if(notready++ > USB_TRANSPORT_NOT_READY_RETRY) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf("cmd 0x%02X returned 0x%02X 0x%02X 0x%02X 0x%02X (NOT READY)\n",
+ 				srb->cmd[0],srb->sense_buf[0],srb->sense_buf[2],srb->sense_buf[12],srb->sense_buf[13]);
++#endif
+ 			return USB_STOR_TRANSPORT_FAILED;
+ 		} else {
+ 			wait_ms(100);
+@@ -813,8 +821,10 @@
+ 		break;
+ 	default:
+ 		if(retry++ > USB_TRANSPORT_UNKNOWN_RETRY) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf("cmd 0x%02X returned 0x%02X 0x%02X 0x%02X 0x%02X\n",
+ 				srb->cmd[0],srb->sense_buf[0],srb->sense_buf[2],srb->sense_buf[12],srb->sense_buf[13]);
++#endif
+ 			return USB_STOR_TRANSPORT_FAILED;
+ 		} else {
+ 			goto do_retry;
+@@ -843,7 +853,9 @@
+ 	} while(retry--);
+ 
+ 	if(!retry) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("error in inquiry\n");
++#endif
+ 		return -1;
+ 	}
+ 	return 0;
+@@ -983,8 +995,10 @@
+ 	if(usb_test_unit_ready(srb,(struct us_data *)dev->privptr)) {
+ 		if (my_data_caches_on)	/* were the data caches on ? */
+ 			sh_enable_data_caches();
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("Device NOT ready\n   Request Sense returned %02X %02X %02X\n",
+ 			srb->sense_buf[2],srb->sense_buf[12],srb->sense_buf[13]);
++#endif
+ 		return 0;
+ 	}
+ 	USB_STOR_PRINTF("\nusb_read: dev %d startblk %lx, blccnt %lx buffer %lx\n",device,start,blks, buf_addr);
+@@ -1098,7 +1112,9 @@
+ 		ss->transport_reset = usb_stor_BBB_reset;
+ 		break;
+ 	default:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("USB Storage Transport unknown / not yet implemented\n");
++#endif
+ 		return 0;
+ 		break;
+ 	}
+@@ -1145,7 +1161,9 @@
+ 	 */
+ 	if (ss->subclass != US_SC_UFI && ss->subclass != US_SC_SCSI &&
+ 	    ss->subclass != US_SC_8070) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("Sorry, protocol %d not yet supported.\n",ss->subclass);
++#endif
+ 		return 0;
+ 	}
+ 	if(ss->ep_int) { /* we had found an interrupt endpoint, prepare irq pipe */
+@@ -1214,7 +1232,9 @@
+ #endif /* CONFIG_USB_BIN_FIXUP */
+ 	USB_STOR_PRINTF("ISO Vers %X, Response Data %X\n",usb_stor_buf[2],usb_stor_buf[3]);
+ 	if(usb_test_unit_ready(pccb,ss)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("Device NOT ready\n   Request Sense returned %02X %02X %02X\n",pccb->sense_buf[2],pccb->sense_buf[12],pccb->sense_buf[13]);
++#endif
+ 		if(dev_desc->removable == 1) {
+ 			dev_desc->type = perq;
+ 			return 1;
+@@ -1225,7 +1245,9 @@
+ 	pccb->pdata = (unsigned char *)&cap[0];
+ 	memset(pccb->pdata,0,8);
+ 	if(usb_read_capacity(pccb,ss) != 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("READ_CAP ERROR\n");
++#endif
+ 		cap[0] = 2880;
+ 		cap[1] = 0x200;
+ 	}
+diff -Naur u-boot-1.3.1.org/disk/part.c u-boot-1.3.1/disk/part.c
+--- u-boot-1.3.1.org/disk/part.c	2010-05-09 00:36:14.691405791 +0200
++++ u-boot-1.3.1/disk/part.c	2010-05-09 00:41:58.663405744 +0200
+@@ -90,7 +90,7 @@
+      defined(CONFIG_CMD_SCSI) || \
+      defined(CONFIG_CMD_USB) || \
+      defined(CONFIG_MMC) || \
+-     defined(CONFIG_SYSTEMACE) )
++     defined(CONFIG_SYSTEMACE) ) && !defined(CONFIG_UFS910_MINI)
+ 
+ /* ------------------------------------------------------------------------- */
+ /*
+@@ -265,6 +265,7 @@
+ 	return (-1);
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ static void print_part_header (const char *type, block_dev_desc_t * dev_desc)
+ {
+ 	puts ("\nPartition Map for ");
+@@ -323,6 +324,7 @@
+ 	}
+ 	puts ("## Unknown partition table\n");
+ }
++#endif
+ 
+ 
+ #else	/* neither MAC nor DOS nor ISO partition configured */
+diff -Naur u-boot-1.3.1.org/disk/part_dos.c u-boot-1.3.1/disk/part_dos.c
+--- u-boot-1.3.1.org/disk/part_dos.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/disk/part_dos.c	2010-05-09 00:41:58.682655399 +0200
+@@ -59,6 +59,7 @@
+ 	    part_type == 0x85);
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ static void print_one_part (dos_partition_t *p, int ext_part_sector, int part_num)
+ {
+ 	int lba_start = ext_part_sector + le32_to_int (p->start4);
+@@ -68,6 +69,7 @@
+ 		part_num, lba_start, lba_size, p->sys_ind,
+ 		(is_extended (p->sys_ind) ? " Extd" : ""));
+ }
++#endif
+ 
+ static int test_block_type(unsigned char *buffer)
+ {
+@@ -95,6 +97,7 @@
+ 
+ /*  Print a partition that is relative to its Extended partition table
+  */
++#if !defined(CONFIG_UFS910_MINI)
+ static void print_partition_extended (block_dev_desc_t *dev_desc, int ext_part_sector, int relative,
+ 							   int part_num)
+ {
+@@ -103,8 +106,10 @@
+ 	int i;
+ 
+ 	if (dev_desc->block_read(dev_desc->dev, ext_part_sector, 1, (ulong *) buffer) != 1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Can't read partition table on %d:%d **\n",
+ 			dev_desc->dev, ext_part_sector);
++#endif
+ 		return;
+ 	}
+ 	i=test_block_type(buffer);
+@@ -154,6 +159,7 @@
+ 
+ 	return;
+ }
++#endif
+ 
+ 
+ /*  Print a partition that is relative to its Extended partition table
+@@ -167,15 +173,19 @@
+ 	int i;
+ 
+ 	if (dev_desc->block_read (dev_desc->dev, ext_part_sector, 1, (ulong *) buffer) != 1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Can't read partition table on %d:%d **\n",
+ 			dev_desc->dev, ext_part_sector);
++#endif
+ 		return -1;
+ 	}
+ 	if (buffer[DOS_PART_MAGIC_OFFSET] != 0x55 ||
+ 		buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("bad MBR sector signature 0x%02x%02x\n",
+ 			buffer[DOS_PART_MAGIC_OFFSET],
+ 			buffer[DOS_PART_MAGIC_OFFSET + 1]);
++#endif
+ 		return -1;
+ 	}
+ 
+@@ -236,11 +246,13 @@
+ 	return -1;
+ }
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ void print_part_dos (block_dev_desc_t *dev_desc)
+ {
+ 	printf ("Partition     Start Sector     Num Sectors     Type\n");
+ 	print_partition_extended (dev_desc, 0, 0, 1);
+ }
++#endif
+ 
+ int get_partition_info_dos (block_dev_desc_t *dev_desc, int part, disk_partition_t * info)
+ {
+diff -Naur u-boot-1.3.1.org/drivers/mtd/cfi_flash.c u-boot-1.3.1/drivers/mtd/cfi_flash.c
+--- u-boot-1.3.1.org/drivers/mtd/cfi_flash.c	2010-05-09 00:36:15.979402339 +0200
++++ u-boot-1.3.1/drivers/mtd/cfi_flash.c	2010-05-09 00:41:58.953406320 +0200
+@@ -450,11 +450,15 @@
+ 	flash_sect_t sect;
+ 
+ 	if (info->flash_id != FLASH_MAN_CFI) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("Can't erase unknown flash type - aborted\n");
++#endif
+ 		return 1;
+ 	}
+ 	if ((s_first < 0) || (s_first > s_last)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		puts ("- no sectors to erase\n");
++#endif
+ 		return 1;
+ 	}
+ 
+@@ -464,11 +468,13 @@
+ 			prot++;
+ 		}
+ 	}
++#if !defined(CONFIG_UFS910_MINI)
+ 	if (prot) {
+ 		printf ("- Warning: %d protected sectors will not be erased!\n", prot);
+ 	} else {
+ 		putc ('\n');
+ 	}
++#endif
+ 
+ 
+ 	for (sect = s_first; sect <= s_last; sect++) {
+@@ -509,6 +515,7 @@
+ 
+ /*-----------------------------------------------------------------------
+  */
++#if !defined(CONFIG_UFS910_MINI)
+ void flash_print_info (flash_info_t * info)
+ {
+ 	int i;
+@@ -598,6 +605,7 @@
+ 	putc ('\n');
+ 	return;
+ }
++#endif
+ 
+ /*-----------------------------------------------------------------------
+  * Copy memory to flash, returns:
+@@ -814,9 +822,11 @@
+ 	start = get_timer (0);
+ 	while (flash_is_busy (info, sector)) {
+ 		if (get_timer (start) > tout) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("Flash %s timeout at address %lx data %lx\n",
+ 				prompt, info->start[sector],
+ 				flash_read_long (info, sector, 0));
++#endif
+ 			flash_write_cmd (info, sector, 0, info->cmd_reset);
+ 			return ERR_TIMOUT;
+ 		}
+@@ -841,6 +851,7 @@
+ 		if ((retcode == ERR_OK)
+ 		    && !flash_isequal (info, sector, 0, FLASH_STATUS_DONE)) {
+ 			retcode = ERR_INVAL;
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("Flash %s error at address %lx\n", prompt,
+ 				info->start[sector]);
+ 			if (flash_isset (info, sector, 0, FLASH_STATUS_ECLBS | FLASH_STATUS_PSLBS)) {
+@@ -857,6 +868,7 @@
+ 			}
+ 			if (flash_isset (info, sector, 0, FLASH_STATUS_VPENS))
+ 				puts ("Vpp Low Error.\n");
++#endif
+ 		}
+ 		flash_write_cmd (info, sector, 0, info->cmd_reset);
+ 		break;
+@@ -943,9 +955,11 @@
+ 	 *	and madness follows...	Sean McGoogan 2009-08-20.
+ 	 */
+ 	if ( info->portwidth > sizeof(cword) ) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("ERROR: %s() ignoring write request (info->portwidth=%u)\n",
+ 			__FUNCTION__,
+ 			info->portwidth);
++#endif
+ 		return;
+ 	}
+ 
+@@ -1287,8 +1301,10 @@
+ 		sector = base;
+ 		for (i = 0; i < num_erase_regions; i++) {
+ 			if (i > NUM_ERASE_REGIONS) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("%d erase regions found, only %d used\n",
+ 					num_erase_regions, NUM_ERASE_REGIONS);
++#endif
+ 				break;
+ 			}
+ 
+@@ -1313,9 +1329,11 @@
+ 				 *	flash_info_t.protect[CFG_MAX_FLASH_SECT];
+ 				 */
+ 			if (erase_region_count > CFG_MAX_FLASH_SECT) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("Error: Number of Sectors (%d) > CFG_MAX_FLASH_SECT (%d)\n",
+ 					erase_region_count,
+ 					CFG_MAX_FLASH_SECT);
++#endif
+ 				flash_write_cmd (info, 0, 0, info->cmd_reset);
+ 				return 0;	/* return, to avoid corrupting any memory */
+ 			}
+diff -Naur u-boot-1.3.1.org/drivers/serial/stm-asc.c u-boot-1.3.1/drivers/serial/stm-asc.c
+--- u-boot-1.3.1.org/drivers/serial/stm-asc.c	2010-05-09 00:36:15.984405768 +0200
++++ u-boot-1.3.1/drivers/serial/stm-asc.c	2010-05-09 01:22:58.269400994 +0200
+@@ -144,6 +144,7 @@
+ 	int t, mode=1;
+ 
+ 	switch (baud) {
++#if !defined(CONFIG_UFS910_MINI)
+ #if 0
+ 	case 0:
+ 		t = -1;
+@@ -170,8 +171,11 @@
+ 	case 57600:
+ 		t = BAUDRATE_VAL_M1(57600);
+ 		break;
++#endif
+ 	default:
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("ASC: unsupported baud rate: %d, using 115200 instead.\n", baud);
++#endif
+ 	case 115200:
+ 		t = BAUDRATE_VAL_M1(115200);
+ 		break;
+diff -Naur u-boot-1.3.1.org/drivers/usb/usb_ohci.c u-boot-1.3.1/drivers/usb/usb_ohci.c
+--- u-boot-1.3.1.org/drivers/usb/usb_ohci.c	2010-05-09 00:36:15.985404848 +0200
++++ u-boot-1.3.1/drivers/usb/usb_ohci.c	2010-05-09 00:41:59.210407859 +0200
+@@ -145,7 +145,11 @@
+ #else
+ #define dbg(format, arg...) do {} while(0)
+ #endif /* DEBUG */
++#if defined(CONFIG_UFS910_MINI)
++#define err(format, arg...)
++#else
+ #define err(format, arg...) printf("ERROR: " format "\n", ## arg)
++#endif
+ #undef SHOW_INFO
+ #ifdef SHOW_INFO
+ #define info(format, arg...) printf("INFO: " format "\n", ## arg)
+diff -Naur u-boot-1.3.1.org/fs/ext2/dev.c u-boot-1.3.1/fs/ext2/dev.c
+--- u-boot-1.3.1.org/fs/ext2/dev.c	2010-05-09 00:36:17.121652200 +0200
++++ u-boot-1.3.1/fs/ext2/dev.c	2010-05-09 00:41:59.339403315 +0200
+@@ -63,7 +63,9 @@
+ 	    || ((sector + ((byte_offset + byte_len - 1) >> SECTOR_BITS)) >=
+ 		part_info.size)) {
+ 	/*      errnum = ERR_OUTSIDE_PART; */
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf (" ** ext2fs_devread() read outside partition sector %d\n", sector);
++#endif
+ 		return (0);
+ 	}
+ 
+@@ -76,7 +78,9 @@
+ 	debug (" <%d, %d, %d>\n", sector, byte_offset, byte_len);
+ 
+ 	if (ext2fs_block_dev_desc == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Invalid Block Device Descriptor (NULL)\n");
++#endif
+ 		return (0);
+ 	}
+ 
+@@ -86,7 +90,9 @@
+ 		    block_read (ext2fs_block_dev_desc->dev,
+ 				part_info.start + sector, 1,
+ 				(unsigned long *) sec_buf) != 1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf (" ** ext2fs_devread() read error **\n");
++#endif
+ 			return (0);
+ 		}
+ 		memcpy (buf, sec_buf + byte_offset,
+@@ -118,7 +124,9 @@
+ 					       block_len / SECTOR_SIZE,
+ 					       (unsigned long *) buf) !=
+ 	    block_len / SECTOR_SIZE) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf (" ** ext2fs_devread() read error - block\n");
++#endif
+ 		return (0);
+ 	}
+ 	block_len = byte_len & ~(SECTOR_SIZE - 1);
+@@ -132,7 +140,9 @@
+ 		    block_read (ext2fs_block_dev_desc->dev,
+ 				part_info.start + sector, 1,
+ 				(unsigned long *) sec_buf) != 1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf (" ** ext2fs_devread() read error - last part\n");
++#endif
+ 			return (0);
+ 		}
+ 		memcpy (buf, sec_buf, byte_len);
+diff -Naur u-boot-1.3.1.org/fs/ext2/ext2fs.c u-boot-1.3.1/fs/ext2/ext2fs.c
+--- u-boot-1.3.1.org/fs/ext2/ext2fs.c	2010-05-09 00:36:17.122652327 +0200
++++ u-boot-1.3.1/fs/ext2/ext2fs.c	2010-05-09 00:41:59.478401846 +0200
+@@ -269,7 +269,9 @@
+ 		if (indir1_block == NULL) {
+ 			indir1_block = (uint32_t *) malloc (blksz);
+ 			if (indir1_block == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 1) malloc failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir1_size = blksz;
+@@ -282,7 +284,9 @@
+ 			indir1_blkno = -1;
+ 			indir1_block = (uint32_t *) malloc (blksz);
+ 			if (indir1_block == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 1) malloc failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir1_size = blksz;
+@@ -293,7 +297,9 @@
+ 						 0, blksz,
+ 						 (char *) indir1_block);
+ 			if (status == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 1) failed. **\n");
++#endif
+ 				return (0);
+ 			}
+ 			indir1_blkno =
+@@ -313,7 +319,9 @@
+ 		if (indir1_block == NULL) {
+ 			indir1_block = (uint32_t *) malloc (blksz);
+ 			if (indir1_block == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 2 1) malloc failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir1_size = blksz;
+@@ -326,7 +334,9 @@
+ 			indir1_blkno = -1;
+ 			indir1_block = (uint32_t *) malloc (blksz);
+ 			if (indir1_block == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 2 1) malloc failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir1_size = blksz;
+@@ -337,7 +347,9 @@
+ 						0, blksz,
+ 						(char *) indir1_block);
+ 			if (status == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 2 1) failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir1_blkno =
+@@ -347,7 +359,9 @@
+ 		if (indir2_block == NULL) {
+ 			indir2_block = (uint32_t *) malloc (blksz);
+ 			if (indir2_block == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 2 2) malloc failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir2_size = blksz;
+@@ -360,7 +374,9 @@
+ 			indir2_blkno = -1;
+ 			indir2_block = (uint32_t *) malloc (blksz);
+ 			if (indir2_block == NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 2 2) malloc failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir2_size = blksz;
+@@ -371,7 +387,9 @@
+ 						 0, blksz,
+ 						 (char *) indir2_block);
+ 			if (status == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 				printf ("** ext2fs read block (indir 2 2) failed. **\n");
++#endif
+ 				return (-1);
+ 			}
+ 			indir2_blkno =
+@@ -381,7 +399,9 @@
+ 	}
+ 	/* Tripple indirect.  */
+ 	else {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** ext2fs doesn't support tripple indirect blocks. **\n");
++#endif
+ 		return (-1);
+ 	}
+ #ifdef DEBUG
+@@ -558,6 +578,7 @@
+ 					}
+ 					fdiro->inode_read = 1;
+ 				}
++#if !defined(CONFIG_UFS910_MINI)
+ 				switch (type) {
+ 				case FILETYPE_DIRECTORY:
+ 					printf ("<DIR> ");
+@@ -575,6 +596,7 @@
+ 				printf ("%10d %s\n",
+ 					__le32_to_cpu (fdiro->inode.size),
+ 					filename);
++#endif
+ 			}
+ 			free (fdiro);
+ 		}
+@@ -762,7 +784,9 @@
+ 	status = ext2fs_find_file (dirname, &ext2fs_root->diropen, &dirnode,
+ 				   FILETYPE_DIRECTORY);
+ 	if (status != 1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Can not find directory. **\n");
++#endif
+ 		return (1);
+ 	}
+ 	ext2fs_iterate_dir (dirnode, NULL, NULL, NULL);
+@@ -886,7 +910,9 @@
+ 	return (1);
+ 
+ fail:
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf ("Failed to mount ext2 filesystem...\n");
++#endif
+ 	free (data);
+ 	ext2fs_root = NULL;
+ 	return (0);
+diff -Naur u-boot-1.3.1.org/fs/fat/fat.c u-boot-1.3.1/fs/fat/fat.c
+--- u-boot-1.3.1.org/fs/fat/fat.c	2010-05-09 00:36:17.124677724 +0200
++++ u-boot-1.3.1/fs/fat/fat.c	2010-05-09 00:41:59.604654915 +0200
+@@ -77,7 +77,9 @@
+ 	cur_dev = dev_desc;
+ 	/* check if we have a MBR (on floppies we have only a PBR) */
+ 	if (dev_desc->block_read (dev_desc->dev, 0, 1, (ulong *) buffer) != 1) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf ("** Can't read from device %d **\n", dev_desc->dev);
++#endif
+ 		return -1;
+ 	}
+ 	if (buffer[DOS_PART_MAGIC_OFFSET] != 0x55 ||
+@@ -104,8 +106,10 @@
+ 			cur_part = 1;
+ 			part_offset = 0;
+ 		} else {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("** Partition %d not valid on device %d **\n",
+ 				part_no, dev_desc->dev);
++#endif
+ 			return -1;
+ 		}
+ #else
+@@ -215,10 +219,12 @@
+ 		bufnum = entry / FAT16BUFSIZE;
+ 		offset = entry - bufnum * FAT16BUFSIZE;
+ 		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case 12:
+ 		bufnum = entry / FAT12BUFSIZE;
+ 		offset = entry - bufnum * FAT12BUFSIZE;
+ 		break;
++#endif
+ 
+ 	default:
+ 		/* Unsupported FAT size */
+@@ -251,6 +257,7 @@
+ 	case 16:
+ 		ret = FAT2CPU16(((__u16*)mydata->fatbuf)[offset]);
+ 		break;
++#if !defined(CONFIG_UFS910_MINI)
+ 	case 12: {
+ 		__u32 off16 = (offset*3)/4;
+ 		__u16 val1, val2;
+@@ -283,6 +290,7 @@
+ 		}
+ 	}
+ 	break;
++#endif
+ 	}
+ 	FAT_DPRINT("ret: %d, offset: %d\n", ret, offset);
+ 
+@@ -580,6 +588,7 @@
+ 				doit = 1;
+ 			    }
+ 			}
++#if !defined(CONFIG_UFS910_MINI)
+ 			if (doit) {
+ 			    if (dirc == ' ') {
+ 				printf (" %8ld   %s%c\n",
+@@ -589,6 +598,7 @@
+ 				printf ("            %s%c\n", l_name, dirc);
+ 			    }
+ 			}
++#endif
+ 			dentptr++;
+ 			continue;
+ 		    }
+@@ -602,9 +612,11 @@
+ 		}
+ 	    }
+ 	    if (dentptr->name[0] == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (dols) {
+ 		    printf ("\n%d file(s), %d dir(s)\n\n", files, dirs);
+ 		}
++#endif
+ 		FAT_DPRINT ("Dentname == NULL - %d\n", i);
+ 		return NULL;
+ 	    }
+@@ -631,6 +643,7 @@
+ 			doit = 1;
+ 		    }
+ 		}
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (doit) {
+ 		    if (dirc == ' ') {
+ 			printf (" %8ld   %s%c\n",
+@@ -640,6 +653,7 @@
+ 			printf ("            %s%c\n", s_name, dirc);
+ 		    }
+ 		}
++#endif
+ 		dentptr++;
+ 		continue;
+ 	    }
+@@ -715,10 +729,12 @@
+ 			return 0;
+ 		}
+ 	} else {
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (strncmp(FAT12_SIGN, vistart->fs_type, SIGNLEN) == 0) {
+ 			*fatsize = 12;
+ 			return 0;
+ 		}
++#endif
+ 		if (strncmp(FAT16_SIGN, vistart->fs_type, SIGNLEN) == 0) {
+ 			*fatsize = 16;
+ 			return 0;
+@@ -840,6 +856,7 @@
+ 				doit = 1;
+ 			    }
+ 			}
++#if !defined(CONFIG_UFS910_MINI)
+ 			if (doit) {
+ 			    if (dirc == ' ') {
+ 				printf (" %8ld   %s%c\n",
+@@ -849,6 +866,7 @@
+ 				printf ("            %s%c\n", l_name, dirc);
+ 			    }
+ 			}
++#endif
+ 			dentptr++;
+ 			continue;
+ 		    }
+@@ -863,7 +881,9 @@
+ 	    } else if (dentptr->name[0] == 0) {
+ 		FAT_DPRINT ("RootDentname == NULL - %d\n", i);
+ 		if (dols == LS_ROOT) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		    printf ("\n%d file(s), %d dir(s)\n\n", files, dirs);
++#endif
+ 		    return 0;
+ 		}
+ 		return -1;
+@@ -894,6 +914,7 @@
+ 			doit = 1;
+ 		    }
+ 		}
++#if !defined(CONFIG_UFS910_MINI)
+ 		if (doit) {
+ 		    if (dirc == ' ') {
+ 			printf (" %8ld   %s%c\n",
+@@ -903,6 +924,7 @@
+ 			printf ("            %s%c\n", s_name, dirc);
+ 		    }
+ 		}
++#endif
+ 		dentptr++;
+ 		continue;
+ 	    }
+@@ -981,13 +1003,15 @@
+ 	char	vol_label[12];
+ 
+ 	if(cur_dev==NULL) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("No current device\n");
++#endif
+ 		return 1;
+ 	}
+-#if defined(CONFIG_CMD_IDE) || \
++#if (defined(CONFIG_CMD_IDE) || \
+     defined(CONFIG_CMD_SCSI) || \
+     defined(CONFIG_CMD_USB) || \
+-    (CONFIG_MMC)
++    (CONFIG_MMC)) && !defined(CONFIG_UFS910_MINI)
+ 	printf("Interface:  ");
+ 	switch(cur_dev->if_type) {
+ 		case IF_TYPE_IDE :	printf("IDE"); break;
+@@ -1002,14 +1026,18 @@
+ 	dev_print(cur_dev);
+ #endif
+ 	if(read_bootsectandvi(&bs, &volinfo, &fatsize)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("\nNo valid FAT fs found\n");
++#endif
+ 		return 1;
+ 	}
+ 	memcpy (vol_label, volinfo.volume_label, 11);
+ 	vol_label[11] = '\0';
+ 	volinfo.fs_type[5]='\0';
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf("Partition %d: Filesystem: %s \"%s\"\n"
+ 			,cur_part,volinfo.fs_type,vol_label);
++#endif
+ 	return 0;
+ }
+ 
+@@ -1024,7 +1052,9 @@
+ long
+ file_fat_read(const char *filename, void *buffer, unsigned long maxsize)
+ {
++#if !defined(CONFIG_UFS910_MINI)
+ 	printf("reading %s\n",filename);
++#endif
+ 	return do_fat_read(filename, buffer, maxsize, LS_NO);
+ }
+ 
+diff -Naur u-boot-1.3.1.org/include/command.h u-boot-1.3.1/include/command.h
+--- u-boot-1.3.1.org/include/command.h	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/include/command.h	2010-05-09 00:41:59.731656889 +0200
+@@ -42,10 +42,12 @@
+ 	int		repeatable;	/* autorepeat allowed?		*/
+ 					/* Implementation function	*/
+ 	int		(*cmd)(struct cmd_tbl_s *, int, int, char *[]);
++#if !defined(CONFIG_UFS910_MINI)
+ 	char		*usage;		/* Usage message	(short)	*/
+ #ifdef	CFG_LONGHELP
+ 	char		*help;		/* Help  message	(long)	*/
+ #endif
++#endif
+ #ifdef CONFIG_AUTO_COMPLETE
+ 	/* do auto completion on the arguments */
+ 	int		(*complete)(int argc, char *argv[], char last_char, int maxv, char *cmdv[]);
+@@ -86,7 +88,12 @@
+ 
+ #define Struct_Section  __attribute__ ((unused,section (".u_boot_cmd")))
+ 
+-#ifdef  CFG_LONGHELP
++#if defined(CONFIG_UFS910_MINI)
++
++#define U_BOOT_CMD(name,maxargs,rep,cmd,usage,help) \
++cmd_tbl_t __u_boot_cmd_##name Struct_Section = {#name, maxargs, rep, cmd}
++
++#elif defined(CFG_LONGHELP)
+ 
+ #define U_BOOT_CMD(name,maxargs,rep,cmd,usage,help) \
+ cmd_tbl_t __u_boot_cmd_##name Struct_Section = {#name, maxargs, rep, cmd, usage, help}
+diff -Naur u-boot-1.3.1.org/include/configs/ufs910.h u-boot-1.3.1/include/configs/ufs910.h
+--- u-boot-1.3.1.org/include/configs/ufs910.h	2010-05-09 00:36:16.930670442 +0200
++++ u-boot-1.3.1/include/configs/ufs910.h	2010-05-09 01:31:22.845648042 +0200
+@@ -78,6 +79,7 @@
+ #	error "Unable to determine sectors for monitor"
+ #endif
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 		"board=" XSTR(BOARD) "_" XSTR(INPUT_CLOCK_RATE) "\0" \
+ 		"monitor_base=" XSTR(CFG_MONITOR_BASE) "\0" \
+@@ -90,6 +92,7 @@
+ 		  "erase $monitor_sec;" \
+ 		  "cp.b $load_addr $monitor_base $monitor_len;" \
+ 		  "protect on $monitor_sec\0"
++#endif
+ 
+ /*--------------------------------------------------------------
+  * Command line configuration.
+@@ -104,6 +107,17 @@
+ #undef CONFIG_CMD_NFS
+ 
+ #define CONFIG_CMD_BOOTMENU
++#if defined(CONFIG_UFS910_MINI)
++#	undef CONFIG_CMD_BOOTD
++#	undef CONFIG_CMD_MEMORY
++#	undef CONFIG_CMD_BDI
++#	undef CONFIG_CMD_ITEST
++#	undef CONFIG_CMD_IMI
++#	undef CONFIG_CMD_IMLS
++#	undef CONFIG_CMD_LOADB
++#	undef CONFIG_CMD_LOADS
++#	undef CONFIG_CMD_XIMG
++#endif
+ 
+ /*--------------------------------------------------------------
+  * Serial console info
+@@ -138,6 +152,8 @@
+  *    for STb7109, the on-chip STMAC & on-board PHY
+  */
+ 
++#if !defined(CONFIG_UFS910_MINI)
++
+ #if 1
+ #	define CONFIG_DRIVER_SMC911X
+ #	define CONFIG_SMC911X_BASE	0xa2000000ul
+@@ -162,6 +178,8 @@
+ #	define CONFIG_CMD_DHCP
+ #endif
+ 
++#endif
++
+ /*  If this board does not have eeprom for ethernet address so allow the user
+  *  to set it in the environment
+  */
+@@ -175,7 +193,7 @@
+ #define CONFIG_DRIVER_VFD
+ #define CONFIG_DRIVER_BUTTONS
+ 
+-#ifdef CONFIG_DRIVER_BUTTONS
++#if defined (CONFIG_DRIVER_BUTTONS) && !defined(CONFIG_UFS910_MINI)
+ #define CONFIG_MISC_INIT_R
+ #endif
+ 
+@@ -250,6 +270,26 @@
+  * Miscellaneous configurable options
+  */
+ 
++#if defined(CONFIG_UFS910_MINI)
++
++#define CFG_HUSH_PARSER		1
++#define CFG_NOHELP		1		/* undef to save memory		*/
++#define CFG_NOERROR		1
++#define CFG_PROMPT		"ufs910> "	/* Monitor Command Prompt	*/
++#define CFG_PROMPT_HUSH_PS2	"> "
++#define CFG_CBSIZE		1024
++#define CFG_PBSIZE (CFG_CBSIZE+sizeof(CFG_PROMPT)+16) /* Print Buffer Size	*/
++#define CFG_MAXARGS		16		/* max number of command args	*/
++#define CFG_HZ			1000		/* HZ for timer ticks		*/
++#define CFG_LOAD_ADDR		CFG_SDRAM_BASE	/* default load address		*/
++#define CFG_BOOTMAPSZ		(16 << 20)	/* initial linux memory size	*/
++#define CFG_FLASH_QUIET_TEST	1
++#define CFG_CONSOLE_INFO_QUIET	1
++
++#define CONFIG_LZMA
++
++#else
++
+ #define CFG_HUSH_PARSER		1
+ #define CFG_LONGHELP		1		/* undef to save memory		*/
+ #define CFG_PROMPT		"ufs910> "	/* Monitor Command Prompt	*/
+@@ -267,6 +308,7 @@
+ #define CONFIG_AUTO_COMPLETE       1
+ 
+ #define CONFIG_LZMA
++#endif
+ 
+ /*-----------------------------------------------------------------------
+  * NOR FLASH organization
+@@ -286,10 +328,18 @@
+  * Addresss, size, & location of U-boot's Environment Sector
+  */
+ 
+-#define CFG_ENV_IS_IN_FLASH	1
+-#define CFG_ENV_OFFSET		CFG_MONITOR_LEN
+-#define CFG_ENV_ADDR		(CFG_FLASH_BASE + CFG_ENV_OFFSET)
+-#define CFG_ENV_SIZE		0x10000
+-#define CFG_ENV_SECT_SIZE	0x10000
++#if defined(CONFIG_UFS910_MINI)
++#	define CFG_ENV_IS_IN_FLASH	1
++#	define CFG_ENV_OFFSET		CFG_MONITOR_LEN
++#	define CFG_ENV_ADDR		(CFG_FLASH_BASE + CFG_ENV_OFFSET)
++#	define CFG_ENV_SIZE		0x10000
++#	define CFG_ENV_SECT_SIZE	0x10000
++#else
++#	define CFG_ENV_IS_IN_FLASH	1
++#	define CFG_ENV_OFFSET		CFG_MONITOR_LEN
++#	define CFG_ENV_ADDR		(CFG_FLASH_BASE + CFG_ENV_OFFSET)
++#	define CFG_ENV_SIZE		0x10000
++#	define CFG_ENV_SECT_SIZE	0x20000
++#endif
+ 
+ #endif	/* __CONFIG_H */
+diff -Naur u-boot-1.3.1.org/include/fat.h u-boot-1.3.1/include/fat.h
+--- u-boot-1.3.1.org/include/fat.h	2010-05-09 00:36:17.125677642 +0200
++++ u-boot-1.3.1/include/fat.h	2010-05-09 00:41:59.992401225 +0200
+@@ -85,7 +85,11 @@
+ #else
+ #define FAT_DPRINT(args...)
+ #endif
++#if defined(CONFIG_UFS910_MINI)
++#define FAT_ERROR(arg)
++#else
+ #define FAT_ERROR(arg)		printf(arg)
++#endif
+ 
+ #define ISDIRDELIM(c)   ((c) == '/' || (c) == '\\')
+ 
+diff -Naur u-boot-1.3.1.org/include/flash.h u-boot-1.3.1/include/flash.h
+--- u-boot-1.3.1.org/include/flash.h	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/include/flash.h	2010-05-09 00:42:00.249400739 +0200
+@@ -83,7 +83,9 @@
+ /* Prototypes */
+ 
+ extern unsigned long flash_init (void);
++#if !defined(CONFIG_UFS910_MINI)
+ extern void flash_print_info (flash_info_t *);
++#endif
+ extern int flash_erase	(flash_info_t *, int, int);
+ extern int flash_sect_erase (ulong addr_first, ulong addr_last);
+ extern int flash_sect_protect (int flag, ulong addr_first, ulong addr_last);
+diff -Naur u-boot-1.3.1.org/include/part.h u-boot-1.3.1/include/part.h
+--- u-boot-1.3.1.org/include/part.h	2010-05-09 00:36:13.390656263 +0200
++++ u-boot-1.3.1/include/part.h	2010-05-09 00:42:00.340405604 +0200
+@@ -100,7 +100,9 @@
+ int get_partition_info (block_dev_desc_t * dev_desc, int part, disk_partition_t *info);
+ void print_part (block_dev_desc_t *dev_desc);
+ void  init_part (block_dev_desc_t *dev_desc);
++#if !defined(CONFIG_UFS910_MINI)
+ void dev_print(block_dev_desc_t *dev_desc);
++#endif
+ 
+ 
+ #ifdef CONFIG_MAC_PARTITION
+diff -Naur u-boot-1.3.1.org/include/usb.h u-boot-1.3.1/include/usb.h
+--- u-boot-1.3.1.org/include/usb.h	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/include/usb.h	2010-05-09 00:42:00.453405642 +0200
+@@ -195,7 +195,9 @@
+ #define USB_MAX_STOR_DEV 5
+ block_dev_desc_t *usb_stor_get_dev(int index);
+ int usb_stor_scan(int mode);
++#if !defined(CONFIG_UFS910_MINI)
+ void usb_stor_info(void);
++#endif
+ 
+ #endif
+ 
+diff -Naur u-boot-1.3.1.org/lib_generic/zlib.c u-boot-1.3.1/lib_generic/zlib.c
+--- u-boot-1.3.1.org/lib_generic/zlib.c	2010-05-09 00:36:16.057401154 +0200
++++ u-boot-1.3.1/lib_generic/zlib.c	2010-05-09 00:42:00.459402774 +0200
+@@ -44,8 +44,10 @@
+ typedef ush FAR ushf;
+ typedef unsigned long ulg;
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ #define ERR_MSG(err) z_errmsg[Z_NEED_DICT-(err)]
+ #define ERR_RETURN(strm,err) return (strm->msg = (char*)ERR_MSG(err), (err))
++#endif
+ /* To be used only when the state is known to be valid */
+ 
+ #ifndef NULL
+@@ -547,7 +549,9 @@
+                 dist += (unsigned)hold & ((1U << op) - 1);
+ #ifdef INFLATE_STRICT
+                 if (dist > dmax) {
++#if !defined(CONFIG_UFS910_MINI)
+                     strm->msg = (char *)"invalid distance too far back";
++#endif
+                     state->mode = BAD;
+                     break;
+                 }
+@@ -559,7 +563,9 @@
+                 if (dist > op) {                /* see if copy from window */
+                     op = dist - op;             /* distance back in window */
+                     if (op > whave) {
++#if !defined(CONFIG_UFS910_MINI)
+                         strm->msg = (char *)"invalid distance too far back";
++#endif
+                         state->mode = BAD;
+                         break;
+                     }
+@@ -635,7 +641,9 @@
+                 goto dodist;
+             }
+             else {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid distance code";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -650,7 +658,9 @@
+             break;
+         }
+         else {
++#if !defined(CONFIG_UFS910_MINI)
+             strm->msg = (char *)"invalid literal/length code";
++#endif
+             state->mode = BAD;
+             break;
+         }
+@@ -1402,19 +1412,25 @@
+             if (
+ #endif
+                 ((BITS(8) << 8) + (hold >> 8)) % 31) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"incorrect header check";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+             if (BITS(4) != Z_DEFLATED) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"unknown compression method";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+             DROPBITS(4);
+             len = BITS(4) + 8;
+             if (len > state->wbits) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid window size";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1429,12 +1445,16 @@
+             NEEDBITS(16);
+             state->flags = (int)(hold);
+             if ((state->flags & 0xff) != Z_DEFLATED) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"unknown compression method";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+             if (state->flags & 0xe000) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"unknown header flags set";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1538,7 +1558,9 @@
+             if (state->flags & 0x0200) {
+                 NEEDBITS(16);
+                 if (hold != (state->check & 0xffff)) {
++#if !defined(CONFIG_UFS910_MINI)
+                     strm->msg = (char *)"header crc mismatch";
++#endif
+                     state->mode = BAD;
+                     break;
+                 }
+@@ -1593,7 +1615,9 @@
+                 state->mode = TABLE;
+                 break;
+             case 3:
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid block type";
++#endif
+                 state->mode = BAD;
+             }
+             DROPBITS(2);
+@@ -1602,7 +1626,9 @@
+             BYTEBITS();                         /* go to byte boundary */
+             NEEDBITS(32);
+             if ((hold & 0xffff) != ((hold >> 16) ^ 0xffff)) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid stored block lengths";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1638,7 +1664,9 @@
+             DROPBITS(4);
+ #ifndef PKZIP_BUG_WORKAROUND
+             if (state->nlen > 286 || state->ndist > 30) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"too many length or distance symbols";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1660,7 +1688,9 @@
+             ret = inflate_table(CODES, state->lens, 19, &(state->next),
+                                 &(state->lenbits), state->work);
+             if (ret) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid code lengths set";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1684,7 +1714,9 @@
+                         NEEDBITS(this.bits + 2);
+                         DROPBITS(this.bits);
+                         if (state->have == 0) {
++#if !defined(CONFIG_UFS910_MINI)
+                             strm->msg = (char *)"invalid bit length repeat";
++#endif
+                             state->mode = BAD;
+                             break;
+                         }
+@@ -1707,7 +1739,9 @@
+                         DROPBITS(7);
+                     }
+                     if (state->have + copy > state->nlen + state->ndist) {
++#if !defined(CONFIG_UFS910_MINI)
+                         strm->msg = (char *)"invalid bit length repeat";
++#endif
+                         state->mode = BAD;
+                         break;
+                     }
+@@ -1726,7 +1760,9 @@
+             ret = inflate_table(LENS, state->lens, state->nlen, &(state->next),
+                                 &(state->lenbits), state->work);
+             if (ret) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid literal/lengths set";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1735,7 +1771,9 @@
+             ret = inflate_table(DISTS, state->lens + state->nlen, state->ndist,
+                             &(state->next), &(state->distbits), state->work);
+             if (ret) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid distances set";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1780,7 +1818,9 @@
+                 break;
+             }
+             if (this.op & 64) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid literal/length code";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1812,7 +1852,9 @@
+             }
+             DROPBITS(this.bits);
+             if (this.op & 64) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid distance code";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1827,13 +1869,17 @@
+             }
+ #ifdef INFLATE_STRICT
+             if (state->offset > state->dmax) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid distance too far back";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+ #endif
+             if (state->offset > state->whave + out - left) {
++#if !defined(CONFIG_UFS910_MINI)
+                 strm->msg = (char *)"invalid distance too far back";
++#endif
+                 state->mode = BAD;
+                 break;
+             }
+@@ -1885,7 +1931,9 @@
+                      state->flags ? hold :
+ #endif
+                      REVERSE(hold)) != state->check) {
++#if !defined(CONFIG_UFS910_MINI)
+                     strm->msg = (char *)"incorrect data check";
++#endif
+                     state->mode = BAD;
+                     break;
+                 }
+@@ -1898,7 +1946,9 @@
+             if (state->wrap && state->flags) {
+                 NEEDBITS(32);
+                 if (hold != (state->total & 0xffffffffUL)) {
++#if !defined(CONFIG_UFS910_MINI)
+                     strm->msg = (char *)"incorrect length check";
++#endif
+                     state->mode = BAD;
+                     break;
+                 }
+@@ -1978,6 +2028,7 @@
+ struct internal_state	{int dummy;}; /* for buggy compilers */
+ #endif
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ const char * const z_errmsg[10] = {
+ "need dictionary",     /* Z_NEED_DICT       2  */
+ "stream end",          /* Z_STREAM_END      1  */
+@@ -1989,6 +2040,7 @@
+ "buffer error",        /* Z_BUF_ERROR     (-5) */
+ "incompatible version",/* Z_VERSION_ERROR (-6) */
+ ""};
++#endif
+ 
+ #ifdef DEBUG
+ 
+diff -Naur u-boot-1.3.1.org/lib_sh/board.c u-boot-1.3.1/lib_sh/board.c
+--- u-boot-1.3.1.org/lib_sh/board.c	2010-05-09 00:36:16.517402040 +0200
++++ u-boot-1.3.1/lib_sh/board.c	2010-05-09 01:26:38.390401600 +0200
+@@ -129,12 +129,16 @@
+ {
+ 	DECLARE_GLOBAL_DATA_PTR;
+ 
++#if defined(CONFIG_UFS910_MINI)
++	gd->baudrate = CONFIG_BAUDRATE;
++#else
+ 	char tmp[64];		/* long enough for environment variables */
+ 	int i = getenv_r ("baudrate", tmp, sizeof (tmp));
+ 
+ 	gd->baudrate = (i > 0)
+ 		? (int) simple_strtoul (tmp, NULL, 10)
+ 		: CONFIG_BAUDRATE;
++#endif
+ 
+ 	return (0);
+ }
+@@ -253,6 +257,7 @@
+ 	/* Allocate environment function pointers etc. */
+ 	env_relocate ();
+ 
++#if defined(CONFIG_CMD_NET)
+ 	/* board MAC address */
+ 	s = getenv ("ethaddr");
+ 	for (i = 0; i < 6; ++i) {
+@@ -264,6 +269,7 @@
+ 
+ 	/* IP Address */
+ 	bd->bi_ip_addr = getenv_IPaddr ("ipaddr");
++#endif
+ 
+ #if defined(CONFIG_PCI)
+ 	/*
+@@ -283,6 +291,7 @@
+ 
+ /** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **/
+ 
++#if !defined(CONFIG_UFS910_MINI)
+ 	/* Initialize from environment */
+ 	if ((s = getenv ("loadaddr")) != NULL) {
+ 		load_addr = simple_strtoul (s, NULL, 16);
+@@ -292,6 +301,7 @@
+ 		copy_filename (BootFile, s, sizeof (BootFile));
+ 	}
+ #endif /* CONFIG_CMD_NET */
++#endif
+ 
+ #if defined(CONFIG_MISC_INIT_R)
+ 	/* miscellaneous platform dependent initialisations */
+diff -Naur u-boot-1.3.1.org/lib_sh/sh_linux.c u-boot-1.3.1/lib_sh/sh_linux.c
+--- u-boot-1.3.1.org/lib_sh/sh_linux.c	2010-05-09 00:36:14.284406304 +0200
++++ u-boot-1.3.1/lib_sh/sh_linux.c	2010-05-09 00:42:00.647404475 +0200
+@@ -144,7 +144,9 @@
+ 		if ((hdr->ih_os != IH_OS_LINUX) ||
+ 		    (hdr->ih_arch != IH_CPU_SH) ||
+ 		    (hdr->ih_type != IH_TYPE_RAMDISK)) {
++#if !defined(CONFIG_UFS910_MINI)
+ 			printf ("No Linux SH Ramdisk Image\n");
++#endif
+ 			SHOW_BOOT_PROGRESS (-13);
+ 			do_reset (cmdtp, flag, argc, argv);
+ 		}
+@@ -249,10 +251,13 @@
+ 	/* try and detect if the kernel is incompatible with U-boot */
+ 	if ((*SE_MODE & 0xFFFFFF00) != 0x53453F00)	/* 'SE?.' */
+ 	{
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("\nWarning: Unable to determine if kernel is built for 29- or 32-bit mode!\n");
++#endif
+ 	}
+ 	else if ((*SE_MODE & 0xFF) != CURRENT_SE_MODE)
+ 	{
++#if !defined(CONFIG_UFS910_MINI)
+ 		printf("\n"
+ 			"Error: A %2u-bit Kernel is incompatible with this %2u-bit U-Boot!\n"
+ 			"Please re-configure and re-build vmlinux or u-boot.\n"
+@@ -260,6 +265,7 @@
+ 			CURRENT_SE_MODE ^ (32 ^ 29),
+ 			CURRENT_SE_MODE,
+ 			*SE_MODE);
++#endif
+ 		return;
+ 	}
+ 
+diff -Naur u-boot-1.3.1.org/pack.sh u-boot-1.3.1/pack.sh
+--- u-boot-1.3.1.org/pack.sh	1970-01-01 01:00:00.000000000 +0100
++++ u-boot-1.3.1/pack.sh	2010-05-09 02:07:26.802401483 +0200
+@@ -0,0 +1,4 @@
++#!/bin/sh
++
++gzip -c -9 u-boot.bin > u-boot.bin.gz
++mkimage -A sh -O u-boot -T standalone -C gzip -a 84600000 -e 84600000 -n "Mini U-Boot" -d u-boot.bin.gz u-boot.ub
+diff -Naur u-boot-1.3.1.org/Makefile u-boot-1.3.1/Makefile
+--- u-boot-1.3.1.org/Makefile	2010-06-13 16:43:26.000000000 +0200
++++ u-boot-1.3.1/Makefile	2010-06-13 16:49:39.954279651 +0200
+@@ -2673,13 +2673,17 @@
+ #########################################################################
+ 
+ ufs910_config \
+-ufs910_128_config :	unconfig
++ufs910_mini_config \
++ufs910_128_config \
++ufs910_128_mini_config :	unconfig
+ 	@mkdir -p $(obj)include $(obj)board/kathrein/ufs910
+ 	@echo "#define CONFIG_SH_STB7100   1" >>$(obj)include/config.h
+ 	@echo "#define CONFIG_SH_MB442     1" >>$(obj)include/config.h
+ 	@echo "#define CONFIG_UFS910       1" >>$(obj)include/config.h
+ 	$(if $(findstring 128,$@), \
+ 	@echo "#define CONFIG_SH_MB442_128 1" >>$(obj)include/config.h)
++	$(if $(findstring mini,$@), \
++	@echo "#define CONFIG_UFS910_MINI  1" >>$(obj)include/config.h)
+ 	@$(MKCONFIG) -a ufs910 sh sh ufs910 kathrein stb7100
+ 
+ mb411_config :		unconfig

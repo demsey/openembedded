@@ -1,0 +1,223 @@
+diff -Naur u-boot-1.3.1.org/common/cmd_ext2.c u-boot-1.3.1/common/cmd_ext2.c
+--- u-boot-1.3.1.org/common/cmd_ext2.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_ext2.c	2010-05-12 09:17:23.139417987 +0200
+@@ -173,7 +173,45 @@
+ 		return(1);
+ 	}
+ 
++#if defined(CFG_FS_LABEL)
++	dev = (int)simple_strtoul (argv[2], &ep, 10);	/* hex changed to dec, because letters are for label */
++	if (ep == argv[2]) {
++		/* argv[2] is not a number */
++		char i;
++		char label_len = strlen(argv[2]);
++		for (i = 0; i < 5; i++) {
++			dev_desc = get_dev(argv[1],i);
++			if (dev_desc == NULL)
++				/* no more storage devices */
++				break;
++
++			for (part = 1; part < 17; part++) {
++				part_length = ext2fs_set_blk_dev(dev_desc, part);
++				if (!part_length)
++					/* not a partition*/
++					break;
++				char label[17];
++				if (!ext2fs_get_label(label))
++					/* not a ext2 partition*/
++					continue;
++				label[16]='\0';
++				if (strlen(label) == label_len && strncmp(label,argv[2],label_len) == 0) {
++					/* found label*/
++					dev = i;
++					break;
++				}
++			}
++			if (dev)
++				break;
++		};
++		if (!dev) {
++			printf ("\n** Unable to find partition labeled '%s' **\n", argv[1]);
++			return(1);
++		}
++	} else {
++#else
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
++#endif
+ 	dev_desc = get_dev(argv[1],dev);
+ 	if (dev_desc==NULL) {
+ 		printf ("\n** Block device %s %d not supported\n", argv[1], dev);
+@@ -186,6 +224,9 @@
+ 		}
+ 		part = (int)simple_strtoul(++ep, NULL, 16);
+ 	}
++#if defined(CFG_FS_LABEL)
++	}
++#endif
+ 
+ 	PRINTF("Using device %s%d, partition %d\n", argv[1], dev, part);
+ 
+@@ -247,7 +288,7 @@
+ 	sprintf(buf, "%lX", filelen);
+ 	setenv("filesize", buf);
+ 
+-	return(filelen);
++	return(0);
+ }
+ 
+ U_BOOT_CMD(
+diff -Naur u-boot-1.3.1.org/common/cmd_fat.c u-boot-1.3.1/common/cmd_fat.c
+--- u-boot-1.3.1.org/common/cmd_fat.c	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/common/cmd_fat.c	2010-05-12 09:18:40.881417822 +0200
+@@ -48,7 +48,41 @@
+ 		printf ("usage: fatload <interface> <dev[:part]> <addr> <filename> [bytes]\n");
+ 		return 1;
+ 	}
++#if defined(CFG_FS_LABEL)
++	dev = (int)simple_strtoul (argv[2], &ep, 10);	/* hex changed to dec, because letters are for label */
++	if (ep == argv[2]) {
++		/* argv[2] is not a number */
++		char i;
++		char label_len = strlen(argv[2]);
++		for (i = 0; i < 5; i++) {
++			dev_desc = get_dev(argv[1],i);
++			if (dev_desc == NULL)
++				/* no more storage devices */
++				break;
++
++			for (part = 1; part < 17; part++) {
++				char label[12];
++				if (!fat_get_label(label))
++					/* not a ext2 partition*/
++					continue;
++				label[11]='\0';
++				if (strlen(label) == label_len && strncmp(label,argv[2],label_len) == 0) {
++					/* found label*/
++					dev = i;
++					break;
++				}
++			}
++			if (dev)
++				break;
++		};
++		if (!dev) {
++			printf ("\n** Unable to find partition labeled '%s' **\n", argv[1]);
++			return(1);
++		}
++	} else {
++#else
+ 	dev = (int)simple_strtoul (argv[2], &ep, 16);
++#endif
+ 	dev_desc=get_dev(argv[1],dev);
+ 	if (dev_desc==NULL) {
+ 		puts ("\n** Invalid boot device **\n");
+@@ -61,6 +95,9 @@
+ 		}
+ 		part = (int)simple_strtoul(++ep, NULL, 16);
+ 	}
++#if defined(CFG_FS_LABEL)
++	}
++#endif
+ 	if (fat_register_device(dev_desc,part)!=0) {
+ 		printf ("\n** Unable to use %s %d:%d for fatload **\n",argv[1],dev,part);
+ 		return 1;
+diff -Naur u-boot-1.3.1.org/fs/ext2/ext2fs.c u-boot-1.3.1/fs/ext2/ext2fs.c
+--- u-boot-1.3.1.org/fs/ext2/ext2fs.c	2010-05-09 15:15:04.942219021 +0200
++++ u-boot-1.3.1/fs/ext2/ext2fs.c	2010-05-12 09:11:48.605667976 +0200
+@@ -892,4 +892,35 @@
+ 	return (0);
+ }
+ 
++#if defined(CFG_FS_LABEL)
++int ext2fs_get_label(char* label){
++	struct ext2_sblock *sblock;
++	int status;
++
++	sblock = malloc (sizeof (struct ext2_sblock));
++	if (!sblock) {
++		return (0);
++	}
++	/* Read the superblock.  */
++	status = ext2fs_devread (1 * 2, 0, sizeof (struct ext2_sblock),
++				 (char *) &sblock);
++	if (status == 0) {
++		goto end;
++	}
++	/* Make sure this is an ext2 filesystem.  */
++	if (__le16_to_cpu (sblock->magic) != EXT2_MAGIC) {
++		goto end;
++	}
++	
++	strncpy(label,sblock->volume_name,16);
++	
++	return 1;
++
++end:
++	free (sblock);
++
++	return 0;
++}
++#endif
++
+ #endif
+diff -Naur u-boot-1.3.1.org/fs/fat/fat.c u-boot-1.3.1/fs/fat/fat.c
+--- u-boot-1.3.1.org/fs/fat/fat.c	2010-05-09 15:15:04.943228507 +0200
++++ u-boot-1.3.1/fs/fat/fat.c	2010-05-12 09:12:17.706680512 +0200
+@@ -1028,4 +1007,28 @@
+ 	return do_fat_read(filename, buffer, maxsize, LS_NO);
+ }
+ 
++#if defined(CFG_FS_LABEL)
++int fat_get_label(char *label)
++{
++	boot_sector	bs;
++	volume_info	volinfo;
++	int		fatsize;
++	
++	if(read_bootsectandvi(&bs, &volinfo, &fatsize)) {
++		return 0;
++	}
++	
++	strncpy(label, volinfo.volume_label, 11);
++	
++	/* strip spaces */
++	label+=10;
++	while (*label == ' ') {
++		*label = 0;
++		label--;
++	}
++	
++	return 1;
++}
++#endif
++
+ #endif
+diff -Naur u-boot-1.3.1.org/include/configs/ufs910.h u-boot-1.3.1/include/configs/ufs910.h
+--- u-boot-1.3.1.org/include/configs/ufs910.h	2010-05-09 15:15:04.729971565 +0200
++++ u-boot-1.3.1/include/configs/ufs910.h	2010-05-12 09:13:13.704668081 +0200
+@@ -244,6 +244,7 @@
+ #	define CONFIG_DOS_PARTITION
+ #	define CONFIG_CMD_EXT2
+ #	define CONFIG_CMD_FAT
++#	define CFG_FS_LABEL
+ #endif
+ 
+ /*-----------------------------------------------------------------------
+diff -Naur u-boot-1.3.1.org/include/ext2fs.h u-boot-1.3.1/include/ext2fs.h
+--- u-boot-1.3.1.org/include/ext2fs.h	2007-12-06 10:21:19.000000000 +0100
++++ u-boot-1.3.1/include/ext2fs.h	2010-05-12 09:22:01.560417876 +0200
+@@ -79,3 +79,4 @@
+ extern int ext2fs_read (char *buf, unsigned len);
+ extern int ext2fs_mount (unsigned part_length);
+ extern int ext2fs_close(void);
++extern int ext2fs_get_label(char* label);
+diff -Naur u-boot-1.3.1.org/include/fat.h u-boot-1.3.1/include/fat.h
+--- u-boot-1.3.1.org/include/fat.h	2010-05-09 15:15:04.944224164 +0200
++++ u-boot-1.3.1/include/fat.h	2010-05-12 09:20:52.757667527 +0200
+@@ -218,5 +218,6 @@
+ long file_fat_read(const char *filename, void *buffer, unsigned long maxsize);
+ const char *file_getfsname(int idx);
+ int fat_register_device(block_dev_desc_t *dev_desc, int part_no);
++int fat_get_label(char *label);
+ 
+ #endif /* _FAT_H_ */

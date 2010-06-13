@@ -1,0 +1,401 @@
+diff -Naur u-boot-1.3.1.org/board/kathrein/ufs910/cmd_bootmenu.c u-boot-1.3.1/board/kathrein/ufs910/cmd_bootmenu.c
+--- u-boot-1.3.1.org/board/kathrein/ufs910/cmd_bootmenu.c	1970-01-01 01:00:00.000000000 +0100
++++ u-boot-1.3.1/board/kathrein/ufs910/cmd_bootmenu.c	2010-05-08 15:58:24.098655460 +0200
+@@ -0,0 +1,360 @@
++#include <common.h>
++#include <command.h>
++#include <asm/io.h>
++#include <asm/pio.h>
++#include "vfd.h"
++
++#if defined(CONFIG_CMD_BOOTMENU)
++
++#define PIO_BASE	0xb8020000
++
++#define UART0_BASE	0xb8030000ul
++#define UART1_BASE	0xb8031000ul
++#define UART2_BASE	0xb8032000ul
++#define UART3_BASE	0xb8033000ul
++
++#ifdef DEBUG
++#define fdebug(fmt,arg...) printf(fmt,##arg)
++#else
++#define fdebug(fmt,arg...)
++#endif
++
++#define CREAD	0000200
++#define HUPCL	0002000
++#define CLOCAL	0004000
++#define CSTOPB	0000100
++#define CSIZE	0000060
++#define CS7	0000040
++#define CS8	0000060
++#define PARENB	0000400
++#define PARODD	0001000
++
++#define BAUDMODE	0x00001000
++#define CTSENABLE	0x00000800
++#define FIFO		0x00000400
++#define RXENABLE	0x00000100
++#define RUN		0x00000080
++#define LOOPBACK	0x00000000
++#define STOPBIT		0x00000008
++#define MODE		0x00000001
++#define MODE_7BIT_PAR	0x0003
++#define MODE_8BIT_PAR	0x0007
++#define MODE_8BIT	0x0001
++#define STOP_1BIT	0x0008
++#define PARITYODD	0x0020
++
++#define STA_NKD		0x0400
++#define STA_TF		0x0200
++#define STA_RHF		0x0100
++#define STA_TOI		0x0080
++#define STA_TNE		0x0040
++#define STA_OE		0x0020
++#define STA_FE		0x0010
++#define STA_PE		0x0008
++#define STA_THE		0x0004
++#define STA_TE		0x0002
++#define STA_RBF		0x0001
++
++
++#define UART_BAUDRATE_OFFSET	0x00
++#define UART_TXBUFFER_OFFSET	0x04
++#define UART_RXBUFFER_OFFSET	0x08
++#define UART_CONTROL_OFFSET	0x0C
++#define UART_INTENABLE_OFFSET	0x10
++#define UART_STATUS_OFFSET	0x14
++#define UART_GUARDTIME_OFFSET	0x18
++#define UART_TIMEOUT_OFFSET	0x1C
++#define UART_TXRESET_OFFSET	0x20
++#define UART_RXRESET_OFFSET	0x24
++#define UART_RETRIES_OFFSET	0x28
++
++#define UART_BAUDRATE_REG	(UART3_BASE + UART_BAUDRATE_OFFSET)
++#define UART_TXBUFFER_REG	(UART3_BASE + UART_TXBUFFER_OFFSET)
++#define UART_RXBUFFER_REG	(UART3_BASE + UART_RXBUFFER_OFFSET)
++#define UART_CONTROL_REG	(UART3_BASE + UART_CONTROL_OFFSET)
++#define UART_INTENABLE_REG	(UART3_BASE + UART_INTENABLE_OFFSET)
++#define UART_STATUS_REG		(UART3_BASE + UART_STATUS_OFFSET)
++#define UART_GUARDTIME_REG	(UART3_BASE + UART_GUARDTIME_OFFSET)
++#define UART_TIMEOUT_REG	(UART3_BASE + UART_TIMEOUT_OFFSET)
++#define UART_TXRESET_REG	(UART3_BASE + UART_TXRESET_OFFSET)
++#define UART_RXRESET_REG	(UART3_BASE + UART_RXRESET_OFFSET)
++#define UART_RETRIES_REG	(UART3_BASE + UART_RETRIES_OFFSET)
++
++
++/*---- Values for the BAUDRATE Register -----------------------*/
++
++
++#if defined(CONFIG_SH_STB7100)
++#define PCLK			(gd->bd->bi_emifrq*1000000)
++#define BAUDRATE_VAL_M0(bps)	(PCLK / (16 * (bps)))
++#define BAUDRATE_VAL_M1(bps)	( (((bps * (1 << 14))+ (1<<13)) / (PCLK/(1 << 6))))
++#else
++#define PCLK			B_CLOCK_RATE
++#define BAUDRATE_VAL_M0(bps)	(PCLK / (16 * (bps)))
++#define BAUDRATE_VAL_M1(bps)	(int)((((double)bps * (1 << 20))/ PCLK)+0.5)
++#endif
++
++#define BPS_2400	BAUDRATE_VAL_M0(2400)
++#define BPS_4800	BAUDRATE_VAL_M0(4800)
++#define BPS_9600	BAUDRATE_VAL_M0(9600)
++#define BPS_19200	BAUDRATE_VAL_M1(19200)
++#define BPS_38400	BAUDRATE_VAL_M1(38400)
++#define BPS_57600	BAUDRATE_VAL_M1(57600)
++#define BPS_96000	BAUDRATE_VAL_M1(96000)
++#define BPS_115200	BAUDRATE_VAL_M1(115200)
++
++
++#if defined(CONFIG_STM_ST231)
++
++#define p2_outl(addr,b) writel(b,addr)
++#define p2_inl(addr)    readl(addr)
++
++#endif
++
++#define FRONT_MENU	0x01
++#define FRONT_EXIT	0x02
++#define FRONT_VFORMAT	0x03
++
++#define REMOTE_UP	0x71
++#define REMOTE_DOWN	0x72
++#define REMOTE_OK	0x73
++
++void front_init (void)
++{
++	DECLARE_GLOBAL_DATA_PTR;
++
++	int p2_val;
++	unsigned int status;
++
++	/* wait for end of current transmission */
++	do {
++		status = p2_inl (UART_STATUS_REG);
++	} while (status & STA_TF);
++
++	p2_val = p2_inl (UART_CONTROL_REG);
++	p2_outl (UART_CONTROL_REG, (p2_val & ~RUN));
++
++	/* reset fifo rx e tx */
++	p2_outl (UART_TXRESET_REG, 1);
++	p2_outl (UART_RXRESET_REG, 1);
++
++	/* set speed and baud generator mode */
++	p2_outl (UART_BAUDRATE_REG, 0x000000c9); //Almost BPS_19200, from TDT sources
++
++	p2_outl (UART_TIMEOUT_REG, 0x10);
++	/* write final value and enable port */
++	p2_outl (UART_CONTROL_REG, (RXENABLE | FIFO | BAUDMODE | MODE_8BIT | STOP_1BIT | RUN));
++}
++
++int front_tstc (void)
++{
++	unsigned short status;
++
++	status = p2_inl (UART_STATUS_REG);
++	return (status & STA_RBF);
++}
++
++int front_getc (void)
++{
++	char ch;
++
++	while (!front_tstc ());
++
++	ch = p2_inl (UART_RXBUFFER_REG);
++
++	return ch;
++}
++
++int front_getremotekey( void )
++{
++	static unsigned char packet[8];
++	int len = 0;
++	int ret = 0;
++	char read = 0;
++	
++	//read uart input (all the time it should return 3 chars)
++	if (front_tstc()){
++		while( read != '\n' && len < 8){
++			if (front_tstc()){
++				read = front_getc();
++				//fdebug("FRONT: char=%d\n", read);
++				packet[len++] = read;
++			}
++		}
++
++		if (packet[0] == '0' && packet[1] >= '0' && packet[1] <= '9'){
++			ret = packet[1];
++		}else if (packet[0] == '5'){
++			switch(packet[1]){
++				case '8':	//up
++				case 'B':	//right
++					ret = REMOTE_UP;
++					break;
++				case '9':	//down
++				case 'A':	//left
++					ret = REMOTE_DOWN;
++					break;
++				case 'C':	//ok
++					ret = REMOTE_OK;
++					break;
++			}
++		}
++	}
++	return ret;
++}
++
++int front_getfrontkey( void )
++{
++	int ret = 0;
++	//TODO: 14W? board_version == 3
++	if (STPIO_GET_PIN(PIO_PORT(1),1) == 0){ //v-format
++		ret = FRONT_VFORMAT;
++	}else if (STPIO_GET_PIN(PIO_PORT(1),2) == 0){ //menu
++		ret = FRONT_MENU;
++	}else if (STPIO_GET_PIN(PIO_PORT(1),0) == 0){ //exit
++		ret = FRONT_EXIT;
++	}
++	//wait for button release
++	while ((STPIO_GET_PIN(PIO_PORT(1),0)==0) || (STPIO_GET_PIN(PIO_PORT(1),1)==0) || (STPIO_GET_PIN(PIO_PORT(1),2))==0){
++		udelay(1000);
++	}
++	return ret;
++}
++
++int cmd_bootmenu(unsigned int inselect, unsigned int timeout)
++{
++	static char buf[20];
++	unsigned int select = inselect;
++	char pressed = 0;
++	char *s;
++
++	front_init();
++
++	sprintf(buf,"bootcmd_%d",select);
++	s = getenv(buf);
++	if (!s)
++		select=0;
++
++	sprintf(buf,"bootdesc_%d",select);
++	if (getenv_r(buf,buf,16) == -1){
++		sprintf(buf,"Custom Boot %d",select);
++	}
++	vfd_puts(buf);
++	vfd_icon(select,1);
++
++	while (timeout)
++	{
++		char key;
++		key = front_getfrontkey();
++		if (!key)
++			key = front_getremotekey();
++		
++		if (key)
++		{
++			//numbers
++			if (key >= '0' && key <= '9'){
++				char tmp = key - '0';
++				sprintf(buf,"bootcmd_%d",tmp);
++				s = getenv(buf);
++				if (s)
++					select = tmp;
++				pressed = 1;
++				timeout = 0;
++			}else{
++				vfd_icon(select,0);
++				//arrows & fp buttons
++				switch(key)
++				{
++					case FRONT_EXIT:
++					case REMOTE_OK:
++						pressed = 1;
++						timeout = 0;
++						break;
++					case FRONT_MENU:
++					case REMOTE_UP:
++						pressed = 1;
++						for (;;)
++						{
++							select++;
++							if (select > 9)
++							{
++								select = 0;
++								break;
++							}
++							sprintf(buf,"bootcmd_%d",select);
++							if (getenv(buf))
++								break;
++						}
++						break;
++					case FRONT_VFORMAT:
++					case REMOTE_DOWN:
++						pressed = 1;
++						for (;;)
++						{
++							if (select == 0)
++								select = 10;
++							select--;
++							sprintf(buf,"bootcmd_%d",select);
++							if (getenv(buf) || !select)
++								break;
++						}
++						break;
++				}
++				vfd_icon(select,1);
++			}
++			sprintf(buf,"bootdesc_%d",select);
++			if (getenv_r(buf,buf,16) == -1){
++				sprintf(buf,"Custom Boot %d",select);
++			}
++			vfd_puts(buf);
++		}
++		if (!pressed)
++		{
++			timeout--;
++			vfd_icon(0x0F,(timeout%25)>13);
++		}
++		else
++			vfd_icon(0x0F,0);
++		udelay(10000);
++	}
++
++	vfd_icon(select,0);
++
++	s = getenv("bootdesc_savelast");
++	if (s && select != inselect &&simple_strtoul(s,NULL,10) == 1)
++	{
++		sprintf(buf,"%d",select);
++		setenv("bootdesc_default",buf);
++		saveenv();
++	}
++
++	sprintf(buf,"bootcmd_%d",select);
++	return run_command (getenv (buf), 0);
++}
++
++static int do_bootmenu( cmd_tbl_t *cmdtp, int flag, int argc, char *argv[] )
++{
++	unsigned int bootmenu_timeout = 500;
++	unsigned int bootmenu_default = 0;
++	char *s;
++
++	s = getenv("bootmenutimeout");
++	if (s)
++		bootmenu_timeout = simple_strtoul(s,NULL,10)*100;
++
++	s = getenv("bootdesc_default");
++	if (s)
++		bootmenu_default = simple_strtoul(s,NULL,10);
++	if (bootmenu_default > 9)
++		bootmenu_default = 0;
++
++	return cmd_bootmenu(bootmenu_default,bootmenu_timeout);
++}
++
++U_BOOT_CMD(
++	bootmenu, 1, 1, do_bootmenu,
++		"bootmenu - show bootmenu on vfd\n",
++		"bootmenu - show bootmenu on vfd\n"
++		);
++
++#endif
+diff -Naur u-boot-1.3.1.org/board/kathrein/ufs910/Makefile u-boot-1.3.1/board/kathrein/ufs910/Makefile
+--- u-boot-1.3.1.org/board/kathrein/ufs910/Makefile	2010-05-02 19:59:03.000000000 +0200
++++ u-boot-1.3.1/board/kathrein/ufs910/Makefile	2010-05-03 20:07:33.617948100 +0200
+@@ -27,7 +27,7 @@
+ 
+ SOBJS	= init-$(BOARD).o
+ 
+-COBJS	= $(BOARD).o vfd.o
++COBJS	= $(BOARD).o vfd.o cmd_bootmenu.o
+ 
+ SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+ OBJS	:= $(addprefix $(obj),$(COBJS))
+diff -Naur u-boot-1.3.1.org/board/kathrein/ufs910/ufs910.c u-boot-1.3.1/board/kathrein/ufs910/ufs910.c
+--- u-boot-1.3.1.org/board/kathrein/ufs910/ufs910.c	2010-05-02 19:59:03.000000000 +0200
++++ u-boot-1.3.1/board/kathrein/ufs910/ufs910.c	2010-05-08 16:25:37.089405137 +0200
+@@ -50,6 +50,9 @@
+ {
+   /*  Setup PIO of ASC device */
+   SET_PIO_ASC(PIO_PORT(4), 3, 2, 4, 5);  /* UART2 - AS0 */
++#if defined(CONFIG_CMD_BOOTMENU)
++  SET_PIO_ASC(PIO_PORT(5), 0, 1, 2, 3);  /* UART3 - AS1 */
++#endif
+ 
+   /*  Setup up ethernet reset */
+ #if defined(CONFIG_DRIVER_SMC911X)
+diff -Naur u-boot-1.3.1.org/include/configs/ufs910.h u-boot-1.3.1/include/configs/ufs910.h
+--- u-boot-1.3.1.org/include/configs/ufs910.h	2010-05-02 19:59:03.000000000 +0200
++++ u-boot-1.3.1/include/configs/ufs910.h	2010-05-08 00:42:04.014308691 +0200
+@@ -103,6 +103,8 @@
+ #undef CONFIG_CMD_NET
+ #undef CONFIG_CMD_NFS
+ 
++#define CONFIG_CMD_BOOTMENU
++
+ /*--------------------------------------------------------------
+  * Serial console info
+  */
