@@ -6,7 +6,7 @@ SECTION = "libs/network"
 SRC_URI = "http://www.openssl.org/source/openssl-${PV}.tar.gz"
 S = "${WORKDIR}/openssl-${PV}"
 
-INC_PR = "r11"
+INC_PR = "r12"
 
 AR_append = " r"
 CFLAG = "${@base_conditional('SITEINFO_ENDIANESS', 'le', '-DL_ENDIAN', '-DB_ENDIAN', d)} \
@@ -23,6 +23,9 @@ export AS = "${CC} -c"
 PACKAGES =+ "libcrypto libssl"
 FILES_libcrypto = "${libdir}/libcrypto.so.*"
 FILES_libssl = "${libdir}/libssl.so.*"
+
+# disable unused algos
+EXTRA_OECONF = "${@base_contains('DISTRO', 'opendreambox', ' no-idea no-mdc2 no-rc5', '', d)}"
 
 do_configure () {
 	cd util
@@ -86,7 +89,7 @@ do_configure () {
         if [ "x$useprefix" == "x" ]; then
                 useprefix=/
         fi        
-	perl ./Configure shared --prefix=$useprefix --openssldir=${libdir}/ssl $target
+	perl ./Configure ${EXTRA_OECONF} shared --prefix=$useprefix --openssldir=${libdir}/ssl $target
 }
 
 do_compile () {
