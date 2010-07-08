@@ -2,9 +2,10 @@ require gst-plugins.inc
 
 SRC_URI_append_opendreambox = " file://samihack.patch;patch=1 \
 file://playbin2-Set-subtitle-encoding-on-the-decodebins-a.patch;patch=1 \
-file://playbin2-If-a-text-sink-is-provided-let-subtitle-p.patch;patch=1 "
+file://playbin2-If-a-text-sink-is-provided-let-subtitle-p.patch;patch=1 \
+file://playbin2-capsless-textsink.patch;patch=1 "
 
-PR = "${INC_PR}.1"
+PR = "${INC_PR}.2"
 
 PROVIDES += "gst-plugins"
 
