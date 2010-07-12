@@ -13,6 +13,8 @@ SRC_URI = "${GNOME_MIRROR}/libsoup/${@'.'.join((bb.data.getVar('PV', d, 1)).spli
 S = "${WORKDIR}/libsoup-${PV}"
 
 EXTRA_OECONF_opendreambox += "--without-gnome"
+#the following is needed for dm800 .. i dont know why...
+SRC_URI_append_opendreambox = " file://libsoup-libz-hack.patch;patch=1;pnum=1"
 
 PACKAGES =+ "libsoup-gnome"
 FILES_libsoup-gnome = "${libdir}/libsoup-gnome*.so.*"

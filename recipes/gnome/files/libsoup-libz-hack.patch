@@ -1,0 +1,11 @@
+diff -Naur libsoup-2.29.5-org/libsoup/Makefile.am libsoup-2.29.5/libsoup/Makefile.am
+--- libsoup-2.29.5-org/libsoup/Makefile.am	2009-12-29 00:10:14.000000000 +0000
++++ libsoup-2.29.5/libsoup/Makefile.am	2010-07-12 18:21:27.000000000 +0000
+@@ -97,6 +97,7 @@
+ 	-version-info $(SOUP_CURRENT):$(SOUP_REVISION):$(SOUP_AGE) -no-undefined
+ 
+ libsoup_2_4_la_LIBADD =			\
++	-lz 				\
+ 	$(GLIB_LIBS)			\
+ 	$(XML_LIBS)			\
+ 	$(LIBGNUTLS_LIBS_STATIC)	\
