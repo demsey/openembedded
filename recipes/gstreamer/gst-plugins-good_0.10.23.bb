@@ -1,7 +1,7 @@
 require gst-plugins.inc
 
 SRC_URI += "file://flvdemux-ecma.diff;patch=1 file://rtspsrc-fixports.patch;patch=1 file://udpsrc-fixports.patch;patch=1"
-PR = "${INC_PR}.1"
+PR = "${INC_PR}.0"
 
 DEPENDS += "gst-plugins-base"
 

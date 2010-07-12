@@ -2,9 +2,9 @@ require gst-common.inc
 DESCRIPTION = "Plugins for GStreamer"
 DEPENDS = "gstreamer libmikmod liboil libogg tremor libvorbis"
 DEPENDS += "${@base_conditional('ENTERPRISE_DISTRO', '1', '', 'libmad libid3tag', d)}"
-DEPENDS += "${@base_conditional('DISTRO', 'opendreambox', 'libmad neon flac libmatroska libcdio libid3tag', '', d)}"
+DEPENDS += "${@base_conditional('DISTRO', 'opendreambox', 'libmad libsoup-2.4 flac libmatroska libcdio libid3tag', '', d)}"
 
-INC_PR = "r7"
+INC_PR = "r8"
 
 PACKAGES_DYNAMIC = "gst-plugin-*"
 
