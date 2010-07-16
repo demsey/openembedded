@@ -1,11 +1,13 @@
 require klibc-common.inc
 
 SRC_URI += "file://staging.patch;patch=1 \
-	    file://klibc_kexecsyscall.patch;patch=1 \
 	    file://mntproc-definitions.patch;patch=1 \
 	    file://signal-cleanup.patch;patch=1 \
             file://isystem.patch;patch=1 \
 	   "
+
+SRC_URI_append = "${@base_conditional('DISTRO', 'opendreambox', '', \
+		' file://klibc_kexecsyscall.patch;patch=1', d)}"
 
 # we want only the shared programms and the lib so we chose them manually
 do_install() {
