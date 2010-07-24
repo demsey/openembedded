@@ -3,7 +3,7 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 
 PACKAGES_DYNAMIC = "enigma2-plugin-*"
 
-SRCDATE = "20100213"
+SRCDATE = "20100724"
 
 # if you want the 2.7.0 release, use
 #TAG = ";tag=enigma2-plugins_rel27"
