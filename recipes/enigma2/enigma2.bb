@@ -17,7 +17,7 @@ RDEPENDS = "python-codecs python-core python-lang python-re python-threading \
 
 GST_RTSP_RDEPENDS = "gst-plugin-udp gst-plugin-rtsp gst-plugin-rtp gst-plugin-rtpmanager"
 GST_ALSA_RDEPENDS = "gst-plugin-alsa alsa-conf"
-GST_MISC_RDEPENDS = "gst-plugin-matroska gst-plugin-qtdemux gst-plugin-vorbis gst-plugin-flv"
+GST_MISC_RDEPENDS = "gst-plugin-matroska gst-plugin-qtdemux gst-plugin-vorbis"
 GST_DVD_RDEPENDS = "gst-plugin-cdxaparse gst-plugin-cdio gst-plugin-vcdsrc"
 GST_BASE_RDEPENDS = "${GST_ALSA_RDEPENDS} ${GST_MISC_RDEPENDS} ${GST_RTSP_RDEPENDS}"
 
