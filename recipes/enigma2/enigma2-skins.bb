@@ -3,7 +3,7 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 
 PACKAGES_DYNAMIC = "enigma2-skin-*"
 
-SRCDATE = "20100213"
+SRCDATE = "20100725"
 
 # if you want the 2.7 release, use
 #TAG = ";tag=enigma2-skins_rel27"
