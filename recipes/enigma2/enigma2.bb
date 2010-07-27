@@ -3,7 +3,7 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 DEPENDS = "jpeg libungif libmad libpng libsigc++-1.2 gettext-native \
 	dreambox-dvbincludes freetype libdvbsi++ python swig-native \
 	libfribidi libxmlccwrap libdreamdvd gstreamer gst-plugin-dvbmediasink \
-	gst-plugins-bad gst-plugins-good gst-plugins-ugly"
+	gst-plugins-bad gst-plugins-good gst-plugins-ugly python-wifi"
 RDEPENDS = "python-codecs python-core python-lang python-re python-threading \
 	python-xml python-fcntl gst-plugin-decodebin gst-plugin-decodebin2 python-stringold \
 	python-pickle gst-plugin-app \
@@ -54,13 +54,13 @@ DESCRIPTION_append_enigma2-plugin-systemplugins-cleanupwizard = "informs you on 
 DESCRIPTION_append_enigma2-plugin-extenstions-modem = "opens a menu to connect to internet via builtin modem."
 RDEPENDS_enigma2-plugin-extensions-modem = "dreambox-modem-ppp-scripts ppp"
 DESCRIPTION_append_enigma2-plugin-systemplugins-wirelesslan = "helps you configuring your wireless lan"
-RDEPENDS_enigma2-plugin-systemplugins-wirelesslan = "wpa-supplicant wireless-tools"
+RDEPENDS_enigma2-plugin-systemplugins-wirelesslan = "wpa-supplicant wireless-tools python-wifi"
 DESCRIPTION_append_enigma2-plugin-systemplugins-networkwizard = "provides easy step by step network configuration"
 
 PN = "enigma2"
 PR = "r0"
 
-SRCDATE = "20100725"
+SRCDATE = "20100727"
 #SRCDATE is NOT used by git to checkout a specific revision
 #but we need it to build a ipk package version
 #when you like to checkout a specific revision of e2 you need
