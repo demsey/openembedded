@@ -9,6 +9,11 @@ SRC_URI += "file://staging.patch;patch=1 \
 SRC_URI_append = "${@base_conditional('DISTRO', 'opendreambox', '', \
 		' file://klibc_kexecsyscall.patch;patch=1', d)}"
 
+#needed for kernel 2.6.32
+SRC_URI_append_dm7025 = "file://23-use-AF_INET-directly.patch;patch=1 \
+	file://24-add-relevant-socket-h-definitions.patch;patch=1 \
+"
+
 # we want only the shared programms and the lib so we chose them manually
 do_install() {
         install -d ${D}${base_bindir}
