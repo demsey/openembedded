@@ -19,8 +19,13 @@ RDEPENDS_${PN} = "\
 WLAN_CRYPTO_MODULES = "\
   kernel-module-aes-generic \
   kernel-module-arc4 \
-  kernel-module-cryptomgr \
   kernel-module-ecb \
+  kernel-module-cryptomgr \
+  kernel-module-crypto-hash \
+  kernel-module-aead \
+  kernel-module-pcompress \
+  kernel-module-crypto-blkcipher \
+  kernel-module-crypto-algapi \
 "
 
 WLAN_PCI_MODULES = "\
@@ -53,6 +58,11 @@ RDEPENDS_${PN}_append_dm800se = "\
 
 RDEPENDS_${PN}_append_dm8000 = "\
   ${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', 'task-opendreambox-madwifi', '${WLAN_CRYPTO_MODULES} ${WLAN_PCI_MODULES}', d)} \
+"
+
+RDEPENDS_${PN}_append_dm7025 = "\
+  ${WLAN_CRYPTO_MODULES} \
+  ${WLAN_USB_MODULES} \
 "
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
