@@ -10,6 +10,9 @@ PR = "r24"
 FILESPATHPKG = "initscripts-${PV}:initscripts:files"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+BOOTUP_dm7025 = "${@base_contains('PREFERRED_VERSION_linux-dm7025', '2.6.12.6', 'bootup_old', 'bootup', d)}"
+BOOTUP ?= "bootup"
+
 SRC_URI = "file://halt \
            file://umountfs \
            file://devpts.sh \
@@ -22,11 +25,9 @@ SRC_URI = "file://halt \
            file://sysfs.sh \
            file://netmount.sh \
            file://var.tar.gz.default \
-           file://bootup"
+           file://${BOOTUP}"
 
 SRC_URI_append_dm8000 = " file://fscking.raw"
-
-KERNEL_VERSION = ""
 
 do_install () {
 #
@@ -46,13 +47,13 @@ do_install () {
 
 	install -m 0755    ${WORKDIR}/halt		${D}${sysconfdir}/init.d
 	install -m 0755    ${WORKDIR}/reboot		${D}${sysconfdir}/init.d
-	install -m 0755    ${WORKDIR}/rmnologin	${D}${sysconfdir}/init.d
+	install -m 0755    ${WORKDIR}/rmnologin		${D}${sysconfdir}/init.d
 	install -m 0755    ${WORKDIR}/sendsigs		${D}${sysconfdir}/init.d
 	install -m 0755    ${WORKDIR}/single		${D}${sysconfdir}/init.d
-	install -m 0755    ${WORKDIR}/devpts.sh	${D}${sysconfdir}/init.d
+	install -m 0755    ${WORKDIR}/devpts.sh		${D}${sysconfdir}/init.d
 	install -m 0755    ${WORKDIR}/devpts		${D}${sysconfdir}/default
 	install -m 0755    ${WORKDIR}/sysfs.sh		${D}${sysconfdir}/init.d
-	install -m 0755    ${WORKDIR}/bootup		${D}${sysconfdir}/init.d
+	install -m 0755    ${WORKDIR}/${BOOTUP}		${D}${sysconfdir}/init.d/bootup
 	install -m 0755    ${WORKDIR}/var.tar.gz.default ${D}${sysconfdir}/var.tar.gz
 #
 # Install device dependent scripts
