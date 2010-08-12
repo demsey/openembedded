@@ -1,7 +1,15 @@
 echo 4 > /proc/progress
+mount -t devfs devfs /dev
+
+echo 12 > /proc/progress
 [ -e /dev/dbox/oled0 ] && ln -s /dev/dbox/oled0 /dev/dbox/lcd0
 
 echo 16 > /proc/progress
+
+for mod in cifs xfs ext2 reiserfs; do
+	modprobe $mod || /bin/true
+done
+echo 18 > /proc/progress
 
 mount -at nonfs,nosmbfs,noncpfs,nocifs
 echo 22 > /proc/progress
@@ -14,14 +22,17 @@ echo 28 > /proc/progress
 
 echo 32 > /proc/progress
 
+# set UDMA66
+hdparm -X66 /dev/discs/disc0/disc
+
 echo 34 > /proc/progress
 
 # accustic management
-hdparm -M128 /dev/sda
+hdparm -M 128 /dev/discs/disc0/disc
 
 echo 44 > /proc/progress
-for mod in xilleon dreambox_keyboard fp rfmod; do
-	modprobe $mod
+for mod in xilleon dreambox_keyboard fp rt73 zd1211b rfmod; do
+	modprobe $mod || /bin/true
 done
 
 echo 50 > /proc/progress

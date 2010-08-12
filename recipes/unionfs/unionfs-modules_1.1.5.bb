@@ -1,7 +1,8 @@
-PR = "r1"
 PARALLEL_MAKE = ""
 
 require unionfs-modules.inc
+
+PR = "r1"
 
 KERNEL_MAJMIN = "${@base_read_file('${STAGING_KERNEL_DIR}/kernel-abiversion')[:3]}"
 
