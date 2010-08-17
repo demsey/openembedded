@@ -13,6 +13,7 @@
 # %% the '%' char itself
 #
 
+KERNEL=="fp0",			NAME="dbox/fp0"
 KERNEL=="oled0",		NAME="dbox/oled0"
 KERNEL=="lcd0",			NAME="dbox/lcd0"
 KERNEL=="pvr",			NAME="misc/pvr"
