@@ -3,7 +3,7 @@ LICENSE = "GPL"
 PN = "linux-dm7025"
 KV = "2.6.12"
 PV = "2.6.12.6"
-PR = "s7"
+PR = "s8"
 
 DEPENDS = "zlib-native zlib"
 
@@ -20,6 +20,7 @@ SRC_URI += "${KERNELORG_MIRROR}/pub/linux/kernel/v2.6/linux-${PV}.tar.bz2 \
 	file://linuxmips-2.6.12-gcc433-compile-fix.patch;patch=1;pnum=1 \
 	file://linuxmips-2.6.12-gcc44-compile-fixes.patch;patch=1;pnum=1 \
 	file://linuxmips-2.6.12-revert-fadvise-fix.patch;patch=1;pnum=1 \
+	file://linuxmips-2.6.12-add-cpu-feature-overrides.patch;patch=1;pnum=1 \
 	http://www.kernel.org/pub/linux/kernel/people/rml/inotify/v2.6/0.23/inotify-0.23-rml-2.6.12-15.patch;patch=1;pnum=1 \
 #squashfs-lzma stuff
 	http://squashfs-lzma.org/dl/sqlzma3.2-r2b.tar.bz2 \
