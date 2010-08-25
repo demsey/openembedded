@@ -5,4 +5,5 @@ usbfs                /proc/bus/usb        usbfs      defaults              0 0
 /dev/mtdblock2       /boot                jffs2      ro                    0 0
 tmpfs                /var                 tmpfs      defaults              0 0
 tmpfs                /tmp                 tmpfs      defaults              0 0
-/dev/discs/disc0/part1            /media/hdd           auto       defaults              0 0
+/dev/hda1            /media/hdd           auto       defaults              0 0
+/dev/hdc1            /media/cf            auto       defaults              0 0

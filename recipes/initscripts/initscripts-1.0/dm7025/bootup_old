@@ -1,6 +1,9 @@
 echo 4 > /proc/progress
 mount -t devfs devfs /dev
 
+mknod /dev/hda1 b 3 1
+mknod /dev/hdc1 b 22 1
+
 echo 12 > /proc/progress
 [ -e /dev/dbox/oled0 ] && ln -s /dev/dbox/oled0 /dev/dbox/lcd0
 
@@ -23,12 +26,12 @@ echo 28 > /proc/progress
 echo 32 > /proc/progress
 
 # set UDMA66
-hdparm -X66 /dev/discs/disc0/disc
+hdparm -X66 /dev/hda1
 
 echo 34 > /proc/progress
 
 # accustic management
-hdparm -M 128 /dev/discs/disc0/disc
+hdparm -M 128 /dev/hda1
 
 echo 44 > /proc/progress
 for mod in xilleon dreambox_keyboard fp rt73 zd1211b rfmod; do
