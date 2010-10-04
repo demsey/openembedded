@@ -1,0 +1,22 @@
+Hack to not use the pg_config of the host system which will add /usr/include
+
+pg_config is a native binary so using that when cross compiling
+will always fail.  The commented out fix would do, but for OE
+our -platform and -xplatform is the same so we are actually not
+really cross compiling. Just comment out the test, we are passing
+the location to the postgres headers and if they are okay we
+will padd.
+
+
+
+--- qt-everywhere-opensource-src-4.7.0-rc1/configure.orig	2010-09-08 11:42:37.000000000 +0000
++++ qt-everywhere-opensource-src-4.7.0-rc1/configure	2010-09-08 11:44:06.000000000 +0000
+@@ -4916,7 +4916,7 @@
+         psql)
+             if [ "$CFG_SQL_psql" != "no" ]; then
+                 # Be careful not to use native pg_config when cross building.
+-                if [ "$XPLATFORM_MINGW" != "yes" ] && "$WHICH" pg_config >/dev/null 2>&1; then
++                if [ "$QT_CROSS_COMPILE" = "no" ] && [ "$XPLATFORM_MINGW" != "yes" ] && "$WHICH" pg_config >/dev/null 2>&1; then
+                     QT_CFLAGS_PSQL=`pg_config --includedir 2>/dev/null`
+                     QT_LFLAGS_PSQL=`pg_config --libdir 2>/dev/null`
+                 fi
