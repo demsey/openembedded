@@ -6,7 +6,7 @@ LICENSE = "GPL"
 inherit module
 
 PACKAGES = "${PN}"
-PR = "r0"
+PR = "r1"
 S="${WORKDIR}/cdfs-${PV}"
 
 SRC_URI = " \
