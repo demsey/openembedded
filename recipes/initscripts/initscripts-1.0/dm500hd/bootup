@@ -17,7 +17,17 @@ done
 
 cat /etc/videomode > /proc/stb/video/videomode
 
-[ -e /etc/dropbear/dropbear_rsa_host_key ] && /usr/bin/showiframe /boot/bootlogo.mvi || /usr/bin/showiframe /boot/bootlogo_wait.mvi
+#we must wait until udev has created the video device
+(
+if [ -d /proc/stb ]; then
+        while true; do
+                if [ -e /dev/dvb/adapter0/video0 ]; then
+                        break;
+                fi;
+        done;
+fi;
+[ -e /etc/dropbear/dropbear_rsa_host_key ] && /usr/bin/showiframe /boot/bootlogo.mvi || /usr/bin/showiframe /boot/bootlogo_wait.mvi;
+) &
 
 hostname -F /etc/hostname
 
