@@ -23,8 +23,8 @@
  
  	/*
  	 * Oxford Semi 952 rev B workaround
---- a/arch/mips/brcmstb/brcm97405b0/bcm_uart.c
-+++ b/arch/mips/brcmstb/brcm97405b0/bcm_uart.c
+--- a/arch/mips/brcmstb/brcm97405d0/bcm_uart.c
++++ b/arch/mips/brcmstb/brcm97405d0/bcm_uart.c
 @@ -115,20 +115,18 @@ unsigned long serial_init(int chan, void *ignored)
  	shift = 2;
  
