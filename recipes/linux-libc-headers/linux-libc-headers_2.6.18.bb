@@ -2,16 +2,16 @@ require linux-libc-headers.inc
 
 INHIBIT_DEFAULT_DEPS = "1"
 DEPENDS += "unifdef-native"
-PR = "r3"
+PR = "r4"
 
 SRC_URI = "${KERNELORG_MIRROR}/pub/linux/kernel/v2.6/linux-2.6.18.tar.bz2 \
-           file://arm-syscall-define.patch;patch=1 \
-           file://fix-dvb-headers.patch;patch=1"
+           file://arm-syscall-define.patch;patch=1"
 
 SRC_URI_append_mipsel = " file://mips-add-missing-headers.patch;patch=1 \
            file://mips-fix-ptrace-header.patch;patch=1"
 
-SRC_URI_append_opendreambox = " file://mips-brcm-add-missing-syscalls.patch;patch=1"
+SRC_URI_append_opendreambox = " file://mips-brcm-add-missing-syscalls.patch;patch=1 \
+           file://dvb-api-2.6.18-5.3.patch;patch=1"
 
 S = "${WORKDIR}/linux-2.6.18"
 
