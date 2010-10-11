@@ -5,7 +5,7 @@ LICENSE = "GPL"
 
 inherit module
 
-PR = "r4"
+PR = "r5"
 
 SRC_URI = "http://www.ralinktech.com.tw/data/drivers/2008_0506_RT73_Linux_STA_Drv1.1.0.1.tar.bz2 \
            file://make.patch;patch=1 \
