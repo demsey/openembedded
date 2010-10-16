@@ -1,4 +1,4 @@
-from enigma import eConsoleAppContainer, iServiceInformation, fbClass, eRCInput, eDBoxLCD
+from enigma import eConsoleAppContainer, iServiceInformation, fbClass, eRCInput, eDBoxLCD, getDesktop
 from Screens.Screen import Screen
 from Plugins.Plugin import PluginDescriptor
 from os import symlink, mkdir, remove, rmdir, path
@@ -46,6 +46,10 @@ class ShellStarter(Screen):
 		if self.faked_lcd:
 			remove("/dev/dbox/lcd0")
 			rmdir("/dev/dbox")
+
+		#force redraw
+		dsk = getDesktop(0)
+		dsk.resize(dsk.size())
 
 		self.close()
 

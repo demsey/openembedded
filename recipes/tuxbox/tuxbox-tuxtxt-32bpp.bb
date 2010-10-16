@@ -4,7 +4,7 @@ MAINTAINER = "Sven Karschewski <seddi@i-have-a-dreambox.com>"
 
 SRCDATE = "20090130"
 PV = "0.0+cvs${SRCDATE}"
-PR = "r0"
+PR = "r1"
 
 SRC_URI = "cvs://anoncvs@cvs.tuxbox.org/cvs/tuxbox;module=apps/tuxbox/plugins/tuxtxt;method=ext \
 	file://makefiles.diff;patch=1;pnum=1 \
