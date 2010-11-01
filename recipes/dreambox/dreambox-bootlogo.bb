@@ -12,6 +12,8 @@ BINARY_VERSION_dm7025 = "2"
 BINARY_VERSION_dm800 = "2"
 BINARY_VERSION_dm800se = "3"
 IMAGES_VERSION_dm800se = "2"
+BINARY_VERSION_dm7020hd = "3"
+IMAGES_VERSION_dm7020hd= "1"
 BINARY_VERSION_dm8000 = "6"
 IMAGES_VERSION_dm8000 = "2"
 
@@ -26,6 +28,7 @@ SRC_URI = "http://sources.dreamboxupdate.com/download/7020/bootlogo-${MACHINE}-$
 SRC_URI_append_dm8000 = " http://sources.dreamboxupdate.com/download/7020/bootlogo-${MACHINE}-${IMAGES_VERSION}.jpg"
 SRC_URI_append_dm500hd = " http://sources.dreamboxupdate.com/download/7020/bootlogo-${MACHINE}-${IMAGES_VERSION}.jpg"
 SRC_URI_append_dm800se = " http://sources.dreamboxupdate.com/download/7020/bootlogo-${MACHINE}-${IMAGES_VERSION}.jpg"
+SRC_URI_append_dm7020hd = " http://sources.dreamboxupdate.com/download/7020/bootlogo-${MACHINE}-${IMAGES_VERSION}.jpg"
 SRC_URI_append_dm800 = " http://sources.dreamboxupdate.com/download/7020/bootlogo-${MACHINE}-${IMAGES_VERSION}.jpg \
 	http://sources.dreamboxupdate.com/download/7020/switchoff-${MACHINE}-${IMAGES_VERSION}.mvi"
 
@@ -58,6 +61,10 @@ do_install_dm500hd() {
 }
 
 do_install_dm800se() {
+	do_install_dm800
+}
+
+do_install_dm7020hd() {
 	do_install_dm800
 }
 

@@ -79,6 +79,13 @@ RDEPENDS_task-opendreambox-enigma2_append_dm8000 = "\
   enigma2-plugin-systemplugins-nfiflash \
 "
 
+RDEPENDS_task-opendreambox-enigma2_append_dm7020hd = "\
+  enigma2-plugin-extensions-genuinedreambox \
+  enigma2-plugin-systemplugins-commoninterfaceassignment \
+  enigma2-plugin-systemplugins-videomode \
+  enigma2-plugin-systemplugins-nfiflash \
+"
+
 RRECOMMENDS_task-opendreambox-enigma2_append_dm8000 = "\
   task-opendreambox-cdplayer \
   task-opendreambox-dvdplayer \

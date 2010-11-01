@@ -1,0 +1,59 @@
+echo 10 > /proc/progress
+
+echo 12 > /proc/progress
+
+mount -at nonfs,nosmbfs,noncpfs,nocifs
+echo 14 > /proc/progress
+
+swapon -a
+echo 15 > /proc/progress
+
+tar xzf /etc/var.tar.gz -C /
+echo 16 > /proc/progress
+
+# sleep after 10min
+hdparm -S120 /dev/sda
+
+echo 17 > /proc/progress
+
+# accustic management
+hdparm -M128 /dev/sda
+
+echo 18 > /proc/progress
+for mod in dreambox_keyboard bcm7405; do
+	modprobe $mod
+done
+
+echo 19 > /proc/progress
+
+cat /etc/videomode > /proc/stb/video/videomode
+
+echo 20 > /proc/progress
+
+#we must wait until udev has created the video device
+(
+if [ -d /proc/stb ]; then
+        while true; do
+                if [ -e /dev/dvb/adapter0/video0 ]; then
+                        break;
+                fi;
+        done;
+fi;
+[ -e /etc/dropbear/dropbear_rsa_host_key ] && /usr/bin/showiframe /boot/bootlogo.mvi || /usr/bin/showiframe /boot/bootlogo_wait.mvi;
+) &
+
+echo 21 > /proc/progress
+
+hostname -F /etc/hostname
+
+echo 22 > /proc/progress
+
+echo 23 > /proc/progress
+
+[ -e "/etc/sysctl.conf" ] && /sbin/sysctl -p "/etc/sysctl.conf"
+
+echo 24 > /proc/progress
+
+ldconfig
+
+echo 25 > /proc/progress

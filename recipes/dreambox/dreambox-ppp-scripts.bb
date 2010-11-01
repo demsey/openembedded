@@ -5,9 +5,6 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 PV = "0.1"
 PR = "r0"
 
-#yet just usable for dm500hd modem!
-#for other machines the serial port in "options" file should be fixed...
-
 S = "${WORKDIR}"
 
 SRC_URI = "file://options file://pap-secrets file://dial.modem \
