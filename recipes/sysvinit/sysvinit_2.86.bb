@@ -2,7 +2,7 @@ DESCRIPTION = "System-V like init."
 SECTION = "base"
 LICENSE = "GPL"
 HOMEPAGE = "http://freshmeat.net/projects/sysvinit/"
-PR = "r58"
+PR = "r59"
 
 # USE_VT and SERIAL_CONSOLE are generally defined by the MACHINE .conf.
 # Set PACKAGE_ARCH appropriately.
@@ -23,6 +23,8 @@ INITTAB ?= "inittab"
 
 SRC_URI = "ftp://ftp.cistron.nl/pub/people/miquels/sysvinit/sysvinit-${PV}.tar.gz \
            file://install.patch;patch=1 \
+           file://67_init_hddown.dpatch;patch=1 \
+           file://92_sata-hddown.dpatch;patch=1 \
            file://need \
            file://provide \
            file://${INITTAB} \
