@@ -3,7 +3,7 @@ LICENSE = "GPL"
 PN = "linux-dm7025"
 KV = "2.6.12"
 PV = "2.6.12.6"
-PR = "s8"
+PR = "s9"
 
 DEPENDS = "zlib-native zlib"
 
@@ -29,6 +29,7 @@ SRC_URI += "${KERNELORG_MIRROR}/pub/linux/kernel/v2.6/linux-${PV}.tar.bz2 \
 	${SOURCEFORGE_MIRROR}/squashfs/squashfs3.2-r2.tar.gz \
 	${SOURCEFORGE_MIRROR}/sevenzip/lzma443.tar.bz2 \
 	file://${WORKDIR}/squashfs-lzma/kernel-patches/linux-2.6.12/squashfs3.2-patch;pnum=1;patch=1 \
+	file://linux-2.6.12-dvb-core-fix-frontend-shutdown-timeout.patch;patch=1;pnum=1 \
 "
 
 S = "${WORKDIR}/linux-${PV}"
