@@ -4,7 +4,7 @@ MAINTAINER = "Sven Karschewski <seddi@i-have-a-dreambox.com>"
 
 SRCDATE = "20090130"
 PV = "0.0+cvs${SRCDATE}"
-PR = "r1"
+PR = "r2"
 
 SRC_URI = "cvs://anoncvs@cvs.tuxbox.org/cvs/tuxbox;module=apps/tuxbox/plugins/tuxtxt;method=ext \
 	file://makefiles.diff;patch=1;pnum=1 \
@@ -15,7 +15,11 @@ SRC_URI = "cvs://anoncvs@cvs.tuxbox.org/cvs/tuxbox;module=apps/tuxbox/plugins/tu
 	file://allow_different_demux.diff;patch=1 \
 	file://plugin.py"
 
-FILES_${PN} = "/usr/bin/tuxtxt /usr/share/fonts /usr/lib/enigma2/python/Plugins/Extensions/Tuxtxt /etc/tuxtxt"
+FILES_${PN} = "/usr/bin/tuxtxt /usr/share/fonts/tuxtxt.otb /usr/lib/enigma2/python/Plugins/Extensions/Tuxtxt /etc/tuxtxt"
+
+# tuxtxt.ttf comes from enigma2 git now
+FILES_${PN}_append_powerpc = " /usr/share/fonts/tuxtxt.ttf"
+RDEPENDS_${PN}_append_mipsel = " enigma2"
 
 S = "${WORKDIR}/tuxtxt"
 

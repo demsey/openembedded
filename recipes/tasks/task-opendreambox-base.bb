@@ -1,7 +1,7 @@
 DESCRIPTION = "OpenDreambox: Base Task for the OpenDreambox Distribution"
 SECTION = "opendreambox/base"
 LICENSE = "MIT"
-PR = "r5"
+PR = "r6"
 
 inherit task
 
@@ -18,7 +18,6 @@ OPENDREAMBOX_BASE_ESSENTIAL = "\
   dreambox-wdog \
   ${@base_contains('MACHINE', 'dm7025', '', 'dreambox-tpmd', d)} \
   dreambox-feed-configs \
-  dreambox-keymaps \
   e2fsprogs-e2fsck \
   e2fsprogs-mke2fs \
   fakelocale \

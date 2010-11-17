@@ -26,6 +26,7 @@ DEPENDS_task-opendreambox-enigma = "\
   links-dream \
 "
 RDEPENDS_task-opendreambox-enigma = "\
+  dreambox-keymaps \
   enigma \
   ipkgpl \
   links-dream-plugin \
