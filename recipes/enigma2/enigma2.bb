@@ -59,7 +59,7 @@ RDEPENDS_enigma2-plugin-systemplugins-wirelesslan = "wpa-supplicant wireless-too
 DESCRIPTION_append_enigma2-plugin-systemplugins-networkwizard = "provides easy step by step network configuration"
 
 PN = "enigma2"
-PR = "r0"
+PR = "r1"
 
 SRCDATE = "20101117"
 #SRCDATE is NOT used by git to checkout a specific revision
@@ -78,7 +78,7 @@ SRC_URI = "git://git.opendreambox.org/git/enigma2.git;protocol=git;branch=${BRAN
 
 S = "${WORKDIR}/git"
 
-FILES_${PN} += "${datadir}/fonts"
+FILES_${PN} += "${datadir}/fonts ${datadir}/keymaps"
 FILES_${PN}-meta = "${datadir}/meta"
 PACKAGES += "${PN}-meta"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
