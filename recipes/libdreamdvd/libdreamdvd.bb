@@ -4,14 +4,14 @@ LICENSE = "GPL"
 DEPENDS = "libdvdnav"
 RDEPENDS = "libdvdnav"
 
-PR = "r1"
-PV = "0.9+cvs${SRCDATE}"
+SRCREV=""
+SRCDATE="20101124"
+BRANCH="${@base_contains('MACHINE', 'dm7025', '7025', 'master', d)}"
 
-SRCDATE = "20100330"
-#no hw scaling support for 7025 yet.. so use old libdreamdvd
-SRCDATE_dm7025 = "20090517"
+PR = "r0"
+PV = "0.9+git${SRCDATE}"
 
-SRC_URI="cvs://anonymous@cvs.schwerkraft.elitedvb.net/cvsroot/libdreamdvd;module=libdreamdvd;method=pserver"
+SRC_URI="git://schwerkraft.elitedvb.net/libdreamdvd/libdreamdvd.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
 
 CFLAGS_dm500hd_append = " -DHARDWARE_SUPPORT_LPCM"
 CFLAGS_dm800se_append = " -DHARDWARE_SUPPORT_LPCM"
@@ -19,14 +19,10 @@ CFLAGS_dm7020hd_append = " -DHARDWARE_SUPPORT_LPCM"
 CFLAGS_dm8000_append = " -DHARDWARE_SUPPORT_LPCM"
 #CFLAGS_dm800_append = " -DHARDWARE_SUPPORT_LPCM"
 
-S = "${WORKDIR}/libdreamdvd"
+S = "${WORKDIR}/git"
 
 inherit autotools pkgconfig
 
 do_stage() {
-	oe_runmake install prefix=${STAGING_DIR} \
-		bindir=${STAGING_BINDIR} \
-		includedir=${STAGING_INCDIR} \
-		libdir=${STAGING_LIBDIR} \
-		datadir=${STAGING_DATADIR}
+	autotools_stage_all
 }
