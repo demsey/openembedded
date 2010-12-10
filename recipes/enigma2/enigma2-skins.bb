@@ -3,17 +3,15 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 
 PACKAGES_DYNAMIC = "enigma2-skin-*"
 
-SRCDATE = "20100727"
-
-# if you want the 2.7 release, use
-#TAG = ";tag=enigma2-skins_rel27"
-#PV = "2.7cvs${SRCDATE}"
-
 # if you want experimental, use:
-TAG = ""
-PV = "experimental-cvs${SRCDATE}"
+SRCREV=""
+SRCDATE="20101211"
+BRANCH="master"
+PV = "experimental-git${SRCDATE}"
 
-SRC_URI = "cvs://anonymous@cvs.schwerkraft.elitedvb.net/cvsroot/enigma2-skins;module=enigma2-skins;method=pserver${TAG};date=${SRCDATE}"
+PR = "r0"
+SRC_URI="git://schwerkraft.elitedvb.net/enigma2-skins/enigma2-skins.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
+
 FILES_${PN} += " /usr/share/enigma2 /usr/share/fonts "
 FILES_${PN}-meta = "${datadir}/meta"
 PACKAGES += "${PN}-meta"
@@ -21,7 +19,7 @@ PACKAGE_ARCH = "all"
 
 inherit autotools
 
-S = "${WORKDIR}/enigma2-skins"
+S = "${WORKDIR}/git"
 
 python populate_packages_prepend () {
 	enigma2_skindir = bb.data.expand('${datadir}/enigma2', d)
