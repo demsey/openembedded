@@ -3,17 +3,14 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 
 PACKAGES_DYNAMIC = "enigma2-plugin-*"
 
-SRCDATE = "20101112"
-
-# if you want the 2.7.0 release, use
-#TAG = ";tag=enigma2-plugins_rel27"
-#PV = "2.7cvs${SRCDATE}"
-
 # if you want experimental, use:
-TAG = ""
-PV = "experimental-cvs${SRCDATE}"
+SRCREV=""
+SRCDATE="20101211"
+BRANCH="master"
+PV = "experimental-git${SRCDATE}"
 
-SRC_URI = "cvs://anonymous@cvs.schwerkraft.elitedvb.net/cvsroot/enigma2-plugins;module=enigma2-plugins;method=pserver${TAG};date=${SRCDATE}"
+PR = "r0"
+SRC_URI="git://schwerkraft.elitedvb.net/enigma2-plugins/enigma2-plugins.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
 
 FILES_${PN} += " /usr/share/enigma2 /usr/share/fonts "
 FILES_${PN}-meta = "${datadir}/meta"
@@ -22,7 +19,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit autotools
 
-S = "${WORKDIR}/enigma2-plugins"
+S = "${WORKDIR}/git"
 
 DEPENDS = "python-pyopenssl python-gdata streamripper python-mutagen python-daap"
 DEPENDS += "enigma2"
