@@ -53,7 +53,7 @@ python populate_packages_prepend () {
 			if line.startswith('Maintainer: '):
 				bb.data.setVar('MAINTAINER_' + full_package, line[12:], d)
 
-	mydir = bb.data.getVar('D', d, 1) + "/../enigma2-plugins/"
+	mydir = bb.data.getVar('D', d, 1) + "/../git/"
 	for package in bb.data.getVar('PACKAGES', d, 1).split():
 		getControlLines(mydir, d, package.split('-')[-1])
 }
