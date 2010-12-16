@@ -5,12 +5,19 @@ PACKAGES_DYNAMIC = "enigma2-plugin-*"
 
 # if you want experimental, use:
 SRCREV=""
-SRCDATE="20101211"
+SRCDATE="20101217"
 BRANCH="master"
 PV = "experimental-git${SRCDATE}"
 
 PR = "r0"
 SRC_URI="git://schwerkraft.elitedvb.net/enigma2-plugins/enigma2-plugins.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
+
+EXTRA_OECONF = " \
+        BUILD_SYS=${BUILD_SYS} \
+        HOST_SYS=${HOST_SYS} \
+        STAGING_INCDIR=${STAGING_INCDIR} \
+        STAGING_LIBDIR=${STAGING_LIBDIR} \
+"
 
 FILES_${PN} += " /usr/share/enigma2 /usr/share/fonts "
 FILES_${PN}-meta = "${datadir}/meta"
