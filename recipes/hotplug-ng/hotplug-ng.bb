@@ -7,7 +7,7 @@ RCONFLICTS_${PN} = "hotplug"
 RREPLACES_${PN} = "hotplug"
 
 SRC_URI = "svn://svn.schwerkraft.elitedvb.net/svnroot;module=hotplug-ng"
-SRCDATE = "20080527"
+SRCDATE = "20100119"
 PV = "002+svn${SRCDATE}"
 
 S = "${WORKDIR}/hotplug-ng/trunk"
