@@ -4,12 +4,12 @@ LICENSE = "GPL"
 DEPENDS = "libdvdnav"
 RDEPENDS = "libdvdnav"
 
-SRCREV=""
-SRCDATE="20101124"
+SRCREV="9e5a6721fb28a518300d311e06b7a30dfff2080f"
+SRCDATE="20110129"
 BRANCH="${@base_contains('MACHINE', 'dm7025', '7025', 'master', d)}"
 
 PR = "r0"
-PV = "0.9+git${SRCDATE}"
+PV = "0.10+git${SRCDATE}"
 
 SRC_URI="git://schwerkraft.elitedvb.net/libdreamdvd/libdreamdvd.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
 
