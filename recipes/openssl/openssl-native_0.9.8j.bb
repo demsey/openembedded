@@ -10,6 +10,7 @@ export BUILD_OPTIMIZATION = " "
 
 SRC_URI += "file://configure-targets.patch;patch=1 \
             file://shared-libs.patch;patch=1 \
+            file://openssl-x86_64-bintuils-2.20.51.patch;patch=1 \
             file://debian.patch;patch=1"
 
 PARALLEL_MAKE = ""
