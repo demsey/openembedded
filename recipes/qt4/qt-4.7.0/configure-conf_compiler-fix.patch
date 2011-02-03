@@ -1,0 +1,10 @@
+--- qt-everywhere-opensource-src-4.7.0/configure.orig	2010-09-22 15:51:20.000000000 +0000
++++ qt-everywhere-opensource-src-4.7.0/configure	2010-09-22 15:52:04.000000000 +0000
+@@ -3068,6 +3068,7 @@
+ fi
+ 
+ QMAKE_CONF_COMPILER=`getQMakeConf "$XQMAKESPEC" | grep "^QMAKE_CXX[^_A-Z0-9]" | sed "s,.* *= *\(.*\)$,\1," | tail -1`
++eval QMAKE_CONF_COMPILER=$(echo $QMAKE_CONF_COMPILER | sed "s/(/{/" | sed "s/)/}/")
+ TEST_COMPILER="$CXX"
+ [ -z "$TEST_COMPILER" ] && TEST_COMPILER=$QMAKE_CONF_COMPILER
+ if [ -z "$TEST_COMPILER" ]; then

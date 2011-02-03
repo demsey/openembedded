@@ -1,11 +1,19 @@
 require klibc-common.inc
 
 SRC_URI += "file://staging.patch;patch=1 \
-	    file://klibc_kexecsyscall.patch;patch=1 \
 	    file://mntproc-definitions.patch;patch=1 \
 	    file://signal-cleanup.patch;patch=1 \
             file://isystem.patch;patch=1 \
 	   "
+
+SRC_URI_append = "${@base_conditional('DISTRO', 'opendreambox', '', \
+		' file://klibc_kexecsyscall.patch;patch=1', d)}"
+
+#needed for kernel 2.6.32
+SRC_URI_append_dm7025 = "${@base_conditional('PREFERRED_VERSION_linux-dm7025', '2.6.12.6', \
+		' file://kernel-2.6.12.6-buildfix.patch;patch=1;pnum=1', \
+		' file://23-use-AF_INET-directly.patch;patch=1 \
+		file://24-add-relevant-socket-h-definitions.patch;patch=1', d)}"
 
 # we want only the shared programms and the lib so we chose them manually
 do_install() {

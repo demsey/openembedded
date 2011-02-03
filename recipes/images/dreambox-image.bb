@@ -66,7 +66,18 @@ do_rootfs_append_dm800() {
     generate_nfo
 }
 
+do_rootfs_append_dm800se() {
+    generate_nfo
+}
+
+do_rootfs_append_dm7020hd() {
+    generate_nfo
+}
+
 do_rootfs_append_dm8000() {
     generate_nfo
 }
 
+do_rootfs_append_dm7025() {
+    generate_nfo
+}

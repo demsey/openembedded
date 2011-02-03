@@ -16,4 +16,4 @@ Index: autofs-4.1.4/samples/auto.hotplug
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ autofs-4.1.4/samples/auto.hotplug	2008-05-21 22:59:47.000000000 +0200
 @@ -0,0 +1 @@
-+* -fstype=auto,ro :/dev/&
++* -fstype=auto,rw,sync :/dev/&

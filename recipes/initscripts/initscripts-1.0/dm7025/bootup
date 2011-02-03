@@ -12,12 +12,10 @@ echo 24 > /proc/progress
 tar xzf /etc/var.tar.gz -C /
 echo 28 > /proc/progress
 
-# sleep after 10min
-hdparm -S120 /dev/sda
 echo 32 > /proc/progress
-# set UDMA66
-hdparm -X66 /dev/sda
+
 echo 34 > /proc/progress
+
 # accustic management
 hdparm -M128 /dev/sda
 

@@ -3,25 +3,31 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 DEPENDS = "jpeg libungif libmad libpng libsigc++-1.2 gettext-native \
 	dreambox-dvbincludes freetype libdvbsi++ python swig-native \
 	libfribidi libxmlccwrap libdreamdvd gstreamer gst-plugin-dvbmediasink \
-	gst-plugins-bad gst-plugins-good gst-plugins-ugly"
+	gst-plugins-bad gst-plugins-good gst-plugins-ugly python-wifi"
 RDEPENDS = "python-codecs python-core python-lang python-re python-threading \
 	python-xml python-fcntl gst-plugin-decodebin gst-plugin-decodebin2 python-stringold \
 	python-pickle gst-plugin-app \
 	gst-plugin-id3demux gst-plugin-mad gst-plugin-ogg gst-plugin-playbin \
 	gst-plugin-typefindfunctions gst-plugin-audioconvert gst-plugin-audioresample \
 	gst-plugin-wavparse python-netclient gst-plugin-mpegstream gst-plugin-selector \
-	gst-plugin-flac gst-plugin-dvbmediasink gst-plugin-mpegdemux \
-	gst-plugin-neonhttpsrc gst-plugin-mpegaudioparse gst-plugin-subparse \
+	gst-plugin-flac gst-plugin-dvbmediasink gst-plugin-mpegdemux gst-plugin-dvdsub \
+	gst-plugin-souphttpsrc gst-plugin-mpegaudioparse gst-plugin-subparse \
 	gst-plugin-apetag gst-plugin-icydemux gst-plugin-autodetect \
 	glibc-gconv-iso8859-15 ethtool"
 
+GST_RTSP_RDEPENDS = "gst-plugin-udp gst-plugin-rtsp gst-plugin-rtp gst-plugin-rtpmanager"
+GST_ALSA_RDEPENDS = "gst-plugin-alsa alsa-conf"
+GST_MISC_RDEPENDS = "gst-plugin-matroska gst-plugin-qtdemux gst-plugin-vorbis gst-plugin-audioparsersbad"
+GST_DVD_RDEPENDS = "gst-plugin-cdxaparse gst-plugin-cdio gst-plugin-vcdsrc"
+GST_BASE_RDEPENDS = "${GST_ALSA_RDEPENDS} ${GST_MISC_RDEPENDS} ${GST_RTSP_RDEPENDS}"
+
 RDEPENDS_append_dm7020 = " gst-plugin-ossaudio gst-plugin-ivorbisdec"
-RDEPENDS_append_dm7025 = " gst-plugin-alsa alsa-conf gst-plugin-ivorbisdec"
-RDEPENDS_append_dm8000 = " gst-plugin-alsa alsa-conf gst-plugin-avi gst-plugin-matroska \
-	gst-plugin-qtdemux gst-plugin-cdxaparse gst-plugin-cdio gst-plugin-vcdsrc gst-plugin-vorbis"
-RDEPENDS_append_dm800 = " gst-plugin-alsa alsa-conf gst-plugin-matroska gst-plugin-qtdemux  gst-plugin-ivorbisdec"
-RDEPENDS_append_dm500hd = " gst-plugin-alsa alsa-conf gst-plugin-avi gst-plugin-matroska \
-	gst-plugin-qtdemux gst-plugin-cdxaparse gst-plugin-cdio gst-plugin-vcdsrc gst-plugin-vorbis"
+RDEPENDS_append_dm7025 = " ${GST_ALSA_RDEPENDS} gst-plugin-ivorbisdec"
+RDEPENDS_append_dm800 = " ${GST_BASE_RDEPENDS} gst-plugin-ivorbisdec"
+RDEPENDS_append_dm8000 = " ${GST_BASE_RDEPENDS} ${GST_DVD_RDEPENDS} gst-plugin-avi"
+RDEPENDS_append_dm500hd = " ${GST_BASE_RDEPENDS} ${GST_DVD_RDEPENDS} gst-plugin-avi"
+RDEPENDS_append_dm800se = " ${GST_BASE_RDEPENDS} ${GST_DVD_RDEPENDS} gst-plugin-avi"
+RDEPENDS_append_dm7020hd = " ${GST_BASE_RDEPENDS} ${GST_DVD_RDEPENDS} gst-plugin-avi"
 
 # 'forward depends' - no two providers can have the same PACKAGES_DYNAMIC, however both
 # enigma2 and enigma2-plugins produce enigma2-plugin-*.
@@ -49,24 +55,17 @@ DESCRIPTION_append_enigma2-plugin-systemplugins-cleanupwizard = "informs you on 
 DESCRIPTION_append_enigma2-plugin-extenstions-modem = "opens a menu to connect to internet via builtin modem."
 RDEPENDS_enigma2-plugin-extensions-modem = "dreambox-modem-ppp-scripts ppp"
 DESCRIPTION_append_enigma2-plugin-systemplugins-wirelesslan = "helps you configuring your wireless lan"
-RDEPENDS_enigma2-plugin-systemplugins-wirelesslan = "wpa-supplicant wireless-tools"
+RDEPENDS_enigma2-plugin-systemplugins-wirelesslan = "wpa-supplicant wireless-tools python-wifi"
 DESCRIPTION_append_enigma2-plugin-systemplugins-networkwizard = "provides easy step by step network configuration"
 
 PN = "enigma2"
 PR = "r0"
 
-SRCDATE = "20100318"
+SRCDATE = "20101204"
 #SRCDATE is NOT used by git to checkout a specific revision
 #but we need it to build a ipk package version
 #when you like to checkout a specific revision of e2 you need
 #have to specify a commit id or a tag name in SRCREV
-
-# if you want upcoming release, use:
-####################################################
-#BRANCH = "master"
-#PV = "2.8git${SRCDATE}"
-#SRCREV = ""
-####################################################
 
 # if you want experimental use
 ####################################################
@@ -75,35 +74,23 @@ PV = "experimental-git${SRCDATE}"
 SRCREV = ""
 ####################################################
 
-# if you want a 2.7-based release, use
-####################################################
-#BRANCH="2.7"
-#PV = "2.7git${SRCDATE}"
-# if you want 2.7.0 use
-#SRCREV = "d5a16c6e9d0ee1cc2dc0d65b4321842dea4b0891"
-####################################################
-
-SRC_URI = "git://git.opendreambox.org/git/enigma2.git;protocol=git;branch=${BRANCH};tag=${SRCREV} \
-	file://new-hotplug.patch;patch=1;pnum=1 \
-	file://enigma2.sh"
+SRC_URI = "git://git.opendreambox.org/git/enigma2.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
 
 S = "${WORKDIR}/git"
 
-FILES_${PN} += "${datadir}/fonts"
+FILES_${PN} += "${datadir}/fonts ${datadir}/keymaps"
 FILES_${PN}-meta = "${datadir}/meta"
 PACKAGES += "${PN}-meta"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit autotools pkgconfig
 
-bindir = "/usr/bin"
-sbindir = "/usr/sbin"
-
-EXTRA_OECONF = "--with-target=native --with-libsdl=no"
-
-do_install_append() {
-	install -m 0755 ${WORKDIR}/enigma2.sh ${D}/usr/bin/
-}
+EXTRA_OECONF = " \
+        BUILD_SYS=${BUILD_SYS} \
+        HOST_SYS=${HOST_SYS} \
+        STAGING_INCDIR=${STAGING_INCDIR} \
+        STAGING_LIBDIR=${STAGING_LIBDIR} \
+"
 
 python populate_packages_prepend () {
 	enigma2_plugindir = bb.data.expand('${libdir}/enigma2/python/Plugins', d)
@@ -111,11 +98,23 @@ python populate_packages_prepend () {
 	do_split_packages(d, enigma2_plugindir, '(.*?/.*?)/.*', 'enigma2-plugin-%s', '%s ', recursive=True, match_path=True, prepend=True)
 }
 
-do_stage() {
-	install -d ${STAGING_INCDIR}/enigma2
-	install -m 0644 ${S}/include/*.h ${STAGING_INCDIR}/enigma2
-	for dir in actions base components driver dvb dvb/lowlevel dvb_ci gdi gui mmi nav python service; do
-		install -d ${STAGING_INCDIR}/enigma2/lib/$dir;
-		install -m 0644 ${S}/lib/$dir/*.h ${STAGING_INCDIR}/enigma2/lib/$dir;
-	done
+RCONFLICTS_${PN} = "dreambox-keymaps"
+RREPLACES_${PN} = "dreambox-keymaps tuxbox-tuxtxt-32bpp (<= 0.0+cvs20090130-r1)"
+
+# workaround for opkg <= 0.1.7+svnr455-r19.1
+pkg_preinst_${PN} () {
+	if [ "x$D" != "x" ]; then
+		exit 1
+	fi
+	if [ -f ${datadir}/fonts/tuxtxt.ttf ]; then
+		cp -a ${datadir}/fonts/tuxtxt.ttf /tmp/tuxtxt.ttf
+	fi
+}
+pkg_postinst_${PN} () {
+	if [ "x$D" != "x" ]; then
+		exit 1
+	fi
+	if [ -f /tmp/tuxtxt.ttf -a ! -f ${datadir}/fonts/tuxtxt.ttf ]; then
+		mv /tmp/tuxtxt.ttf ${datadir}/fonts/tuxtxt.ttf
+	fi
 }

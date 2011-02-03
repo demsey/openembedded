@@ -1,6 +1,8 @@
+PATCHLEVEL = ".16"
+
 require linux-opendreambox.inc
 
-SRCREV = "cc2180fb0be6e69acc19245126a7f86d76df7ed2"
+SRCREV = "3b5bab90dc6d57b80ed0bbbdf745e6532207e61f"
 PR = "r0"
 
 SRC_URI_append = "\
@@ -11,4 +13,5 @@ SRC_URI_append = "\
 	file://squashfs-lzma-0005-add-an-extra-parameter-to-the-decompressor.patch;patch=1 \
 	file://squashfs-lzma-0006-add-LZMA-compression.patch;patch=1 \
 	file://squashfs-lzma-0007-Make-unlzma-available-to-non-initramfs-ini.patch;patch=1 \
-	file://unionfs-2.5.3_for_2.6.32-pre.diff;patch=1"
+	http://download.filesystems.org/unionfs/unionfs-2.x/unionfs-2.5.4_for_2.6.32.9.diff.gz;patch=1 \
+	file://squashfs-lzma-as-module-buildfix.patch;patch=1"

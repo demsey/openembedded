@@ -2,7 +2,7 @@ SECTION = "console/network"
 LICENSE = "GPL"
 DEPENDS = "readline virtual/libiconv"
 
-SRC_URI = "http://samba.org/samba/ftp/stable/samba-${PV}.tar.gz \
+SRC_URI = "http://samba.org/samba/ftp/stable/samba-${PV}.tar.gz;name=src \
            file://volatiles.03_samba \
            file://smb.conf \
            file://init \
@@ -22,6 +22,9 @@ FILES_${PN}     += "${libdir}/vfs/*.so ${libdir}/charset/*.so ${libdir}/*.dat \
 FILES_${PN}-dbg += "${libdir}/vfs/.debug/*.so ${libdir}/charset/.debug/*.so \
                     ${libdir}/auth/.debug/*.so ${libdir}/security/.debug/*.so"
 
+SAMBAMMAP = "no"
+SAMBAMMAP_libc-glibc = "yes"
+
 # The file system settings --foodir=dirfoo and overridden unconditionally
 # in the samba config by --with-foodir=dirfoo - even if the --with is not
 # specified!  Fix that here.  Set the privatedir to /etc/samba/private.
@@ -37,7 +40,9 @@ EXTRA_OECONF='--disable-cups \
               --with-libdir=${libdir} \
               --with-mandir=${mandir} \
               --with-swatdir=${datadir}/swat \
-              samba_cv_struct_timespec=yes'
+              --with-aio-support \
+              samba_cv_struct_timespec=yes \
+              libreplace_cv_HAVE_MMAP=${SAMBAMMAP}'
 
 PACKAGES =+ "libsmbclient libsmbclient-dev cifs cifs-doc smbfs smbfs-doc"
 PACKAGES =+ "${@base_conditional('DISTRO', 'opendreambox', ' sambaserver libpopt libtalloc libtdb', '', d)}"
@@ -116,13 +121,3 @@ do_install_append_opendreambox() {
 	install -m 0755 ${WORKDIR}/01samba-start ${D}/etc/network/if-up.d
 }
 
-do_stage() {
-	install -m 0644 include/libsmbclient.h ${STAGING_INCDIR}
-	oe_libinstall -C bin -a -so libsmbclient ${STAGING_LIBDIR}
-	oe_libinstall -C bin -a -so libtdb ${STAGING_LIBDIR}
-	oe_libinstall -C bin -a -so libtalloc ${STAGING_LIBDIR}
-	oe_libinstall -C bin -so libwbclient ${STAGING_LIBDIR}
-	install -d ${STAGING_LIBDIR}/pkgconfig/
-	install -m 0644 ${WORKDIR}/tdb.pc ${STAGING_LIBDIR}/pkgconfig/
-	install -m 0644 ${S}/lib/tdb/include/*.h ${STAGING_INCDIR}/
-}

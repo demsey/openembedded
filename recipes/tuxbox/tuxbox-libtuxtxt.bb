@@ -30,6 +30,16 @@ SRC_URI_append_dm800 = " \
 	file://resize_framebuffer.diff;patch=1 \
 	file://allow_different_demux.diff;patch=1"
 
+SRC_URI_append_dm800se = " \
+	file://32bpp.diff;patch=1 \
+	file://resize_framebuffer.diff;patch=1 \
+	file://allow_different_demux.diff;patch=1"
+
+SRC_URI_append_dm7020hd = " \
+	file://32bpp.diff;patch=1 \
+	file://resize_framebuffer.diff;patch=1 \
+	file://allow_different_demux.diff;patch=1"
+
 SRC_URI_append_dm8000 = " \
 	file://32bpp.diff;patch=1 \
 	file://resize_framebuffer.diff;patch=1 \

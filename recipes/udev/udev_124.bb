@@ -3,6 +3,7 @@ DESCRIPTION = "udev is a daemon which dynamically creates and removes device nod
 the hotplug package and requires a kernel not older than 2.6.12."
 RPROVIDES_${PN} = "hotplug"
 PR = "r18"
+PR_dm8000 = "r19"
 
 SRC_URI = "http://kernel.org/pub/linux/utils/kernel/hotplug/udev-${PV}.tar.gz \
 	   file://noasmlinkage.patch;patch=1 \
@@ -25,6 +26,8 @@ SRC_URI_append_opendreambox = " file://40-od-devfs-compatibility.rules \
 
 SRC_URI_append_dm8000 = " ${@base_contains('PREFERRED_VERSION_linux-dm8000', '2.6.18', 'file://41-od-linux-2.6.18-misc.rules', '', d)}"
 SRC_URI_append_dm800 = " ${@base_contains('PREFERRED_VERSION_linux-dm800', '2.6.18', 'file://41-od-linux-2.6.18-misc.rules', '', d)}"
+SRC_URI_append_dm800se = " ${@base_contains('PREFERRED_VERSION_linux-dm800se', '2.6.18', 'file://41-od-linux-2.6.18-misc.rules', '', d)}"
+SRC_URI_append_dm7020hd = " ${@base_contains('PREFERRED_VERSION_linux-dm7020hd', '2.6.18', 'file://41-od-linux-2.6.18-misc.rules', '', d)}"
 SRC_URI_append_dm500hd = " ${@base_contains('PREFERRED_VERSION_linux-dm500hd', '2.6.18', 'file://41-od-linux-2.6.18-misc.rules', '', d)}"
 
 require udev.inc

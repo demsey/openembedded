@@ -1,7 +1,7 @@
 require klibc-common.inc
 
 SRC_URI += "file://staging.patch;patch=1"
-SRC_URI_append = "${@base_conditional('MACHINE', 'dm7025', '', \
+SRC_URI_append = "${@base_conditional('DISTRO', 'opendreambox', '', \
 		' file://klibc_kexecsyscall.patch;patch=1', d)}"
 
 # we want only the shared programms and the lib so we chose them manually

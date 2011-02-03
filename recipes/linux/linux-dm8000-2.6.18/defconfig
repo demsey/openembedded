@@ -581,7 +581,7 @@ CONFIG_CHR_DEV_SG=y
 #
 # Some SCSI devices (e.g. CD jukebox) support multiple LUNs
 #
-# CONFIG_SCSI_MULTI_LUN is not set
+CONFIG_SCSI_MULTI_LUN=y
 # CONFIG_SCSI_CONSTANTS is not set
 # CONFIG_SCSI_LOGGING is not set
 
@@ -710,7 +710,7 @@ CONFIG_NETIF_DMA=y
 # CONFIG_DUMMY is not set
 # CONFIG_BONDING is not set
 # CONFIG_EQUALIZER is not set
-# CONFIG_TUN is not set
+CONFIG_TUN=m
 
 #
 # ARCnet devices
@@ -1000,90 +1000,7 @@ CONFIG_I2C_CHARDEV=y
 #
 # Digital Video Broadcasting Devices
 #
-CONFIG_DVB=y
-CONFIG_DVB_CORE=m
-
-#
-# Supported SAA7146 based PCI Adapters
-#
-
-#
-# Supported USB Adapters
-#
-# CONFIG_DVB_USB is not set
-# CONFIG_DVB_TTUSB_BUDGET is not set
-# CONFIG_DVB_TTUSB_DEC is not set
-# CONFIG_DVB_CINERGYT2 is not set
-
-#
-# Supported FlexCopII (B2C2) Adapters
-#
-# CONFIG_DVB_B2C2_FLEXCOP is not set
-
-#
-# Supported BT878 Adapters
-#
-
-#
-# Supported Pluto2 Adapters
-#
-# CONFIG_DVB_PLUTO2 is not set
-
-#
-# Supported DVB Frontends
-#
-
-#
-# Customise DVB Frontends
-#
-
-#
-# DVB-S (satellite) frontends
-#
-CONFIG_DVB_STV0299=m
-# CONFIG_DVB_CX24110 is not set
-# CONFIG_DVB_CX24123 is not set
-# CONFIG_DVB_TDA8083 is not set
-# CONFIG_DVB_MT312 is not set
-# CONFIG_DVB_VES1X93 is not set
-# CONFIG_DVB_S5H1420 is not set
-
-#
-# DVB-T (terrestrial) frontends
-#
-# CONFIG_DVB_SP8870 is not set
-# CONFIG_DVB_SP887X is not set
-# CONFIG_DVB_CX22700 is not set
-# CONFIG_DVB_CX22702 is not set
-# CONFIG_DVB_L64781 is not set
-# CONFIG_DVB_TDA1004X is not set
-# CONFIG_DVB_NXT6000 is not set
-# CONFIG_DVB_MT352 is not set
-# CONFIG_DVB_ZL10353 is not set
-# CONFIG_DVB_DIB3000MB is not set
-# CONFIG_DVB_DIB3000MC is not set
-
-#
-# DVB-C (cable) frontends
-#
-# CONFIG_DVB_VES1820 is not set
-# CONFIG_DVB_TDA10021 is not set
-# CONFIG_DVB_STV0297 is not set
-
-#
-# ATSC (North American/Korean Terrestrial/Cable DTV) frontends
-#
-# CONFIG_DVB_NXT200X is not set
-# CONFIG_DVB_OR51211 is not set
-# CONFIG_DVB_OR51132 is not set
-# CONFIG_DVB_BCM3510 is not set
-# CONFIG_DVB_LGDT330X is not set
-
-#
-# Miscellaneous devices
-#
-# CONFIG_DVB_LNBP21 is not set
-# CONFIG_DVB_ISL6421 is not set
+# CONFIG_DVB is not set
 # CONFIG_USB_DABUSB is not set
 
 #
@@ -1300,7 +1217,7 @@ CONFIG_USB_HID=m
 CONFIG_USB_HIDINPUT=y
 # CONFIG_USB_HIDINPUT_POWERBOOK is not set
 # CONFIG_HID_FF is not set
-# CONFIG_USB_HIDDEV is not set
+CONFIG_USB_HIDDEV=y
 
 #
 # USB HID Boot Protocol drivers
@@ -1662,7 +1579,7 @@ CONFIG_NLS_UTF8=m
 # Kernel hacking
 #
 CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-# CONFIG_PRINTK_TIME is not set
+CONFIG_PRINTK_TIME=y
 # CONFIG_MAGIC_SYSRQ is not set
 # CONFIG_UNUSED_SYMBOLS is not set
 # CONFIG_DEBUG_KERNEL is not set

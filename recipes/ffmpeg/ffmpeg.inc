@@ -3,7 +3,7 @@ HOMEPAGE = "http://ffmpeg.mplayerhq.hu/"
 AUTHOR = "Fabrice Bellard ffmpeg-devel@mplayerhq.hu"
 SECTION = "libs"
 PRIORITY = "optional"
-LICENSE = "LGPL"
+LICENSE = "GPLv2+"
 
 ARM_INSTRUCTION_SET = "arm"
 
@@ -27,49 +27,6 @@ EXTRA_OECONF = "\
         --disable-ffplay \
         \
 "
-
-do_stage() {
-        for lib in libavcodec libavdevice libavformat \
-                   libavutil libpostproc libswscale
-        do
-            oe_libinstall -a -so -C $lib $lib ${STAGING_LIBDIR} || true
-            install -d ${STAGING_INCDIR}/$lib 
-        done 
-
-        install -d ${STAGING_INCDIR}/ffmpeg
-
-        install -m 0644 ${S}/libavcodec/avcodec.h ${STAGING_INCDIR}/ffmpeg/avcodec.h
-        install -m 0644 ${S}/libavcodec/opt.h ${STAGING_INCDIR}/ffmpeg/opt.h
-        install -m 0644 ${S}/libavcodec/avcodec.h ${STAGING_INCDIR}/libavcodec/avcodec.h
-        install -m 0644 ${S}/libavcodec/opt.h ${STAGING_INCDIR}/libavcodec/opt.h
-
-        install -m 0644 ${S}/libavdevice/avdevice.h  ${STAGING_INCDIR}/ffmpeg/avdevice.h
-        
-        for h in avformat.h avio.h rtp.h rtsp.h rtspcodes.h
-        do
-           install -m 0644 ${S}/libavformat/$h  ${STAGING_INCDIR}/ffmpeg/$h
-           install -m 0644 ${S}/libavformat/$h  ${STAGING_INCDIR}/libavformat/$h	
-	done
-
-		for h in adler32.h avstring.h avutil.h base64.h bswap.h \
-                 common.h crc.h fifo.h integer.h intfloat_readwrite.h \
-                 log.h lzo.h mathematics.h md5.h mem.h pixfmt.h random*.h \
-                 rational.h sha1.h
-		do
-           install -m 0644 ${S}/libavutil/$h        ${STAGING_INCDIR}/ffmpeg/$h
-           install -m 0644 ${S}/libavutil/$h        ${STAGING_INCDIR}/libavutil/$h 
-        done
-
-        install -d ${STAGING_INCDIR}/libswscale/ 
-        install -m 0644 ${S}/libswscale/*.h ${STAGING_INCDIR}/ffmpeg/
-        install -m 0644 ${S}/libswscale/*.h ${STAGING_INCDIR}/libswscale/
-
-        install -d ${STAGING_INCDIR}/libpostproc
-        install -d ${STAGING_INCDIR}/postproc 
-        install -m 0644 ${S}/libpostproc/postprocess.h ${STAGING_INCDIR}/libpostproc/postprocess.h
-        install -m 0644 ${S}/libpostproc/postprocess.h ${STAGING_INCDIR}/postproc/postprocess.h
-}
-
 
 PACKAGES += "${PN}-vhook-dbg ${PN}-vhook"
 

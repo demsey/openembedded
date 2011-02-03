@@ -1,7 +1,7 @@
 DESCRIPTION = "Util-linux-ng is a suite of essential utilities for any Linux system."
 SECTION = "base"
 LICENSE = "GPL"
-DEPENDS = "udev zlib ncurses virtual/libintl"
+DEPENDS = "${@base_contains('IMAGE_DEV_MANAGER', 'udev', 'udev', '', d)} zlib ncurses virtual/libintl"
 
 inherit autotools
 
