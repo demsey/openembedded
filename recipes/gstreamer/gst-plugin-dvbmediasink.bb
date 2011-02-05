@@ -3,16 +3,18 @@ SECTION = "multimedia"
 PRIORITY = "optional"
 MAINTAINER = "Felix Domke <tmbinc@openembedded.org>"
 DEPENDS = "gstreamer gst-plugins-base"
-PV = "0.10+cvs${SRCDATE}"
-PR = "r1"
+
+SRCREV="1c557cf393fcee2801c838b13bf06d8c03c2be09"
+SRCDATE="20110205"
+BRANCH="master"
+PV = "0.10+git${SRCDATE}"
+PR = "r0"
 
 inherit autotools pkgconfig
 
-SRCDATE = "20101106"
+SRC_URI = "git://schwerkraft.elitedvb.net/dvbmediasink/dvbmediasink.git;protocol=git;branch=${BRANCH};tag=${SRCREV}"
 
-SRC_URI = "cvs://anonymous@cvs.schwerkraft.elitedvb.net/cvsroot/dvbmediasink;module=dvbmediasink;method=pserver"
-
-S = "${WORKDIR}/dvbmediasink"
+S = "${WORKDIR}/git"
 
 FILES_${PN} = "${libdir}/gstreamer-0.10/*.so*"
 FILES_${PN}-dev += "${libdir}/gstreamer-0.10/*.la \
