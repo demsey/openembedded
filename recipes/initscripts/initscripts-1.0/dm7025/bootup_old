@@ -25,6 +25,7 @@ echo 32 > /proc/progress
 
 # set UDMA66
 hdparm -X66 /dev/hda1
+hdparm -d1 /dev/hda1
 
 echo 34 > /proc/progress
 
