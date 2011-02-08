@@ -3,7 +3,7 @@ require opkg_svn.bb
 DEPENDS = "curl"
 PROVIDES += "opkg"
 
-PR = "${INC_PR}.3"
+PR = "${INC_PR}.4"
 
 SRCREV = "${SRCREV_pn-opkg}"
 
