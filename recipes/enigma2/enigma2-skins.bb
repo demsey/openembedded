@@ -4,8 +4,8 @@ MAINTAINER = "Felix Domke <tmbinc@elitedvb.net>"
 PACKAGES_DYNAMIC = "enigma2-skin-*"
 
 # if you want experimental, use:
-SRCREV=""
-SRCDATE="20101211"
+SRCREV="de610a460bec046f0dca9987ecba458303daaf1d"
+SRCDATE="20110128"
 BRANCH="master"
 PV = "experimental-git${SRCDATE}"
 
