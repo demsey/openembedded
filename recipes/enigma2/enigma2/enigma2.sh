@@ -3,7 +3,12 @@
 /usr/bin/showiframe /boot/backdrop.mvi
 
 cd /home/root
-LD_PRELOAD=/usr/lib/libopen.so.0.0 /usr/bin/enigma2
+
+if [ -f /usr/lib/libpassthrough.so ]
+	LD_PRELOAD="/usr/lib/libopen.so.0.0 /usr/lib/libpassthrough.so" /usr/bin/enigma2
+else
+	LD_PRELOAD=/usr/lib/libopen.so.0.0 /usr/bin/enigma2
+fi
 
 # enigma2 exit codes:
 #
