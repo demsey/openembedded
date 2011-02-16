@@ -1,0 +1,16 @@
+diff --git a/lib/dvb/demux.cpp b/lib/dvb/demux.cpp
+index f4d8618..8fb3a26 100644
+--- a/lib/dvb/demux.cpp
++++ b/lib/dvb/demux.cpp
+@@ -87,9 +87,8 @@ int eDVBDemux::openDemux(void)
+ 
+ int eDVBDemux::openDVR(int flags)
+ {
+-	char filename[128];
+-	snprintf(filename, 128, "/dev/dvb/adapter%d/dvr%d", adapter, demux);
+-	return ::open(filename, flags);
++	eDebug("FIXMEEEE.... 7025 drivers doesn't support /dev/dvb/adapterX/dvrX!!!!");
++	return ::open("/dev/misc/pvr", flags);
+ }
+ 
+ DEFINE_REF(eDVBDemux)
