@@ -36,10 +36,10 @@ RDEPENDS = "kernel (${KV})"
 
 #hack for broken busybox depmod (v4l-dvb dvb-core isn't automatically loaded on bcm740x load)
 DEPENDS = " module-init-tools"
-RDEPENDS_append_dm8000 = " dreambox-secondstage module-init-tools-depmod"
-RDEPENDS_append_dm800 = " dreambox-secondstage module-init-tools-depmod"
-RDEPENDS_append_dm500hd = " dreambox-secondstage module-init-tools-depmod"
-RDEPENDS_append_dm800se = " dreambox-secondstage module-init-tools-depmod"
+RDEPENDS_append_dm8000 = " dreambox-secondstage (>=81) module-init-tools-depmod"
+RDEPENDS_append_dm800 = " dreambox-secondstage (>=81) module-init-tools-depmod"
+RDEPENDS_append_dm500hd = " dreambox-secondstage (>=81) module-init-tools-depmod"
+RDEPENDS_append_dm800se = " dreambox-secondstage (>=81) module-init-tools-depmod"
 RDEPENDS_append_dm7020hd = " dreambox-secondstage module-init-tools-depmod"
 
 PR = "r0"
