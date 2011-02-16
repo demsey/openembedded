@@ -67,7 +67,7 @@ DEPENDS_append_dm800se = " dreambox-libpassthrough"
 DEPENDS_append_dm7020hd = " dreambox-libpassthrough"
 
 SRCDATE = "20110216"
-SRCREV = "a6b8704419415c3453c63f7909f4d01a03aaf133"
+SRCREV = "f157ad52f1bc3be81ccba075aa9218237aa71973"
 #SRCDATE is NOT used by git to checkout a specific revision
 #but we need it to build a ipk package version
 #when you like to checkout a specific revision of e2 you need
