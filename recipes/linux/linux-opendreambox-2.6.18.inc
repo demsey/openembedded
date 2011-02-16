@@ -1,7 +1,7 @@
 require linux-opendreambox.inc
 
 SRCREV = "c59d7210272be29e3850aca3abbff76443f65d6f-fixed"
-PR_INC = "r8"
+PR_INC = "r9"
 
 RREPLACES_kernel = "kernel-2.6.18-7.1-${MACHINE}"
 RCONFLICTS_kernel = "kernel-2.6.18-7.1-${MACHINE}"

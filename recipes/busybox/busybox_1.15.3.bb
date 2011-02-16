@@ -1,5 +1,5 @@
 require busybox.inc
-PR = "${INC_PR}.4"
+PR = "${INC_PR}.5"
 
 SRC_URI = "\
   http://www.busybox.net/downloads/busybox-${PV}.tar.gz \
@@ -23,6 +23,7 @@ SRC_URI = "\
   file://defconfig \
   file://mdev \
   file://mdev.conf \
+  file://devfsd.conf \
 "
 
 SRC_URI_append_opendreambox = "\
@@ -45,4 +46,7 @@ do_install_append() {
     install -d ${D}${sysconfdir}/mdev
     install -m 0755 ${WORKDIR}/find-touchscreen.sh ${D}${sysconfdir}/mdev/
     install -m 0755 ${WORKDIR}/mdev ${D}${sysconfdir}/init.d/
+    if grep "CONFIG_DEVFSD=y" ${WORKDIR}/defconfig; then
+        install -m 644 ${WORKDIR}/devfsd.conf ${D}${sysconfdir}
+    fi
 }

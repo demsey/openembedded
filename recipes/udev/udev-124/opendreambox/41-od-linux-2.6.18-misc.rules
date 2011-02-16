@@ -16,6 +16,6 @@
 KERNEL=="fp0",			NAME="dbox/fp0"
 KERNEL=="oled0",		NAME="dbox/oled0"
 KERNEL=="lcd0",			NAME="dbox/lcd0"
-KERNEL=="pvr",			NAME="misc/pvr"
 KERNEL=="hsm0",			NAME="misc/hsm0"
 KERNEL=="vtuner0",		NAME="misc/vtuner0"
+KERNEL=="vtuner1",		NAME="misc/vtuner1"

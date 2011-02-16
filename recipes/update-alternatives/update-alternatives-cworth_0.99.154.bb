@@ -2,7 +2,7 @@ require update-alternatives-cworth.inc
 
 RPROVIDES_${PN} = "update-alternatives"
 
-PR="${INC_PR}.0"
+PR="${INC_PR}.1"
 
 do_install () {
     install -d ${D}${sbindir} \
@@ -11,5 +11,3 @@ do_install () {
 
     install -m 0755 update-alternatives ${D}${sbindir}/update-alternatives
 }
-
-require ../opkg/update-alternatives-merge.inc

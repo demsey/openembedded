@@ -2,7 +2,7 @@ inherit pkgconfig native
 
 require openssl.inc
 
-PR = "${INC_PR}.1"
+PR = "${INC_PR}.2"
 
 # This flag can contain target options (e.g -mfpu=neon for armv7-a systems)
 export FULL_OPTIMIZATION = " "

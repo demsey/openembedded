@@ -26,5 +26,3 @@ pkg_postinst_${PN} () {
 pkg_postrm_${PN} () {
   update-alternatives --remove opkg ${bindir}/opkg-cl
 }
-
-require update-alternatives-merge.inc
