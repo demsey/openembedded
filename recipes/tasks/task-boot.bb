@@ -1,5 +1,5 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r57"
+PR = "r58"
 
 inherit task
 

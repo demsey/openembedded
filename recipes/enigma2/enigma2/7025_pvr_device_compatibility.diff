@@ -1,5 +1,3 @@
-diff --git a/lib/dvb/demux.cpp b/lib/dvb/demux.cpp
-index f4d8618..8fb3a26 100644
 --- a/lib/dvb/demux.cpp
 +++ b/lib/dvb/demux.cpp
 @@ -87,9 +87,8 @@ int eDVBDemux::openDemux(void)
@@ -14,3 +12,29 @@ index f4d8618..8fb3a26 100644
  }
  
  DEFINE_REF(eDVBDemux)
+--- a/lib/dvb/dvb.cpp
++++ b/lib/dvb/dvb.cpp
+@@ -1798,19 +1798,11 @@ RESULT eDVBChannel::playSource(ePtr<iTsSource> &source, const char *streaminfo_f
+ 			return -ENODEV;
+ 		}
+ #else
+-		ePtr<eDVBAllocatedDemux> &demux = m_demux ? m_demux : m_decoder_demux;
+-		if (demux)
+-		{
+-			m_pvr_fd_dst = demux->get().openDVR(O_WRONLY);
+-			if (m_pvr_fd_dst < 0)
+-			{
+-				eDebug("can't open /dev/dvb/adapterX/dvrX - you need to buy the new(!) $$$ box! (%m)"); // or wait for the driver to be improved.
+-				return -ENODEV;
+-			}
+-		}
+-		else
++		eDebug("FIXMEEEE.... 7025 drivers doesn't support /dev/dvb/adapterX/dvrX!!!!");
++		m_pvr_fd_dst = open("/dev/misc/pvr", O_WRONLY);
++		if (m_pvr_fd_dst < 0)
+ 		{
+-			eDebug("no demux allocated yet.. so its not possible to open the dvr device!!");
++			eDebug("can't open /dev/misc/pvr - you need to buy the new(!) $$$ box! (%m)"); // or wait for the driver to be improved.
+ 			return -ENODEV;
+ 		}
+ #endif
