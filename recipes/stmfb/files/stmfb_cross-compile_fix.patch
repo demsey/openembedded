@@ -1,0 +1,21 @@
+Makefile: Cross-Compile fix
+
+  Remove standard Makefile hacks ARCH and CROSS_COMPILE
+  for enabling using it in OE enviroment
+
+--- a/Linux/Makefile	2007-06-08 11:50:08.000000000 +0200
++++ b/Linux/Makefile	2011-02-18 21:21:47.733624461 +0100
+@@ -14,11 +14,11 @@
+ all: modules tests
+ 
+ modules:
+-	make -C $(KERNELDIR) $(patsubst %,O=%,$O) M="$(KBUILD_PATH)" ARCH=sh CROSS_COMPILE="sh4-linux-" modules
++	make -C $(KERNELDIR) $(patsubst %,O=%,$O) M="$(KBUILD_PATH)" modules
+ 
+ .PHONY: modules_install
+ modules_install:
+-	make -C $(KERNELDIR) $(patsubst %,O=%,$O) M="$(KBUILD_PATH)" ARCH=sh CROSS_COMPILE="sh4-linux-" modules_install
++	make -C $(KERNELDIR) $(patsubst %,O=%,$O) M="$(KBUILD_PATH)" modules_install
+ 
+ tests: ACTION = all
+ tests: $(TEST_SUBDIRS)
