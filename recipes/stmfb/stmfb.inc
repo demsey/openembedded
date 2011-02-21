@@ -20,7 +20,7 @@ RPM_SRC_FILE = "stlinux23-host-${PN}-source-${PV_MAJOR}_${STM_RELEASE}_${PV_MINO
 # For enabling overriding if needed
 STM_PATH ?= "ftp://ftp.stlinux.com/pub/stlinux/2.3/updates/SRPMS"
 
-SRC_URI = "${STM_PATH}/${RPM_SRC_FILE};name=rpmsource"
+SRC_URI = "${STM_PATH}/${RPM_SRC_FILE};name=${PN}"
 
 S = "${WORKDIR}/${PN}"
 # Inside of stmfb-3.1 tarbals name is more detailed
