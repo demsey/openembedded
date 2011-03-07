@@ -1,0 +1,21 @@
+--- stmfb-3.1_stm23_0026/Linux/stm/coredisplay/stx7109c3.c	2009-06-30 18:22:12.000000000 +0200
++++ stmfb-3.1_stm23_0026/Linux/stm/coredisplay/stx7109c3.c.new	2011-02-27 00:26:05.793902552 +0100
+@@ -58,6 +58,8 @@
+ #endif
+ #elif defined(CONFIG_SH_HMS1) || defined(CONFIG_SH_ST_HMS1)
+     .hdmi_i2c_adapter_id      = 2,
++#elif defined(CONFIG_CUBEREVO)
++    .hdmi_i2c_adapter_id      = 1,
+ #else
+     .hdmi_i2c_adapter_id      = 0, /* Add your board definition here */
+ #endif
+@@ -134,7 +136,8 @@
+ #if defined(CONFIG_SH_STB7100_MBOARD) || defined(CONFIG_SH_STB7100_REF) || \
+     defined(CONFIG_SH_STB7109E_REF)   || defined(CONFIG_SH_ST_MB411)    || \
+     defined(CONFIG_SH_ST_MB442)       || defined(CONFIG_SH_ST_MB448)    || \
+-    defined(CONFIG_SH_HMS1)           || defined(CONFIG_SH_ST_HMS1)
++    defined(CONFIG_SH_HMS1)           || defined(CONFIG_SH_ST_HMS1)     || \
++    defined(CONFIG_CUBEREVO)
+ #define SYSCONF_DEVICEID 0x19001000
+ #else
+ #define SYSCONF_DEVICEID 0

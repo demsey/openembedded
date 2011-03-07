@@ -1,0 +1,164 @@
+commit 882e8227145ff51617b0a1ce7e365be9fb374afc
+Author: Robert Demski <drdemsey@gmail.com>
+Date:   Sun Feb 27 14:26:29 2011 +0100
+
+    Add USE_EXT_CLK fixing wrong freq calc formula. hard coded
+    
+    Signed-off-by: Robert Demski <drdemsey@gmail.com>
+
+diff --git a/soc/stb7100/stb7100device.cpp b/soc/stb7100/stb7100device.cpp
+index c227661..737d3cf 100644
+--- a/soc/stb7100/stb7100device.cpp
++++ b/soc/stb7100/stb7100device.cpp
+@@ -79,7 +79,11 @@ CSTb7100Device::CSTb7100Device(void): CGenericGammaDevice()
+    * Global setup of the display clock registers.
+    */
+   WriteDevReg(STb7100_CLKGEN_BASE + CKGB_LCK, CKGB_LCK_UNLOCK);
++#ifdef USE_EXT_CLK
++  WriteDevReg(STb7100_CLKGEN_BASE + CKGB_CLK_REF_SEL, CKGB_REF_SEL_EXTERNAL);
++#else
+   WriteDevReg(STb7100_CLKGEN_BASE + CKGB_CLK_REF_SEL, CKGB_REF_SEL_INTERNAL);
++#endif
+ 
+   ULONG chipid = ReadDevReg(STb7100_SYSCFG_BASE);
+ 
+@@ -162,7 +166,11 @@ bool CSTb7100Device::Create()
+     return false;
+   }
+ 
++#ifdef USE_EXT_CLK
++  m_pHDFSynth->SetClockReference(STM_CLOCK_REF_27MHZ,0);
++#else
+   m_pHDFSynth->SetClockReference(STM_CLOCK_REF_30MHZ,0);
++#endif
+ 
+   if((m_pSDFSynth = new CSTmFSynthType1(this, STb7100_CLKGEN_BASE+CKGB_FS1_MD1)) == 0)
+   {
+@@ -170,7 +178,11 @@ bool CSTb7100Device::Create()
+     return false;
+   }
+ 
++#ifdef USE_EXT_CLK
++  m_pSDFSynth->SetClockReference(STM_CLOCK_REF_27MHZ,0);
++#else
+   m_pSDFSynth->SetClockReference(STM_CLOCK_REF_30MHZ,0);
++#endif
+ 
+   if(!m_pHDFSynth || !m_pSDFSynth)
+   {
+diff --git a/soc/stb7100/stb7100hdmi.cpp b/soc/stb7100/stb7100hdmi.cpp
+index 73a9ce7..cb16d66 100644
+--- a/soc/stb7100/stb7100hdmi.cpp
++++ b/soc/stb7100/stb7100hdmi.cpp
+@@ -56,9 +56,15 @@
+ 
+ #define AUD_FSYN_CFG_SPDIF_EN (1L<<8)
+ 
++#ifdef USE_EXT_CLK
++#define MD_48KHZ_256FS   0x11
++#define PE_48KHZ_256FS   0x3600
++#define SDIV_48KHZ_256FS 0x5
++#else
+ #define MD_48KHZ_256FS   0xF3
+ #define PE_48KHZ_256FS   0x3C00
+ #define SDIV_48KHZ_256FS 0x4
++#endif
+ 
+ #define AUD_SPDIF_CTRL   0x1C
+ #define AUD_PRCONV_CTRL  0x200
+@@ -129,7 +135,11 @@ CSTb710xHDMI::CSTb710xHDMI(CDisplayDevice     *pDev,
+     DEBUGF2(2,("CSTb710xHDMI::CSTb710xHDMI - Setting up default SPDIF clock, aud cfg = %lx\n",val));
+     WriteAUDReg(AUD_FSYN_CFG, 0x1);        /* Reset                          */
+     g_pIOS->StallExecution(10);
++#ifdef USE_EXT_CLK
++    WriteAUDReg(AUD_FSYN_CFG, 0x00005ddc|(1<<23)); /* Enable and power everything up */
++#else
+     WriteAUDReg(AUD_FSYN_CFG, 0x00005ddc); /* Enable and power everything up */
++#endif
+ 
+     WriteAUDReg(AUD_FSYN0_EN,   0);
+     WriteAUDReg(AUD_FSYN0_SDIV, SDIV_48KHZ_256FS);
+@@ -336,7 +346,11 @@ int CSTb710xHDMI::GetAudioFrequency(void)
+    * The 710x uses a 30MHz reference clock to the audio FSynths,
+    * the same clock as for video.
+    */
++#ifdef USE_EXT_CLK
++  return stm_fsynth_frequency(STM_CLOCK_REF_27MHZ, sdiv, md, pe);
++#else
+   return stm_fsynth_frequency(STM_CLOCK_REF_30MHZ, sdiv, md, pe);
++#endif
+ }
+ 
+ 
+diff --git a/linux/drivers/stm/coredisplay/stx7100.c b/linux/drivers/stm/coredisplay/stx7100.c
+index bcb4399..479a29f 100644
+--- a/linux/drivers/stm/coredisplay/stx7100.c
++++ b/linux/drivers/stm/coredisplay/stx7100.c
+@@ -231,7 +231,11 @@ int __init stmcore_display_postinit(struct stmcore_display *p)
+   if(DAC456SaturationPoint != 0)
+     stm_display_output_set_control(p->main_output, STM_CTRL_DAC456_SATURATION_POINT, DAC456SaturationPoint);
+ 
++#ifdef USE_EXT_CLK
++  stm_display_output_setup_clock_reference(p->main_output, STM_CLOCK_REF_27MHZ, refClockError);
++#else
+   stm_display_output_setup_clock_reference(p->main_output, STM_CLOCK_REF_30MHZ, refClockError);
++#endif
+ 
+ /*
+  * Uncomment this if you want to change the default DENC luma filter
+diff --git a/linux/drivers/stm/coredisplay/stx7109c3.c b/linux/drivers/stm/coredisplay/stx7109c3.c
+index b22b273..e5c14b5 100644
+--- a/linux/drivers/stm/coredisplay/stx7109c3.c
++++ b/linux/drivers/stm/coredisplay/stx7109c3.c
+@@ -234,7 +234,11 @@ static stm_display_filter_setup_t luma_filter_FIR2F = {
+ int __init stmcore_display_postinit(struct stmcore_display *p)
+ {
+ 
++#ifdef USE_EXT_CLK
++  stm_display_output_setup_clock_reference(p->main_output, STM_CLOCK_REF_27MHZ, refClockError);
++#else
+   stm_display_output_setup_clock_reference(p->main_output, STM_CLOCK_REF_30MHZ, refClockError);
++#endif
+ 
+   /*
+    * Setup internal configuration controls
+diff --git a/STMCommon/stmfsynth.cpp b/STMCommon/stmfsynth.cpp
+index b83789d..0d1a777 100644
+--- a/STMCommon/stmfsynth.cpp
++++ b/STMCommon/stmfsynth.cpp
+@@ -26,7 +26,11 @@ CSTmFSynth::CSTmFSynth(CDisplayDevice *pDev, ULONG ulRegOffset)
+   m_pDevRegs = (ULONG*)pDev->GetCtrlRegisterBase();
+   m_ulFSynthOffset = ulRegOffset;
+ 
++#ifdef USE_EXT_CLK
++  m_refClock    = STM_CLOCK_REF_27MHZ;
++#else
+   m_refClock    = STM_CLOCK_REF_30MHZ;
++#endif
+   m_refError    = 0;
+   m_adjustment  = 0;
+   m_divider     = 1;
+@@ -203,6 +207,23 @@ bool CSTmFSynth::SolveFsynthEqn(ULONG Fout,stm_clock_fsynth_timing_t *timing)
+   timing->sdiv = sdiv;
+   timing->md   = md;
+   timing->pe   = pe;
++
++#ifdef USE_EXT_CLK
++   /* fixing wrong freq calc formula. hard coded.*/
++   switch(Fout)
++   {
++          case 8192000:
++                    timing->sdiv = 4;
++                    timing->md=-6;
++                    timing->pe=20736;
++                    break;
++          case 4096000:
++                     timing->sdiv = 5;
++                     timing->md=-6;
++                     timing->pe=20736;
++                     break;
++   }
++#endif
+ 
+   DEBUGF2(2,("%s: Fout == %lu SDIV == %u, MD == %02x, PE == 0x%x\n", __PRETTY_FUNCTION__, Fout, sdiv, md, pe));
+ 

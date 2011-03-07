@@ -35,6 +35,9 @@ inherit module
 
 addtask munge before do_patch after do_unpack
 
+# Set boxtype
+STMFB_EXTRA_CONF ?= "-DCONFIG_${@'${MACHINE}'.upper().replace('-','_')}"
+
 do_munge() {
 	rpm="${WORKDIR}/${RPM_SRC_FILE}"
 	tarbal="${PN}-${PV_MAJOR}_${STM_RELEASE}_${PV_MINOR}.tar.bz2"
@@ -43,6 +46,15 @@ do_munge() {
 		rpm2cpio.pl $rpm | cpio -ivd $tarbal
 		tar xjf "${WORKDIR}/${tarbal}" -C ${WORKDIR}
 	fi
+
+	# Set extra parameters
+	mf="stm/coredisplay/Makefile"
+	if [ -f "${S}/Linux/${mf}" ]; then
+	  mf="${S}/Linux/${mf}"
+	elif [ -f "${S}/linux/drivers/${mf}" ]; then
+	  mf="${S}/linux/drivers/${mf}"
+	fi
+	sed -i "s/ -DINSERT_EXTRA_CXXFLAGS_HERE/ ${STMFB_EXTRA_CONF}/g" "${mf}"
 }
 
 MODULES = "stmfb stmcore-display-stx7100 \

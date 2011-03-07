@@ -1,0 +1,264 @@
+commit 16d0685a30182ce8d94b94cbb69900643dbed474
+Author: Robert Demski <drdemsey@gmail.com>
+Date:   Sun Feb 27 00:10:52 2011 +0100
+
+    TDT - hacks
+    
+    Signed-off-by: Robert Demski <drdemsey@gmail.com>
+
+diff --git a/Linux/stm/coredisplay/hdmidev.c b/Linux/stm/coredisplay/hdmidev.c
+index 5d9b672..0de62fc 100644
+--- a/Linux/stm/coredisplay/hdmidev.c
++++ b/Linux/stm/coredisplay/hdmidev.c
+@@ -62,6 +62,7 @@ MODULE_PARM_DESC(hdmi0, "[enable|disable]");
+ 
+ extern int stmhdmi_manager(void *data);
+ 
++static struct stm_hdmi *HACK_dev;
+ 
+ static int stmhdmi_open(struct inode *inode,struct file *filp)
+ {
+@@ -369,6 +370,168 @@ static int stmhdmi_set_spd_data(struct stm_hdmi *dev, unsigned long arg)
+   return 0;
+ }
+ 
++//HACK->
++
++long stmhdmiio_set_audio_source(unsigned int arg)
++{
++  unsigned long audio = STM_AV_SOURCE_MAIN_INPUT;
++  unsigned long val;
++  long retval=0;
++  struct stm_hdmi *dev = HACK_dev;
++
++  printk("%s - %p\n", __func__, dev);
++
++  if(mutex_lock_interruptible(&dev->lock))
++    return -ERESTARTSYS;
++
++  switch(arg)
++  {
++    case STMHDMIIO_AUDIO_SOURCE_2CH_I2S:
++      audio |= STM_AV_SOURCE_2CH_I2S_INPUT;
++      break;
++    case STMHDMIIO_AUDIO_SOURCE_SPDIF:
++      audio |= STM_AV_SOURCE_SPDIF_INPUT;
++      break;
++    case STMHDMIIO_AUDIO_SOURCE_8CH_I2S:
++      audio |= STM_AV_SOURCE_8CH_I2S_INPUT;
++      break;
++    case STMHDMIIO_AUDIO_SOURCE_NONE:
++      break;
++    default:
++      retval = -EINVAL;
++      goto exit;
++  }
++
++  if(stm_display_output_set_control(dev->hdmi_output, STM_CTRL_AV_SOURCE_SELECT, audio)<0)
++  {
++    if(signal_pending(current))
++      retval = -ERESTARTSYS;
++    else
++     retval = -EIO;
++
++    goto exit;
++  }
++
++  if(stm_display_output_get_control(dev->hdmi_output, STM_CTRL_AV_SOURCE_SELECT, &val)<0)
++  {
++    if(signal_pending(current))
++      retval = -EINTR;
++    else
++      retval = -EIO;
++
++    goto exit;
++  }
++
++  if(val != audio)
++    retval = -EINVAL;
++
++
++exit:
++  mutex_unlock(&dev->lock);
++  return retval;
++
++}
++EXPORT_SYMBOL(stmhdmiio_set_audio_source);
++
++
++long stmhdmiio_get_audio_source(unsigned int * arg)
++{
++  unsigned long audio;
++  long retval=0;
++  struct stm_hdmi *dev = HACK_dev;
++
++  printk("%s - %p\n", __func__, dev);
++
++  if(mutex_lock_interruptible(&dev->lock))
++    return -ERESTARTSYS;
++
++  if(stm_display_output_get_control(dev->hdmi_output, STM_CTRL_AV_SOURCE_SELECT, &audio)<0)
++  {
++    if(signal_pending(current))
++      retval = -EINTR;
++    else
++      retval = -EIO;
++
++    goto exit;
++  }
++
++  if (audio & STM_AV_SOURCE_2CH_I2S_INPUT)
++    *arg =  STMHDMIIO_AUDIO_SOURCE_2CH_I2S;
++  else if (audio & STM_AV_SOURCE_SPDIF_INPUT)
++    *arg =  STMHDMIIO_AUDIO_SOURCE_SPDIF;
++  else if (audio & STM_AV_SOURCE_8CH_I2S_INPUT)
++    *arg =  STMHDMIIO_AUDIO_SOURCE_8CH_I2S;
++  else
++    *arg =  STMHDMIIO_AUDIO_SOURCE_NONE;
++
++
++exit:
++  mutex_unlock(&dev->lock);
++  return retval;
++
++}
++EXPORT_SYMBOL(stmhdmiio_get_audio_source);
++
++
++long stmhdmiio_set_edid_handling(unsigned int arg)
++{
++  long retval=0;
++  struct stm_hdmi *dev = HACK_dev;
++
++  printk("%s - %p\n", __func__, dev);
++
++  if(mutex_lock_interruptible(&dev->lock))
++    return -ERESTARTSYS;
++
++  dev->non_strict_edid_semantics = arg ;
++
++  mutex_unlock(&dev->lock);
++  return retval;
++
++}
++EXPORT_SYMBOL(stmhdmiio_set_edid_handling);
++
++
++long stmhdmiio_get_edid_handling(unsigned int * arg)
++{
++  long retval=0;
++  struct stm_hdmi *dev = HACK_dev;
++
++  printk("%s - %p\n", __func__, dev);
++
++  if(mutex_lock_interruptible(&dev->lock))
++    return -ERESTARTSYS;
++
++  *arg =  dev->non_strict_edid_semantics;
++
++  mutex_unlock(&dev->lock);
++  return retval;
++
++}
++EXPORT_SYMBOL(stmhdmiio_get_edid_handling);
++
++long stmhdmiio_get_cec_address(unsigned int * arg)
++{
++  long retval=0;
++  struct stm_hdmi *dev = HACK_dev;
++
++  printk("%s - %p\n", __func__, dev);
++
++  if(mutex_lock_interruptible(&dev->lock))
++    return -ERESTARTSYS;
++
++  *arg = (dev->edid_info.cec_address[0] << 12) +
++         (dev->edid_info.cec_address[1] << 8) +
++         (dev->edid_info.cec_address[2] << 4) +
++         (dev->edid_info.cec_address[3]);
++
++  mutex_unlock(&dev->lock);
++  return retval;
++
++}
++EXPORT_SYMBOL(stmhdmiio_get_cec_address);
++
++//HACK <-
+ 
+ static long stmhdmi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ {
+@@ -1018,6 +1018,9 @@ int __init stmhdmi_create(int id,
+ 
+   DPRINTK("new hdmi structure = %p\n",hdmi);
+ 
++  //Dagobert
++  HACK_dev = hdmi;
++
+   /*
+    * Note that we reuse the device handle from the platform data.
+    */
+diff --git a/Linux/stm/coredisplay/hdmiedid.c b/Linux/stm/coredisplay/hdmiedid.c
+index f778122..f45b545 100644
+--- a/Linux/stm/coredisplay/hdmiedid.c
++++ b/Linux/stm/coredisplay/hdmiedid.c
+@@ -386,6 +386,8 @@ static int stmhdmi_cea_process_blocks(struct stm_hdmi *hdmi, edid_block_t rawedi
+   int block_end = rawedid[STM_EXT_TIMING_OFFSET];
+   int block_pos = 4;
+   int offset;
++  //HACK
++  stmhdmi_cea_process_video_short_codes(hdmi, 21);
+ 
+   while(block_pos < block_end)
+   {
+diff --git a/Linux/video/stmfb.c b/Linux/video/stmfb.c
+index 653e535..9d2c46f 100644
+--- a/Linux/video/stmfb.c
++++ b/Linux/video/stmfb.c
+@@ -81,6 +81,15 @@ MODULE_PARM_DESC(display3, "mode:memory:auxmem:default TV encoding:analogue colo
+ static int stmfb_probe_get_blitter(struct stmfb_info *i,
+                                    const struct stmcore_display_pipeline_data * const pd);
+ 
++/* Dagobert big Hacking School :-D */
++struct stmfb_info* stmfb_get_fbinfo_ptr(void)
++{
++    /* we only deal with fb0 */
++    return &stmfb_info[0];
++}
++
++EXPORT_SYMBOL(stmfb_get_fbinfo_ptr);
++
+ /************************************************************************
+  *  Initialization and cleanup code
+  */
+diff --git a/Linux/video/stmfboutconfig.c b/Linux/video/stmfboutconfig.c
+index 7b63221..c275f0b 100644
+--- a/Linux/video/stmfboutconfig.c
++++ b/Linux/video/stmfboutconfig.c
+@@ -100,6 +100,7 @@ void stmfb_initialise_output_config(stm_display_output_t *out, struct stmfbio_ou
+ }
+ 
+ 
++EXPORT_SYMBOL(stmfb_get_output_configuration);
+ int stmfb_get_output_configuration (struct stmfbio_output_configuration *c, struct stmfb_info *i)
+ {
+   switch(c->outputid)
+@@ -603,6 +604,7 @@ static void stmfbio_set_psi(stm_display_output_t *o,
+ 
+ }
+ 
++EXPORT_SYMBOL(stmfb_set_output_configuration);
+ int stmfb_set_output_configuration (struct stmfbio_output_configuration *c, struct stmfb_info *i)
+ {
+   stm_display_output_t *o = 0;
+diff --git a/Linux/video/stmfbvar.c b/Linux/video/stmfbvar.c
+index e2dbf15..262ece0 100644
+--- a/Linux/video/stmfbvar.c
++++ b/Linux/video/stmfbvar.c
+@@ -696,6 +696,7 @@ static int stmfb_decode_var_ex(struct stmfbio_var_screeninfo_ex *v, stm_display_
+   return 0;
+ }
+ 
++EXPORT_SYMBOL(stmfb_set_var_ex);
+ int stmfb_set_var_ex(struct stmfbio_var_screeninfo_ex *v, struct stmfb_info *i)
+ {
+   int ret;
