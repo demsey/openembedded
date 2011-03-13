@@ -1,0 +1,11 @@
+--- quilt-0.48.bak/configure.ac	2009-01-31 03:28:06.000000000 +0100
++++ quilt-0.48/configure.ac	2010-07-27 15:03:51.662232573 +0200
+@@ -274,7 +274,7 @@
+ AC_MSG_CHECKING([the version of $PATCH])
+ if $PATCH --version 2> /dev/null | grep GNU >/dev/null; then
+   set -- `$PATCH --version 2> /dev/null`
+-  patch_version=$2
++  test $2 == "patch" && patch_version=$3 || patch_version=$2
+   AC_MSG_RESULT($patch_version)
+   saved_IFS=$IFS; IFS='.'
+   set -- $patch_version
