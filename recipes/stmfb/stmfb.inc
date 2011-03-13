@@ -2,6 +2,8 @@ DESCRIPTION = "STM Frame Buffer driver"
 SECTION = "kernel/modules"
 LICENSE = "GPL"
 
+inherit module
+
 PV_MAJOR = "${@bb.data.getVar('PV',d,1).split('-')[0]}"
 PV_MINOR = "${@bb.data.getVar('PV',d,1).split('-')[1]}"
 PV_MICRO = "${@bb.data.getVar('PV',d,1).split('-')[2]}"
@@ -30,8 +32,6 @@ S_append = "${@base_conditional("PV_MAJOR", "3.0", "", "-${PV_MAJOR}_${STM_RELEA
 SRC_URI_append = " \
 	file://stmfb_cross-compile_fix.patch;patch=1;pnum=1;maxrev=0020 \
 	"
-
-inherit module
 
 addtask munge before do_patch after do_unpack
 
