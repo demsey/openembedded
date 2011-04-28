@@ -18,5 +18,6 @@ SRC_URI_append = "\
 #   file://cmdline_printk_stm23${SRCREVSTR}.patch;patch=1;pnum=1 \
     file://sound_stm23${SRCREVSTR}.diff;patch=1;pnum=1 \
     file://linux-sh4-asm_mov_0xffffff_stm23${SRCREVSTR}.patch;patch=1;pnum=1;minrev=0123 \
+    file://linux-mini_fo_stm23.patch;patch=1;pnum=1 \
     "
 
